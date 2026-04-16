@@ -1,0 +1,57 @@
+{
+  "contract_id": "C-I-DI-001",
+  "interaction_id": "I-DI-001",
+  "function": {
+    "name": "handle_i_di_001",
+    "module_hint": "backend.handlers.data_ingestion",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "screen_state",
+        "type": "ScreenState"
+      }
+    ]
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 10000,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff": "exponential",
+      "base_ms": 250
+    },
+    "concurrency_policy": "queue-latest",
+    "idempotency_rule": "idempotency-key-required-for-writes",
+    "ui_locking_rule": "disable-submit-and-spin-until-response",
+    "failure_transitions": [
+      {
+        "condition": "http-4xx-validation-error",
+        "transition": "data-ingestion",
+        "ui_effect": "inline-error-beside-field"
+      },
+      {
+        "condition": "http-5xx-server-error",
+        "transition": "data-ingestion",
+        "ui_effect": "toast-retry-option"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "data-ingestion",
+        "ui_effect": "toast-check-connection"
+      }
+    ],
+    "side_effects": []
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "BE-R-*"
+    ],
+    "external_rule_refs": [
+      "API-R-*"
+    ],
+    "source_state": "data-ingestion",
+    "success_transition": "data-ingestion"
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "contract_id": "C-I-BT-009",
+  "interaction_id": "I-BT-009",
+  "function": {
+    "name": "handle_i_bt_009",
+    "module_hint": "backend.handlers.backtest",
+    "inputs": [
+      {
+        "name": "backtest_id",
+        "type": "str"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "comparison_run",
+        "type": "ComparisonRun"
+      }
+    ]
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 10000,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff": "exponential",
+      "base_ms": 250
+    },
+    "concurrency_policy": "queue-latest",
+    "idempotency_rule": "idempotency-key-required-for-writes",
+    "ui_locking_rule": "disable-submit-and-spin-until-response",
+    "failure_transitions": [
+      {
+        "condition": "http-4xx-validation-error",
+        "transition": "backtest",
+        "ui_effect": "inline-error-beside-field"
+      },
+      {
+        "condition": "http-5xx-server-error",
+        "transition": "backtest",
+        "ui_effect": "toast-retry-option"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "backtest",
+        "ui_effect": "toast-check-connection"
+      }
+    ],
+    "side_effects": [
+      {
+        "type": "db-write",
+        "target": "backend database",
+        "description": "persisted record"
+      }
+    ]
+  },
+  "preconditions": [],
+  "postconditions": [
+    {
+      "ref": "CSC-004",
+      "condition": "compare.overlay-pnl-chart has new color-coded series; comparison-table has new row"
+    }
+  ],
+  "references": {
+    "validation_rule_refs": [
+      "CSC-004"
+    ],
+    "external_rule_refs": [],
+    "source_state": "backtest",
+    "success_transition": "backtest"
+  }
+}

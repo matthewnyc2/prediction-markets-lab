@@ -1,0 +1,1472 @@
+{
+  "project": "prediction-markets",
+  "phase": "2",
+  "step": "B",
+  "produced_at": "2026-04-16",
+  "interactions": [
+    {
+      "interaction_id": "I-CMP-001",
+      "source_state": "compare",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "compare",
+      "endpoint": "GET /api/comparison-runs",
+      "rules_referenced": [
+        "BE-R-*",
+        "HTML-R-*"
+      ],
+      "notes": "Loads saved comparison-runs and their source backtest-results / live-sessions"
+    },
+    {
+      "interaction_id": "I-CMP-002",
+      "source_state": "compare",
+      "trigger": "click add-run button",
+      "category": "state_change",
+      "target_screen": "compare",
+      "elements_involved": [
+        "add-run-button"
+      ],
+      "rules_referenced": [
+        "HTML-R-*"
+      ],
+      "notes": "Opens a picker dialog; no api call yet"
+    },
+    {
+      "interaction_id": "I-CMP-003",
+      "source_state": "compare",
+      "trigger": "pick 'add from backtest'",
+      "category": "api_call",
+      "target_screen": "compare",
+      "endpoint": "GET /api/backtests?completed=true",
+      "rules_referenced": [
+        "BE-R-*"
+      ],
+      "notes": "Lists completed backtests in picker"
+    },
+    {
+      "interaction_id": "I-CMP-004",
+      "source_state": "compare",
+      "trigger": "pick 'add from live session'",
+      "category": "api_call",
+      "target_screen": "compare",
+      "endpoint": "GET /api/live-sessions",
+      "rules_referenced": [
+        "BE-R-*"
+      ],
+      "notes": "Lists live-paper-trading-sessions in picker"
+    },
+    {
+      "interaction_id": "I-CMP-005",
+      "source_state": "compare",
+      "trigger": "confirm run selection in picker",
+      "category": "api_call",
+      "target_screen": "compare",
+      "endpoint": "POST /api/comparison-runs",
+      "request_body": {
+        "source_type": "backtest|live",
+        "source_id": "..."
+      },
+      "rules_referenced": [
+        "CSC-004",
+        "TS-03",
+        "FS-005"
+      ],
+      "notes": "Creates comparison-run; appends row to table; adds series to overlay-pnl-chart. Rejects if source_id does not exist (FS-005)."
+    },
+    {
+      "interaction_id": "I-CMP-006",
+      "source_state": "compare",
+      "trigger": "click remove-run button",
+      "category": "api_call",
+      "target_screen": "compare",
+      "endpoint": "DELETE /api/comparison-runs/{id}",
+      "rules_referenced": [
+        "BE-R-*"
+      ],
+      "notes": "Removes row and chart series without touching source backtest/session"
+    },
+    {
+      "interaction_id": "I-CMP-007",
+      "source_state": "compare",
+      "trigger": "edit run label (text input)",
+      "category": "input_change",
+      "target_screen": "compare",
+      "endpoint": "PATCH /api/comparison-runs/{id} {label:...}",
+      "rules_referenced": [
+        "BE-R-*"
+      ],
+      "notes": "Debounced 500ms; updates table + chart legend"
+    },
+    {
+      "interaction_id": "I-CMP-008",
+      "source_state": "compare",
+      "trigger": "TS-03 satisfied condition",
+      "category": "state_change",
+      "target_screen": "compare",
+      "elements_involved": [
+        "overlay-pnl-chart",
+        "comparison-table"
+      ],
+      "rules_referenced": [
+        "TS-03"
+      ],
+      "notes": "When table has \u22652 runs covering \u22652 platforms OR \u22652 date-ranges, TS-03 is observable. No UI flag needed; it's an acceptance signal."
+    },
+    {
+      "interaction_id": "I-CMP-009",
+      "source_state": "compare",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "rules_referenced": [
+        "HTML-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-PF-001",
+      "source_state": "portfolio",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "portfolio",
+      "endpoint": "GET /api/portfolio + GET /api/equity-curve?window=all + GET /api/attribution",
+      "rules_referenced": [
+        "BE-R-*",
+        "HS-004"
+      ]
+    },
+    {
+      "interaction_id": "I-PF-002",
+      "source_state": "portfolio",
+      "trigger": "click timeframe toggle (7d / 30d / 90d / ytd / all)",
+      "category": "filter_change",
+      "target_screen": "portfolio",
+      "endpoint": "GET /api/equity-curve?window={value}",
+      "rules_referenced": [
+        "QU-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-PF-003",
+      "source_state": "portfolio",
+      "trigger": "click Export CSV",
+      "category": "export",
+      "target_screen": "portfolio",
+      "endpoint": "GET /api/portfolio/export?format=csv",
+      "rules_referenced": [
+        "BE-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-PF-004",
+      "source_state": "portfolio",
+      "trigger": "click Export JSON",
+      "category": "export",
+      "target_screen": "portfolio",
+      "endpoint": "GET /api/portfolio/export?format=json",
+      "rules_referenced": [
+        "BE-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-PF-005",
+      "source_state": "portfolio",
+      "trigger": "click attribution bar for a strategy",
+      "category": "drilldown",
+      "target_screen": "paper-trades",
+      "elements_involved": [
+        "pnl-attribution-bars"
+      ],
+      "rules_referenced": [
+        "CSC-003",
+        "HS-005"
+      ],
+      "notes": "Preset filter source=strategy-id when navigating to paper-trades"
+    },
+    {
+      "interaction_id": "I-PF-006",
+      "source_state": "portfolio",
+      "trigger": "30s poll refresh",
+      "category": "refresh",
+      "target_screen": "portfolio",
+      "endpoint": "GET /api/portfolio (tiles only)",
+      "rules_referenced": [
+        "FW-R-*"
+      ],
+      "notes": "Tiles update; equity-curve invalidation triggered on new closed fills (HS-004)"
+    },
+    {
+      "interaction_id": "I-PF-007",
+      "source_state": "portfolio",
+      "trigger": "insufficient data edge case (sortino <20 trades)",
+      "category": "state_change",
+      "target_screen": "portfolio",
+      "elements_involved": [
+        "sortino-tile"
+      ],
+      "rules_referenced": [
+        "QU-R-*"
+      ],
+      "notes": "Tile shows 'insufficient data' in dim text"
+    },
+    {
+      "interaction_id": "I-PF-008",
+      "source_state": "portfolio",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "rules_referenced": [
+        "HTML-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-DI-001",
+      "source_state": "data-ingestion",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "data-ingestion",
+      "endpoint": "GET /api/adapters/status",
+      "rules_referenced": [
+        "BE-R-*",
+        "API-R-*"
+      ],
+      "notes": "Loads 4 adapter rows with current status, last-sync, counts"
+    },
+    {
+      "interaction_id": "I-DI-002",
+      "source_state": "data-ingestion",
+      "trigger": "click Sync now on Kalshi row",
+      "category": "api_call",
+      "target_screen": "data-ingestion",
+      "endpoint": "POST /api/adapters/kalshi/sync",
+      "async_mode_hint": "async-await-long-running",
+      "rules_referenced": [
+        "API-R-*",
+        "SR-003",
+        "CSC-005"
+      ],
+      "notes": "Status pill flips to 'syncing' until complete; respects Kalshi rate limits; errors roll up to dashboard platform-health"
+    },
+    {
+      "interaction_id": "I-DI-003",
+      "source_state": "data-ingestion",
+      "trigger": "click Sync now on Polymarket row",
+      "category": "api_call",
+      "target_screen": "data-ingestion",
+      "endpoint": "POST /api/adapters/polymarket/sync",
+      "async_mode_hint": "async-await-long-running",
+      "rules_referenced": [
+        "API-R-*",
+        "SR-003"
+      ]
+    },
+    {
+      "interaction_id": "I-DI-004",
+      "source_state": "data-ingestion",
+      "trigger": "click Sync now on Manifold row",
+      "category": "api_call",
+      "target_screen": "data-ingestion",
+      "endpoint": "POST /api/adapters/manifold/sync",
+      "async_mode_hint": "async-await-long-running",
+      "rules_referenced": [
+        "API-R-*",
+        "SR-003"
+      ],
+      "notes": "Reconstructs price-history from /v0/bets on first sync; incremental thereafter"
+    },
+    {
+      "interaction_id": "I-DI-005",
+      "source_state": "data-ingestion",
+      "trigger": "click Retry on PredictIt row (when rate-limited)",
+      "category": "api_call",
+      "target_screen": "data-ingestion",
+      "endpoint": "POST /api/adapters/predictit/sync",
+      "async_mode_hint": "async-await-long-running",
+      "rules_referenced": [
+        "API-R-*",
+        "SR-003"
+      ],
+      "notes": "PredictIt enforces 1 req/s; retry uses exponential backoff; no historical api means live-only recording"
+    },
+    {
+      "interaction_id": "I-DI-006",
+      "source_state": "data-ingestion",
+      "trigger": "status transitions healthy \u2192 rate-limited or error",
+      "category": "state_change",
+      "target_screen": "data-ingestion",
+      "elements_involved": [
+        "adapters-table.status-pill"
+      ],
+      "rules_referenced": [
+        "CSC-005",
+        "FS-006"
+      ],
+      "notes": "Pill color changes; action button switches to 'Retry'; dashboard platform-health reflects degraded state"
+    },
+    {
+      "interaction_id": "I-DI-007",
+      "source_state": "data-ingestion",
+      "trigger": "30s poll refresh",
+      "category": "refresh",
+      "target_screen": "data-ingestion",
+      "endpoint": "GET /api/adapters/status",
+      "rules_referenced": [
+        "FS-006",
+        "FW-R-*"
+      ],
+      "notes": "Revalidates status + last-sync; triggers FS-006 warning if healthy but stale"
+    },
+    {
+      "interaction_id": "I-DI-008",
+      "source_state": "data-ingestion",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "rules_referenced": [
+        "HTML-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-DASH-001",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Dashboard' (self)",
+      "category": "navigation",
+      "target_screen": "dashboard",
+      "elements_involved": [
+        "dashboard.sidebar-nav.item[label='Dashboard']"
+      ],
+      "rules_referenced": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "notes": "No-op navigation to current screen; highlighted as .active li."
+    },
+    {
+      "interaction_id": "I-DASH-002",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Markets'",
+      "category": "navigation",
+      "target_screen": "markets",
+      "elements_involved": [
+        "dashboard.sidebar-nav.item[label='Markets']"
+      ],
+      "rules_referenced": [
+        "HTML-R-003",
+        "HTML-R-004",
+        "HTML-R-005"
+      ],
+      "notes": "Primary cross-screen nav; Markets nav item displays count badge (e.g. 4218)."
+    },
+    {
+      "interaction_id": "I-DASH-003",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Strategies'",
+      "category": "navigation",
+      "target_screen": "strategies",
+      "elements_involved": [
+        "dashboard.sidebar-nav.item[label='Strategies']"
+      ],
+      "rules_referenced": [
+        "HTML-R-003",
+        "HTML-R-004",
+        "HTML-R-005"
+      ],
+      "notes": "Strategies nav item shows badge count of registered strategies."
+    },
+    {
+      "interaction_id": "I-DASH-004",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Paper Trades'",
+      "category": "navigation",
+      "target_screen": "paper-trades",
+      "elements_involved": [
+        "dashboard.sidebar-nav.item[label='Paper Trades']"
+      ],
+      "rules_referenced": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "notes": "Navigates to the paper-trades ledger screen."
+    },
+    {
+      "interaction_id": "I-DASH-005",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Backtest'",
+      "category": "navigation",
+      "target_screen": "backtest",
+      "elements_involved": [
+        "dashboard.sidebar-nav.item[label='Backtest']"
+      ],
+      "rules_referenced": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "notes": "Navigates to the backtest configuration screen."
+    },
+    {
+      "interaction_id": "I-DASH-006",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Compare'",
+      "category": "navigation",
+      "target_screen": "compare",
+      "elements_involved": [
+        "dashboard.sidebar-nav.item[label='Compare']"
+      ],
+      "rules_referenced": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "notes": "Navigates to the compare screen where saved backtests can be overlaid."
+    },
+    {
+      "interaction_id": "I-DASH-007",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Portfolio'",
+      "category": "navigation",
+      "target_screen": "portfolio",
+      "elements_involved": [
+        "dashboard.sidebar-nav.item[label='Portfolio']"
+      ],
+      "rules_referenced": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "notes": "Navigates to the portfolio screen."
+    },
+    {
+      "interaction_id": "I-DASH-008",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Data ingestion'",
+      "category": "navigation",
+      "target_screen": "data-ingestion",
+      "elements_involved": [
+        "dashboard.sidebar-nav.item[label='Data ingestion']"
+      ],
+      "rules_referenced": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "notes": "Navigates to the adapter health and sync screen."
+    },
+    {
+      "interaction_id": "I-DASH-009",
+      "source_state": "dashboard",
+      "trigger": "page mount \u2014 initial load of dashboard route",
+      "category": "api_call",
+      "target_screen": "dashboard",
+      "elements_involved": [
+        "dashboard.equity-tile",
+        "dashboard.brier-tile",
+        "dashboard.sharpe-tile",
+        "dashboard.win-rate-tile",
+        "dashboard.equity-curve",
+        "dashboard.active-strategies-panel",
+        "dashboard.recent-trades-panel"
+      ],
+      "rules_referenced": [
+        "FE-R-027",
+        "BE-R-001",
+        "INV-001",
+        "PR-003",
+        "HS-004"
+      ],
+      "notes": "Server Component fetches tiles + equity-curve + active strategies + recent trades with next: { revalidate: 30 }; Client Components that display live data hydrate with SWR refreshInterval 30_000."
+    },
+    {
+      "interaction_id": "I-DASH-010",
+      "source_state": "dashboard",
+      "trigger": "SWR periodic refresh every 30s while dashboard is mounted",
+      "category": "refresh",
+      "target_screen": "dashboard",
+      "elements_involved": [
+        "dashboard.equity-tile",
+        "dashboard.brier-tile",
+        "dashboard.sharpe-tile",
+        "dashboard.win-rate-tile",
+        "dashboard.equity-curve",
+        "dashboard.active-strategies-panel",
+        "dashboard.recent-trades-panel"
+      ],
+      "rules_referenced": [
+        "FE-R-027",
+        "FE-R-024",
+        "HS-002",
+        "HS-004"
+      ],
+      "notes": "SWR refreshInterval 30_000, refreshWhenHidden=false, refreshWhenOffline=false; matches live_poll_interval_seconds. 'updated 3s ago' subtitle reflects last successful fetch."
+    },
+    {
+      "interaction_id": "I-DASH-011",
+      "source_state": "dashboard",
+      "trigger": "hover on equity-curve chart series",
+      "category": "state_change",
+      "target_screen": "dashboard",
+      "elements_involved": [
+        "dashboard.equity-curve.tooltip",
+        "dashboard.equity-curve.crosshair"
+      ],
+      "rules_referenced": [
+        "FE-R-024",
+        "FE-R-025"
+      ],
+      "notes": "Recharts hover shows date + equity value tooltip; presentational only, no state mutation. isAnimationActive=false on live series."
+    },
+    {
+      "interaction_id": "I-DASH-012",
+      "source_state": "dashboard",
+      "trigger": "click on a row in active-strategies-panel",
+      "category": "navigation",
+      "target_screen": "strategies",
+      "elements_involved": [
+        "dashboard.active-strategies-panel.row"
+      ],
+      "rules_referenced": [
+        "HTML-R-022",
+        "CSC-001",
+        "CSC-007"
+      ],
+      "notes": "Row maps to a specific strategy card on the strategies screen; navigates with strategy-id in the hash or route param."
+    },
+    {
+      "interaction_id": "I-DASH-013",
+      "source_state": "dashboard",
+      "trigger": "click on a row in recent-trades-panel",
+      "category": "drilldown",
+      "target_screen": "market-detail",
+      "elements_involved": [
+        "dashboard.recent-trades-panel.row"
+      ],
+      "rules_referenced": [
+        "HTML-R-022",
+        "INV-004",
+        "CSC-002"
+      ],
+      "notes": "Drills down to the market-detail page for the market of that trade (platform + market-id)."
+    },
+    {
+      "interaction_id": "I-DASH-014",
+      "source_state": "dashboard",
+      "trigger": "click on 'View all' link in recent-trades-panel header",
+      "category": "navigation",
+      "target_screen": "paper-trades",
+      "elements_involved": [
+        "dashboard.recent-trades-panel.view-all-link"
+      ],
+      "rules_referenced": [
+        "HTML-R-022"
+      ],
+      "notes": "Anchor href='#wf-paper-trades' in wireframe; links to full paper-trades ledger."
+    },
+    {
+      "interaction_id": "I-DASH-015",
+      "source_state": "dashboard",
+      "trigger": "no paper-fills exist yet OR <1 day of portfolio history",
+      "category": "state_change",
+      "target_screen": "dashboard",
+      "elements_involved": [
+        "dashboard.equity-curve.empty-state",
+        "dashboard.recent-trades-panel.empty-state"
+      ],
+      "rules_referenced": [
+        "INV-001",
+        "PR-003",
+        "HS-004"
+      ],
+      "notes": "Conditional display: equity-curve shows empty-state message until >=1 day history; recent-trades shows empty-state until first paper-fill exists."
+    },
+    {
+      "interaction_id": "I-MKT-001",
+      "source_state": "markets",
+      "trigger": "click on sidebar nav item 'Dashboard'",
+      "category": "navigation",
+      "target_screen": "dashboard",
+      "elements_involved": [
+        "markets.sidebar-nav.item[label='Dashboard']"
+      ],
+      "rules_referenced": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "notes": "Returns to dashboard from markets."
+    },
+    {
+      "interaction_id": "I-MKT-002",
+      "source_state": "markets",
+      "trigger": "page mount \u2014 initial load of /markets route",
+      "category": "api_call",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.markets-table",
+        "markets.platform-count-pill-kalshi",
+        "markets.platform-count-pill-polymarket",
+        "markets.platform-count-pill-manifold",
+        "markets.platform-count-pill-predictit"
+      ],
+      "rules_referenced": [
+        "FE-R-027",
+        "FE-R-028",
+        "BE-R-007",
+        "BE-R-009",
+        "PR-004"
+      ],
+      "notes": "Server Component fetch with next: { revalidate: 30 }; returns normalized market rows with platform chip, title, yes/no price, vol 24h, close date. Per-platform counts render in filter-bar pills."
+    },
+    {
+      "interaction_id": "I-MKT-003",
+      "source_state": "markets",
+      "trigger": "SWR periodic refresh every 30s while markets is mounted",
+      "category": "refresh",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.markets-table"
+      ],
+      "rules_referenced": [
+        "FE-R-027",
+        "FE-R-028"
+      ],
+      "notes": "Client component uses SWR refreshInterval 30_000; re-renders row prices without full page reload. Sub-header shows 'last refresh 32s ago' counter."
+    },
+    {
+      "interaction_id": "I-MKT-004",
+      "source_state": "markets",
+      "trigger": "type into search-input (debounced)",
+      "category": "filter_change",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.search-input"
+      ],
+      "rules_referenced": [
+        "HTML-R-016",
+        "BE-R-008"
+      ],
+      "notes": "Debounced text filter on market-title column; updates markets-table rows client-side (or via query param). Input placeholder is 'search market title'; min-width 240px per HTML-R-016."
+    },
+    {
+      "interaction_id": "I-MKT-005",
+      "source_state": "markets",
+      "trigger": "click 'All' platform-filter pill",
+      "category": "filter_change",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.platform-filter-pill[value=all]"
+      ],
+      "rules_referenced": [
+        "HTML-R-015",
+        "HTML-R-016"
+      ],
+      "notes": "Clears platform filter; all platforms included. Active pill styled .pill.accent.plain; others .pill.off."
+    },
+    {
+      "interaction_id": "I-MKT-006",
+      "source_state": "markets",
+      "trigger": "click 'Kalshi' platform-filter pill",
+      "category": "filter_change",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.platform-filter-pill[value=kalshi]"
+      ],
+      "rules_referenced": [
+        "HTML-R-015",
+        "HTML-R-016",
+        "BE-R-009"
+      ],
+      "notes": "Filters markets-table to platform==kalshi; pill swaps to .pill.accent.plain; rerequests /api/markets?platform=kalshi or filters client-side."
+    },
+    {
+      "interaction_id": "I-MKT-007",
+      "source_state": "markets",
+      "trigger": "click 'Polymarket' platform-filter pill",
+      "category": "filter_change",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.platform-filter-pill[value=polymarket]"
+      ],
+      "rules_referenced": [
+        "HTML-R-015",
+        "HTML-R-016",
+        "BE-R-009"
+      ],
+      "notes": "Filters markets-table to platform==polymarket."
+    },
+    {
+      "interaction_id": "I-MKT-008",
+      "source_state": "markets",
+      "trigger": "click 'Manifold' platform-filter pill",
+      "category": "filter_change",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.platform-filter-pill[value=manifold]"
+      ],
+      "rules_referenced": [
+        "HTML-R-015",
+        "HTML-R-016",
+        "BE-R-009"
+      ],
+      "notes": "Filters markets-table to platform==manifold; only BINARY outcomeType rows ingested per adapter rule."
+    },
+    {
+      "interaction_id": "I-MKT-009",
+      "source_state": "markets",
+      "trigger": "click 'PredictIt' platform-filter pill",
+      "category": "filter_change",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.platform-filter-pill[value=predictit]"
+      ],
+      "rules_referenced": [
+        "HTML-R-015",
+        "HTML-R-016",
+        "BE-R-009"
+      ],
+      "notes": "Filters markets-table to platform==predictit."
+    },
+    {
+      "interaction_id": "I-MKT-010",
+      "source_state": "markets",
+      "trigger": "toggle 'Open only' filter pill",
+      "category": "toggle",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.open-only-filter"
+      ],
+      "rules_referenced": [
+        "HTML-R-016"
+      ],
+      "notes": "When on, markets-table shows only markets with lifecycle==open. Pill shown as .pill.warn.plain when active in wireframe."
+    },
+    {
+      "interaction_id": "I-MKT-011",
+      "source_state": "markets",
+      "trigger": "toggle 'Volume >$10k' filter pill",
+      "category": "toggle",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.volume-threshold-filter"
+      ],
+      "rules_referenced": [
+        "HTML-R-016"
+      ],
+      "notes": "Threshold 10000 per markets-elements.json; when on, filters rows where volume_24h > 10000."
+    },
+    {
+      "interaction_id": "I-MKT-012",
+      "source_state": "markets",
+      "trigger": "click 'YES' column header",
+      "category": "sort_change",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.markets-table.column-sort[col=yes-price]"
+      ],
+      "rules_referenced": [
+        "FE-R-023"
+      ],
+      "notes": "Toggles asc/desc sort on yes_price; active header renders a caret in --accent."
+    },
+    {
+      "interaction_id": "I-MKT-013",
+      "source_state": "markets",
+      "trigger": "click 'NO' column header",
+      "category": "sort_change",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.markets-table.column-sort[col=no-price]"
+      ],
+      "rules_referenced": [
+        "FE-R-023"
+      ],
+      "notes": "Toggles asc/desc sort on no_price."
+    },
+    {
+      "interaction_id": "I-MKT-014",
+      "source_state": "markets",
+      "trigger": "click 'Vol 24h' column header",
+      "category": "sort_change",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.markets-table.column-sort[col=volume-24h]"
+      ],
+      "rules_referenced": [
+        "FE-R-023"
+      ],
+      "notes": "Toggles asc/desc sort on volume_24h."
+    },
+    {
+      "interaction_id": "I-MKT-015",
+      "source_state": "markets",
+      "trigger": "click 'Close' column header",
+      "category": "sort_change",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.markets-table.column-sort[col=close-date]"
+      ],
+      "rules_referenced": [
+        "FE-R-023"
+      ],
+      "notes": "Toggles asc/desc sort on close_date."
+    },
+    {
+      "interaction_id": "I-MKT-016",
+      "source_state": "markets",
+      "trigger": "click on a markets-table row (tr.link)",
+      "category": "drilldown",
+      "target_screen": "market-detail",
+      "elements_involved": [
+        "markets.markets-table.row.link"
+      ],
+      "rules_referenced": [
+        "HTML-R-013",
+        "HTML-R-014",
+        "INV-002"
+      ],
+      "notes": "Entire row is a clickable link with cursor:pointer. Navigates to /markets/{platform}/{market-id}. Only the markets screen uses tr.link."
+    },
+    {
+      "interaction_id": "I-MKT-017",
+      "source_state": "markets",
+      "trigger": "pagination next/prev when table exceeds threshold",
+      "category": "api_call",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.markets-table.pagination"
+      ],
+      "rules_referenced": [
+        "BE-R-008",
+        "FE-R-027"
+      ],
+      "notes": "4218 total markets forces pagination; next/prev fires GET /api/markets?offset=&limit= with current filter+sort state. Offset/limit constrained via pydantic Field(ge=0)."
+    },
+    {
+      "interaction_id": "I-MKT-018",
+      "source_state": "markets",
+      "trigger": "filter combination produces zero rows",
+      "category": "state_change",
+      "target_screen": "markets",
+      "elements_involved": [
+        "markets.empty-state-panel"
+      ],
+      "rules_referenced": [
+        "HTML-R-013"
+      ],
+      "notes": "Conditional display \u2014 empty-state-panel shown when markets-table body has no rows matching active platform + filter combination."
+    },
+    {
+      "interaction_id": "I-MD-001",
+      "source_state": "market-detail",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "market-detail",
+      "elements_involved": [
+        "market-title",
+        "price-history-chart",
+        "recent-fills-table"
+      ],
+      "endpoint": "GET /api/markets/{platform}/{market_id} + GET /api/markets/{...}/price-history?window=90d + GET /api/markets/{...}/fills",
+      "rules_referenced": [
+        "FE-R-004",
+        "BE-R-002",
+        "API-R-*"
+      ],
+      "notes": "Parallel initial fetches; 30s SWR poll for current price"
+    },
+    {
+      "interaction_id": "I-MD-002",
+      "source_state": "market-detail",
+      "trigger": "click BUY YES button",
+      "category": "state_change",
+      "target_screen": "market-detail",
+      "elements_involved": [
+        "buy-yes-button",
+        "size-input",
+        "cost-display",
+        "max-loss-display"
+      ],
+      "rules_referenced": [
+        "DESIGN-R-*"
+      ],
+      "notes": "Selects side; recomputes cost = yes-price \u00d7 size and max-loss = cost"
+    },
+    {
+      "interaction_id": "I-MD-003",
+      "source_state": "market-detail",
+      "trigger": "click BUY NO button",
+      "category": "state_change",
+      "target_screen": "market-detail",
+      "elements_involved": [
+        "buy-no-button",
+        "size-input",
+        "cost-display"
+      ],
+      "rules_referenced": [
+        "DESIGN-R-*"
+      ],
+      "notes": "Side = no; cost = no-price \u00d7 size"
+    },
+    {
+      "interaction_id": "I-MD-004",
+      "source_state": "market-detail",
+      "trigger": "change size input",
+      "category": "input_change",
+      "target_screen": "market-detail",
+      "elements_involved": [
+        "size-input",
+        "cost-display",
+        "max-loss-display",
+        "submit-paper-trade"
+      ],
+      "rules_referenced": [
+        "INV-002",
+        "DESIGN-R-*"
+      ],
+      "notes": "Integer > 0 required; live-updates computed cost and max-loss; submit enabled only when side selected AND size > 0"
+    },
+    {
+      "interaction_id": "I-MD-005",
+      "source_state": "market-detail",
+      "trigger": "click submit-paper-trade",
+      "category": "api_call",
+      "target_screen": "market-detail",
+      "elements_involved": [
+        "submit-paper-trade",
+        "recent-fills-table"
+      ],
+      "endpoint": "POST /api/paper-fills",
+      "request_body": {
+        "platform": "...",
+        "market_id": "...",
+        "side": "yes|no",
+        "order_side": "buy",
+        "size": "int"
+      },
+      "rules_referenced": [
+        "INV-001",
+        "INV-004",
+        "INV-007",
+        "PR-001",
+        "PR-007",
+        "BE-R-*"
+      ],
+      "notes": "Atomic: creates paper-fill + updates paper-position; invariant INV-007 blocks real trading; success = fill appears in recent-fills-table + portfolio equity updates (CSC-002)"
+    },
+    {
+      "interaction_id": "I-MD-006",
+      "source_state": "market-detail",
+      "trigger": "submit-paper-trade fails (insufficient bankroll)",
+      "category": "state_change",
+      "target_screen": "market-detail",
+      "elements_involved": [
+        "submit-paper-trade"
+      ],
+      "rules_referenced": [
+        "INV-008"
+      ],
+      "notes": "Backend returns 422; UI shows error toast; button re-enabled"
+    },
+    {
+      "interaction_id": "I-MD-007",
+      "source_state": "market-detail",
+      "trigger": "30s poll refresh",
+      "category": "refresh",
+      "target_screen": "market-detail",
+      "elements_involved": [
+        "market-title",
+        "price-history-chart",
+        "recent-fills-table"
+      ],
+      "endpoint": "GET /api/markets/{...} (price + recent fills)",
+      "rules_referenced": [
+        "FW-R-*"
+      ],
+      "notes": "SWR revalidates price + fills; chart isAnimationActive=false"
+    },
+    {
+      "interaction_id": "I-MD-008",
+      "source_state": "market-detail",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "elements_involved": [
+        "sidebar.nav-list.li"
+      ],
+      "rules_referenced": [
+        "HTML-R-*"
+      ],
+      "notes": "8 nav targets (dashboard, markets, strategies, paper-trades, backtest, compare, portfolio, data-ingestion). Emitted once per target as group."
+    },
+    {
+      "interaction_id": "I-STR-001",
+      "source_state": "strategies",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "strategies",
+      "elements_involved": [
+        "strategy-card-*"
+      ],
+      "endpoint": "GET /api/strategies",
+      "rules_referenced": [
+        "BE-R-*",
+        "FW-R-*"
+      ],
+      "notes": "Fetches 5 strategy cards with state/parameters/capital/pnl; 30s poll refreshes pnl"
+    },
+    {
+      "interaction_id": "I-STR-002",
+      "source_state": "strategies",
+      "trigger": "toggle Kelly sizing ON",
+      "category": "api_call",
+      "target_screen": "strategies",
+      "elements_involved": [
+        "strategy-card-kelly.on-off-toggle"
+      ],
+      "endpoint": "POST /api/strategies/kelly-sizing/toggle",
+      "request_body": {
+        "state": "on"
+      },
+      "rules_referenced": [
+        "INV-003",
+        "INV-008",
+        "FS-001",
+        "PR-002",
+        "CSC-001"
+      ],
+      "notes": "Precondition: assigned-capital > 0 (INV-003); \u03a3 capital of ON strategies \u2264 equity (INV-008); state transition logged (PR-002); causes new fills on dashboard (CSC-001)"
+    },
+    {
+      "interaction_id": "I-STR-003",
+      "source_state": "strategies",
+      "trigger": "toggle any strategy OFF",
+      "category": "api_call",
+      "target_screen": "strategies",
+      "elements_involved": [
+        "strategy-card-*.on-off-toggle"
+      ],
+      "endpoint": "POST /api/strategies/{id}/toggle",
+      "request_body": {
+        "state": "off"
+      },
+      "rules_referenced": [
+        "PR-002",
+        "CSC-007",
+        "FS-007"
+      ],
+      "notes": "No new paper-fills from this strategy after off timestamp; pnl stops growing; dashboard pill updates"
+    },
+    {
+      "interaction_id": "I-STR-004",
+      "source_state": "strategies",
+      "trigger": "change strategy parameter (kelly-fraction, min-edge, window-hours, threshold, spread)",
+      "category": "input_change",
+      "target_screen": "strategies",
+      "elements_involved": [
+        "strategy-card-*.parameter-input"
+      ],
+      "endpoint": "PATCH /api/strategies/{id}/parameters",
+      "rules_referenced": [
+        "BE-R-*",
+        "QU-R-024"
+      ],
+      "notes": "Debounced 300ms; validated against parameter schema; persisted only if strategy is on"
+    },
+    {
+      "interaction_id": "I-STR-005",
+      "source_state": "strategies",
+      "trigger": "change strategy assigned capital",
+      "category": "input_change",
+      "target_screen": "strategies",
+      "elements_involved": [
+        "strategy-card-*.capital-input"
+      ],
+      "endpoint": "PATCH /api/strategies/{id}/capital",
+      "rules_referenced": [
+        "INV-008",
+        "FS-001"
+      ],
+      "notes": "Validation: \u2264 equity \u2212 sum(other ON strategies' capital); value 0 blocks toggle-on"
+    },
+    {
+      "interaction_id": "I-STR-006",
+      "source_state": "strategies",
+      "trigger": "click running-pnl on a strategy card",
+      "category": "drilldown",
+      "target_screen": "paper-trades",
+      "elements_involved": [
+        "strategy-card-*.running-pnl"
+      ],
+      "rules_referenced": [
+        "HTML-R-*",
+        "CSC-003"
+      ],
+      "notes": "Navigates to paper-trades with filter source=strategy-id preset"
+    },
+    {
+      "interaction_id": "I-STR-007",
+      "source_state": "strategies",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "elements_involved": [
+        "sidebar.nav-list.li"
+      ],
+      "rules_referenced": [
+        "HTML-R-*"
+      ],
+      "notes": "Standard sidebar navigation (8 targets)"
+    },
+    {
+      "interaction_id": "I-STR-008",
+      "source_state": "strategies",
+      "trigger": "toggle-on attempt with assigned-capital = 0",
+      "category": "state_change",
+      "target_screen": "strategies",
+      "elements_involved": [
+        "strategy-card-*.on-off-toggle"
+      ],
+      "rules_referenced": [
+        "INV-003",
+        "FS-001"
+      ],
+      "notes": "UI blocks toggle-on; shows inline error 'Assign capital first'"
+    },
+    {
+      "interaction_id": "I-STR-009",
+      "source_state": "strategies",
+      "trigger": "toggle-on attempt exceeding equity",
+      "category": "state_change",
+      "target_screen": "strategies",
+      "elements_involved": [
+        "strategy-card-*.on-off-toggle"
+      ],
+      "rules_referenced": [
+        "INV-008"
+      ],
+      "notes": "Backend 422; UI shows 'Would exceed available equity' with remaining headroom"
+    },
+    {
+      "interaction_id": "I-STR-010",
+      "source_state": "strategies",
+      "trigger": "30s poll refresh",
+      "category": "refresh",
+      "target_screen": "strategies",
+      "elements_involved": [
+        "strategy-card-*.running-pnl"
+      ],
+      "endpoint": "GET /api/strategies",
+      "rules_referenced": [
+        "FW-R-*"
+      ],
+      "notes": "Revalidates pnl numbers without animation flash"
+    },
+    {
+      "interaction_id": "I-STR-011",
+      "source_state": "strategies",
+      "trigger": "new strategy .py file dropped in strategies/ directory",
+      "category": "state_change",
+      "target_screen": "strategies",
+      "elements_involved": [
+        "strategy-card-*"
+      ],
+      "rules_referenced": [
+        "FW-R-*"
+      ],
+      "notes": "Backend filesystem scan auto-registers on next request; UI shows new card on next poll; no server restart required"
+    },
+    {
+      "interaction_id": "I-PT-001",
+      "source_state": "paper-trades",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?status=all&limit=100",
+      "rules_referenced": [
+        "BE-R-*",
+        "HTML-R-*"
+      ],
+      "notes": "Initial ledger load with default filters"
+    },
+    {
+      "interaction_id": "I-PT-002",
+      "source_state": "paper-trades",
+      "trigger": "click status filter pill (All / Open / Closed)",
+      "category": "filter_change",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?status={value}",
+      "rules_referenced": [
+        "HTML-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-PT-003",
+      "source_state": "paper-trades",
+      "trigger": "click strategy filter pill (Kelly / Arb / Momentum / Fade / MM / Manual)",
+      "category": "filter_change",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?source={strategy_id|manual}",
+      "rules_referenced": [
+        "HS-005"
+      ]
+    },
+    {
+      "interaction_id": "I-PT-004",
+      "source_state": "paper-trades",
+      "trigger": "click platform filter pill",
+      "category": "filter_change",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?platform={kalshi|polymarket|manifold|predictit}",
+      "rules_referenced": [
+        "HTML-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-PT-005",
+      "source_state": "paper-trades",
+      "trigger": "change date-range picker",
+      "category": "filter_change",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?from={iso}&to={iso}",
+      "rules_referenced": [
+        "BE-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-PT-006",
+      "source_state": "paper-trades",
+      "trigger": "click market cell in row",
+      "category": "drilldown",
+      "target_screen": "market-detail",
+      "rules_referenced": [
+        "HTML-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-PT-007",
+      "source_state": "paper-trades",
+      "trigger": "click Export CSV button",
+      "category": "export",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills/export?format=csv&filters=...",
+      "rules_referenced": [
+        "BE-R-*"
+      ],
+      "notes": "Downloads csv attachment; uses same active filter set"
+    },
+    {
+      "interaction_id": "I-PT-008",
+      "source_state": "paper-trades",
+      "trigger": "click Export JSON button",
+      "category": "export",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills/export?format=json&filters=...",
+      "rules_referenced": [
+        "BE-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-PT-009",
+      "source_state": "paper-trades",
+      "trigger": "click column sort (Time / Qty / Entry / Exit / P&L)",
+      "category": "sort_change",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?order={field}&dir={asc|desc}",
+      "rules_referenced": [
+        "HTML-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-PT-010",
+      "source_state": "paper-trades",
+      "trigger": "30s poll refresh (only when Open filter active)",
+      "category": "refresh",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?status=open",
+      "rules_referenced": [
+        "FW-R-*"
+      ],
+      "notes": "Closed fills don't change; open fills need refresh to reflect exit prices"
+    },
+    {
+      "interaction_id": "I-PT-011",
+      "source_state": "paper-trades",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "rules_referenced": [
+        "HTML-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-BT-001",
+      "source_state": "backtest",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "backtest",
+      "endpoint": "GET /api/strategies + GET /api/adapters/price-history-range",
+      "rules_referenced": [
+        "BE-R-*",
+        "API-R-*"
+      ],
+      "notes": "Fetches strategy list and min(stored-price-history.timestamp) per platform for date-picker bounds (OQ-01)"
+    },
+    {
+      "interaction_id": "I-BT-002",
+      "source_state": "backtest",
+      "trigger": "change strategy picker",
+      "category": "input_change",
+      "target_screen": "backtest",
+      "elements_involved": [
+        "strategy-picker"
+      ],
+      "rules_referenced": [
+        "HTML-R-*"
+      ]
+    },
+    {
+      "interaction_id": "I-BT-003",
+      "source_state": "backtest",
+      "trigger": "toggle platform in multiselect",
+      "category": "filter_change",
+      "target_screen": "backtest",
+      "elements_involved": [
+        "platform-multiselect"
+      ],
+      "rules_referenced": [
+        "HTML-R-*",
+        "API-R-*"
+      ],
+      "notes": "If PredictIt toggled and date-range < first-sync date, show warning 'No PredictIt data before {date}'"
+    },
+    {
+      "interaction_id": "I-BT-004",
+      "source_state": "backtest",
+      "trigger": "change date-range picker",
+      "category": "input_change",
+      "target_screen": "backtest",
+      "elements_involved": [
+        "date-range-picker"
+      ],
+      "rules_referenced": [
+        "API-R-*"
+      ],
+      "notes": "Disabled dates < min(stored-price-history.timestamp) per selected platform (OQ-01 resolution)"
+    },
+    {
+      "interaction_id": "I-BT-005",
+      "source_state": "backtest",
+      "trigger": "change starting-bankroll input",
+      "category": "input_change",
+      "target_screen": "backtest",
+      "elements_involved": [
+        "starting-bankroll"
+      ],
+      "rules_referenced": [
+        "BE-R-*"
+      ],
+      "notes": "Integer \u2265 1 USD; default $10,000"
+    },
+    {
+      "interaction_id": "I-BT-006",
+      "source_state": "backtest",
+      "trigger": "click run-backtest button",
+      "category": "api_call",
+      "target_screen": "backtest",
+      "endpoint": "POST /api/backtests",
+      "request_body": {
+        "strategy_id": "...",
+        "platforms": [
+          "..."
+        ],
+        "from": "...",
+        "to": "...",
+        "bankroll": 10000
+      },
+      "async_mode_hint": "async-await-long-running",
+      "rules_referenced": [
+        "INV-006",
+        "TS-02",
+        "FS-003",
+        "QU-R-*"
+      ],
+      "notes": "Long-running; UI shows progress; button disabled during run; response includes final-equity + sharpe + brier + win-rate + equity-curve-series (TS-02)"
+    },
+    {
+      "interaction_id": "I-BT-007",
+      "source_state": "backtest",
+      "trigger": "run-backtest completes successfully",
+      "category": "state_change",
+      "target_screen": "backtest",
+      "elements_involved": [
+        "results-panel",
+        "equity-curve",
+        "tiles"
+      ],
+      "rules_referenced": [
+        "TS-02"
+      ],
+      "notes": "Reveals results-panel (conditional display); tiles populate; equity-curve renders"
+    },
+    {
+      "interaction_id": "I-BT-008",
+      "source_state": "backtest",
+      "trigger": "run-backtest encounters bankruptcy (equity < 0)",
+      "category": "state_change",
+      "target_screen": "backtest",
+      "elements_involved": [
+        "results-panel"
+      ],
+      "rules_referenced": [
+        "CSC-006",
+        "FS-004"
+      ],
+      "notes": "Halts replay; displays BANKRUPT flag; equity-curve terminates; subsequent ticks not processed"
+    },
+    {
+      "interaction_id": "I-BT-009",
+      "source_state": "backtest",
+      "trigger": "click save-as-comparison button",
+      "category": "api_call",
+      "target_screen": "backtest",
+      "endpoint": "POST /api/comparison-runs",
+      "request_body": {
+        "source_type": "backtest",
+        "source_id": "..."
+      },
+      "rules_referenced": [
+        "CSC-004"
+      ],
+      "notes": "Creates comparison-run; navigates (or offers link) to compare screen"
+    },
+    {
+      "interaction_id": "I-BT-010",
+      "source_state": "backtest",
+      "trigger": "run-backtest fails (e.g., invalid config)",
+      "category": "state_change",
+      "target_screen": "backtest",
+      "elements_involved": [
+        "run-backtest-button"
+      ],
+      "rules_referenced": [
+        "BE-R-*"
+      ],
+      "notes": "HTTP 422; UI shows error message; button re-enabled; results-panel remains hidden or shows last successful run if any"
+    },
+    {
+      "interaction_id": "I-BT-011",
+      "source_state": "backtest",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "rules_referenced": [
+        "HTML-R-*"
+      ]
+    }
+  ],
+  "total_interactions": 99,
+  "by_screen": {
+    "compare": 9,
+    "portfolio": 8,
+    "data-ingestion": 8,
+    "dashboard": 15,
+    "markets": 18,
+    "market-detail": 8,
+    "strategies": 11,
+    "paper-trades": 11,
+    "backtest": 11
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "contract_id": "C-I-DI-006",
+  "interaction_id": "I-DI-006",
+  "function": {
+    "name": "handle_i_di_006",
+    "module_hint": "frontend.handlers.data_ingestion",
+    "inputs": [
+      {
+        "name": "adapter",
+        "type": "Platform"
+      },
+      {
+        "name": "new_status",
+        "type": "AdapterStatus"
+      }
+    ],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": null,
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": []
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "CSC-005",
+      "FS-006"
+    ],
+    "external_rule_refs": [],
+    "source_state": "data-ingestion",
+    "success_transition": "data-ingestion"
+  }
+}

@@ -1,0 +1,201 @@
+{
+  "domain": "frontend",
+  "rules": [
+    {
+      "id": "FE-R-001",
+      "technology": "nextjs",
+      "rule": "Use the App Router (app/ directory) exclusively; do not create a pages/ directory. Route segments must be organized as app/<route>/page.tsx with layout.tsx, loading.tsx, error.tsx, and not-found.tsx conventions.",
+      "rationale": "Next.js 15 defaults to App Router and the project tech-kb standardizes on it. Mixing Pages Router creates two routing models and duplicate data-fetching paradigms.",
+      "source_file": "nextjs.md"
+    },
+    {
+      "id": "FE-R-002",
+      "technology": "nextjs",
+      "rule": "Components are Server Components by default. Only add the \"use client\" directive when the component needs browser APIs, event handlers, React state/effects, or next/navigation client hooks. Push the client boundary as deep in the tree as possible.",
+      "rationale": "tech-kb: '\"use client\" is viral downward for bundling but components imported above can still be Server Components — keep the boundary as deep as possible.' Preserves RSC bundle savings.",
+      "source_file": "nextjs.md"
+    },
+    {
+      "id": "FE-R-003",
+      "technology": "nextjs",
+      "rule": "In route segments, type params and searchParams as Promise<...> and await them. Do not treat them as synchronous objects. Same rule for cookies(), headers(), and draftMode().",
+      "rationale": "Breaking change in Next 15: these request APIs are now async. tech-kb Example 4 shows the required Promise-typed PageProps pattern.",
+      "source_file": "nextjs.md"
+    },
+    {
+      "id": "FE-R-004",
+      "technology": "nextjs",
+      "rule": "Every fetch() call must explicitly declare its caching behavior: either next: { revalidate: n } for ISR, cache: 'force-cache' for static, or cache: 'no-store' for dynamic. Do not rely on implicit caching.",
+      "rationale": "Next 15 removed default fetch caching. tech-kb gotcha: '`fetch` is uncached by default in 15. Explicitly opt in.' Explicit intent avoids accidental staleness or per-request over-fetching.",
+      "source_file": "nextjs.md"
+    },
+    {
+      "id": "FE-R-005",
+      "technology": "nextjs",
+      "rule": "Route handlers (app/**/route.ts) that read headers, cookies, or request-specific search params must declare `export const dynamic = 'force-dynamic'`. Handlers that proxy user-scoped backend calls must never be statically cached.",
+      "rationale": "tech-kb: 'Route handlers need dynamic = \"force-dynamic\" when you read headers or use query params that change per request; otherwise they get cached statically at build.'",
+      "source_file": "nextjs.md"
+    },
+    {
+      "id": "FE-R-006",
+      "technology": "nextjs",
+      "rule": "Server Actions must live in files marked with \"use server\" at the top, must validate all FormData input before use, and must call revalidatePath / revalidateTag for any affected route after mutation.",
+      "rationale": "tech-kb Example 5 demonstrates the pattern. Without revalidation, downstream Server Components show stale data; without validation, untrusted FormData reaches the backend.",
+      "source_file": "nextjs.md"
+    },
+    {
+      "id": "FE-R-007",
+      "technology": "nextjs",
+      "rule": "Set reactStrictMode: true and experimental.typedRoutes: true in next.config.ts. Backend proxy paths must be declared via rewrites() (e.g. /api/backend/:path* -> 127.0.0.1:8000/api/:path*), not hardcoded in client code.",
+      "rationale": "tech-kb Example 6 shows this exact config. Typed routes catches dead links at compile time; centralized rewrite keeps the backend origin configurable.",
+      "source_file": "nextjs.md"
+    },
+    {
+      "id": "FE-R-008",
+      "technology": "nextjs",
+      "rule": "Data-fetching page components should wrap their rendering children in <Suspense fallback={...}> so streaming works. Prefer passing fetched data into a presentational child over fetching inside a client child.",
+      "rationale": "tech-kb Example 1 (MarketsPage) wraps MarketTable in Suspense; this enables React 19 streaming SSR and preserves the server/client split.",
+      "source_file": "nextjs.md"
+    },
+    {
+      "id": "FE-R-009",
+      "technology": "typescript",
+      "rule": "tsconfig.json must have strict: true, noUncheckedIndexedAccess: true, noImplicitOverride: true, exactOptionalPropertyTypes: true, noFallthroughCasesInSwitch: true, and isolatedModules: true. allowJs must be false.",
+      "rationale": "tech-kb section 2 recommends these exact flags for frontend tsconfig. noUncheckedIndexedAccess and exactOptionalPropertyTypes catch real bugs on market/tick data arrays and optional fields.",
+      "source_file": "typescript.md"
+    },
+    {
+      "id": "FE-R-010",
+      "technology": "typescript",
+      "rule": "Do not use `any`. Use `unknown` for untrusted inputs and narrow via type guards, zod parsing, or discriminated-union switches. Exhaustive switches must end with `const _: never = x` default for compile-time exhaustiveness.",
+      "rationale": "tech-kb gotcha: 'Avoid any; prefer unknown then narrow.' Example 1 shows the `never` exhaustiveness pattern for Order state unions.",
+      "source_file": "typescript.md"
+    },
+    {
+      "id": "FE-R-011",
+      "technology": "typescript",
+      "rule": "All data crossing the network boundary (responses from FastAPI, Server Action inputs, route handler bodies) must be validated with a zod schema via Schema.parse() or Schema.safeParse(). Derive TypeScript types with z.infer<typeof Schema>.",
+      "rationale": "tech-kb Example 2 (MarketSchema) pairs zod runtime validation with z.infer so the type and runtime shape cannot drift. Without this, backend schema changes silently corrupt the UI.",
+      "source_file": "typescript.md"
+    },
+    {
+      "id": "FE-R-012",
+      "technology": "typescript",
+      "rule": "Use `as const satisfies T` for constant object literals (registries, config maps). Do not use `as T` casts — they widen and hide errors. Reserved for cases where `satisfies` genuinely cannot express the intent.",
+      "rationale": "tech-kb gotcha: 'as const satisfies T is better than as T — satisfies does not widen literals.' Example 3 shows the STRATEGIES registry pattern used to derive StrategyId = keyof typeof STRATEGIES.",
+      "source_file": "typescript.md"
+    },
+    {
+      "id": "FE-R-013",
+      "technology": "typescript",
+      "rule": "Pin zod to ^3.23.x. Do not mix zod v3 and v4 in the same project. @types/react must be pinned to ^19 to match React 19 event types.",
+      "rationale": "tech-kb gotchas: 'Don't mix zod versions — v4 has breaking API changes' and 'In React 19, event types from @types/react@19 differ subtly from 18 — pin @types/react@^19.'",
+      "source_file": "typescript.md"
+    },
+    {
+      "id": "FE-R-014",
+      "technology": "typescript",
+      "rule": "Prefer Result<T,E> or ok/err discriminated unions over throwing for expected failures at I/O boundaries (fetch, parse). Reserve thrown exceptions for genuinely unexpected conditions.",
+      "rationale": "tech-kb Example 4 defines Result<T,E> with safeFetch — makes error paths explicit in the type system and forces call sites to handle them.",
+      "source_file": "typescript.md"
+    },
+    {
+      "id": "FE-R-015",
+      "technology": "tailwind",
+      "rule": "Use Tailwind CSS v4 CSS-first config. Do not create tailwind.config.js or tailwind.config.ts. Theme tokens live in an @theme { ... } block inside app/globals.css. CSS entry must be `@import \"tailwindcss\";` — never the old @tailwind base/components/utilities triad.",
+      "rationale": "tech-kb section 1 mandates CSS-first config; gotcha: 'No more content: [] array — delete the old config file when upgrading from v3.'",
+      "source_file": "tailwind.md"
+    },
+    {
+      "id": "FE-R-016",
+      "technology": "tailwind",
+      "rule": "Because the deployment theme is dark-only, force dark mode with `@variant dark (&:where(:root, :root *));` in globals.css and set color-scheme: dark on :root. Do not ship a light-mode toggle or rely on prefers-color-scheme.",
+      "rationale": "tech-kb section 2 example shows the exact @variant directive. Comment: 'Force dark mode always — deployment.theme = \"dark-only\"'.",
+      "source_file": "tailwind.md"
+    },
+    {
+      "id": "FE-R-017",
+      "technology": "tailwind",
+      "rule": "All colors, spacing, radii, and fonts must be sourced from the @theme tokens (--color-yes, --color-no, --color-accent, --color-bg, --color-surface, --color-text, --spacing-gutter, --radius-card, etc.) defined in globals.css. Do not hardcode hex colors in className strings; prefer theme-named utilities (text-yes, bg-surface) or var(--color-*).",
+      "rationale": "tech-kb gotcha: 'Arbitrary values bg-[#123] still work; prefer theme tokens for consistency.' Shared palette is required for chart components to visually match UI.",
+      "source_file": "tailwind.md"
+    },
+    {
+      "id": "FE-R-018",
+      "technology": "tailwind",
+      "rule": "For shared styles, use the @utility directive (e.g. @utility live-dot) rather than @apply in component CSS. Use oklch()/lab() color functions over hex for new token additions.",
+      "rationale": "tech-kb: '@apply still works but is discouraged in v4 for shared styles — use @utility instead' and 'Colors in v4 accept oklch()/lab() — prefer them over hex for perceptually uniform palettes.'",
+      "source_file": "tailwind.md"
+    },
+    {
+      "id": "FE-R-019",
+      "technology": "tailwind",
+      "rule": "Numeric content (prices in cents, volumes, PnL, timestamps) must render with font-mono or tabular-nums so digits align and do not jitter on updates. Pair with right-aligned text for columnar data.",
+      "rationale": "tech-kb Example 3 table row uses font-mono text-right for pnl; Example 1 uses font-mono for YES/NO prices. Prediction-market UIs update in place and non-tabular digits shift visibly.",
+      "source_file": "tailwind.md"
+    },
+    {
+      "id": "FE-R-020",
+      "technology": "tailwind",
+      "rule": "Do not install tailwindcss@3 alongside v4 plugins. PostCSS plugin is @tailwindcss/postcss (separate package in v4). Do not add autoprefixer — Lightning CSS handles it.",
+      "rationale": "tech-kb gotcha + version table: 'autoprefixer NOT NEEDED in v4 — Lightning CSS handles it' and 'Don't install tailwindcss@3 and v4 plugins side-by-side.'",
+      "source_file": "tailwind.md"
+    },
+    {
+      "id": "FE-R-021",
+      "technology": "recharts",
+      "rule": "Every file that renders a Recharts chart must begin with \"use client\". Chart components must never be imported directly into Server Components; wrap them in a thin client component.",
+      "rationale": "tech-kb gotcha: 'Must be Client Component — add \"use client\". Recharts uses browser SVG APIs.' Section 4: 'Route chart components through \"use client\" wrappers; keep page shells Server Components.'",
+      "source_file": "recharts.md"
+    },
+    {
+      "id": "FE-R-022",
+      "technology": "recharts",
+      "rule": "Wrap charts in <ResponsiveContainer width=\"100%\" height={N}> with an explicit height (or place inside a parent with a defined height). Never use ResponsiveContainer inside an unsized flex/grid cell.",
+      "rationale": "tech-kb gotcha: 'ResponsiveContainer needs a parent with a defined height (or explicit height prop). A common bug is \"chart doesn't render\" — check parent has height.'",
+      "source_file": "recharts.md"
+    },
+    {
+      "id": "FE-R-023",
+      "technology": "recharts",
+      "rule": "For time-series axes use type=\"number\", scale=\"time\", numeric Unix-ms timestamps in dataKey, and a tickFormatter that calls new Date(v).toLocale...(). Do not use string timestamps as x values.",
+      "rationale": "tech-kb gotcha: 'For time axes, use type=\"number\" + scale=\"time\" + numeric Unix-ms ts. Strings work but sort alphabetically.' Example 1 is the reference implementation.",
+      "source_file": "recharts.md"
+    },
+    {
+      "id": "FE-R-024",
+      "technology": "recharts",
+      "rule": "Set isAnimationActive={false} on Line/Area/Bar for any chart that updates on live data (polled every 30s per live_poll_interval_seconds). Set dot={false} on Line charts with more than ~100 points.",
+      "rationale": "tech-kb gotchas: 'isAnimationActive={false} for real-time data to avoid animation stutter on each update' and 'dot={false} for lines with >100 points — per-point dots tank rendering.'",
+      "source_file": "recharts.md"
+    },
+    {
+      "id": "FE-R-025",
+      "technology": "recharts",
+      "rule": "Chart colors must be sourced from a shared chartTheme.ts object whose values mirror the Tailwind @theme tokens (--color-yes, --color-no, --color-accent, --color-border, --color-text-muted). Do not hardcode hex strings in chart props.",
+      "rationale": "tech-kb section 4: 'Share a chartTheme.ts object with colors matching Tailwind tokens to avoid hard-coding hex strings.' Keeps palette in one source of truth.",
+      "source_file": "recharts.md"
+    },
+    {
+      "id": "FE-R-026",
+      "technology": "recharts",
+      "rule": "Tooltip styling must be set via the contentStyle inline prop, not via className. Tooltip labelFormatter / formatter callbacks must return the same unit the YAxis displays (e.g. cents with ¢ suffix for prices).",
+      "rationale": "tech-kb gotcha: 'Tooltip contentStyle must be inline; class-based styling is unreliable.' Example 1 shows the formatter returning `${(v * 100).toFixed(2)}¢` to match the YAxis tickFormatter.",
+      "source_file": "recharts.md"
+    },
+    {
+      "id": "FE-R-027",
+      "technology": "recharts",
+      "rule": "Pin recharts to ^2.13.x. Do not upgrade to recharts@3.x. For live-updating data feeds use SWR or react-query with refetchInterval: 30_000 (matches live_poll_interval_seconds) — do not re-implement polling with raw setInterval inside chart components.",
+      "rationale": "tech-kb gotcha: 'recharts@3.x is available but has breaking changes — stick to 2.13.x for stability.' Section 4 specifies the 30s poll interval aligned with data_refresh_policy.",
+      "source_file": "recharts.md"
+    },
+    {
+      "id": "FE-R-028",
+      "technology": "recharts",
+      "rule": "When multiple charts share an x-axis (e.g. price + volume for the same market), give them the same syncId so hover crosshairs align. Use <ReferenceLine> / <ReferenceArea> for event annotations (news spikes, resolution times) rather than a separate chart.",
+      "rationale": "tech-kb Example 4 demonstrates syncId for linked price/volume charts; Example 6 shows ReferenceArea+ReferenceLine for news annotations.",
+      "source_file": "recharts.md"
+    }
+  ]
+}

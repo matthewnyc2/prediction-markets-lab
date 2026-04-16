@@ -1,0 +1,303 @@
+{
+  "source": "tech-kb/ composition analysis",
+  "generated_at": "2026-04-16",
+  "phase": "HACF Phase 2 Step A — Agent A4 (rules-builder, framework composition)",
+  "project": "prediction-markets",
+  "description": "Cross-framework composition rules for how Next.js 15 + TypeScript + Tailwind 4 + Recharts 2.13 interact with FastAPI 0.115 + SQLAlchemy 2.x + Alembic 1.13 + pandas/numpy/scipy + pytest/Playwright for THIS specific project (live paper-trading + backtest on prediction markets). Individual per-framework rules live in rules-database-seed.json.",
+  "rules": [
+    {
+      "id": "FW-R-001",
+      "rule": "FastAPI's auto-generated OpenAPI schema at http://127.0.0.1:8000/openapi.json is the single authoritative contract between backend and frontend. Generate TypeScript types from it (e.g., via `openapi-typescript`) into `lib/api-types.ts` rather than hand-writing types that mirror pydantic models.",
+      "rationale": "Pydantic v2 BaseModel + FastAPI `response_model` produces a deterministic OpenAPI schema. Hand-written TS types drift; generated types guarantee the Market.yes_price bounds ([0,1]) and Platform enum stay in lockstep with backend.",
+      "bridges": ["fastapi", "pydantic", "typescript", "nextjs"],
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-002",
+      "rule": "Regenerate the TypeScript API types (`openapi-typescript http://127.0.0.1:8000/openapi.json -o lib/api-types.ts`) whenever any pydantic schema in `backend/app/schemas/` changes. Wire this into an npm script `types:gen` and call it as part of `predev` or on backend restart.",
+      "rationale": "Without regeneration on dev-server restart, frontend sees stale field names (e.g., renaming `yes_price` -> `yes`). Making the step explicit and scripted prevents silent UI breakage.",
+      "bridges": ["fastapi", "typescript", "nextjs"],
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-003",
+      "rule": "Zod schemas on the frontend must validate JSON returned from FastAPI at the network boundary (`MarketSchema.parse(await res.json())`) and must be kept structurally identical to the pydantic models. Any field divergence is a bug to fix on the pydantic side first, not in the zod schema.",
+      "rationale": "FastAPI is the source of truth; zod is a runtime guard against schema drift and upstream adapter corruption. Fixing divergence in zod instead of pydantic silently re-introduces the drift on the next backend restart.",
+      "bridges": ["fastapi", "pydantic", "typescript", "zod"],
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-004",
+      "rule": "Every Next.js `fetch()` call into the FastAPI backend that reads price/volume data must use `cache: 'no-store'` OR `next: { revalidate: 30 }` — never the default Next 15 behavior (uncached, but silently cached in some contexts). Pick `no-store` for dynamic market detail pages, `revalidate: 30` for market list pages (matches `live_poll_interval_seconds`).",
+      "rationale": "Next.js 15 made fetch uncached by default, but route handlers and server components still apply request memoization. Prices change every 30s; caching beyond the live_poll_interval serves stale prices and breaks bankroll math.",
+      "bridges": ["nextjs", "fastapi"],
+      "category": "data-fetching"
+    },
+    {
+      "id": "FW-R-005",
+      "rule": "Client Components that display live prices must use SWR (or equivalent) with `refreshInterval: 30_000`, `refreshWhenHidden: false`, `refreshWhenOffline: false`. Server Components that render the initial HTML for the same page must fetch with `next: { revalidate: 30 }`. The two paths must agree on the 30-second cadence.",
+      "rationale": "Mismatched cadences cause UI flicker on hydration (SSR shows price X, client immediately refetches and shows Y). Recharts.md §4 explicitly recommends `refetchInterval: 30_000` to match `data_refresh_policy.live_poll_interval_seconds`.",
+      "bridges": ["nextjs", "recharts", "swr"],
+      "category": "data-fetching"
+    },
+    {
+      "id": "FW-R-006",
+      "rule": "All Recharts components must live under a `\"use client\"` module. Next.js page.tsx files (Server Components) may import them, but never render them in a Server Component path — instead, wrap in a thin Client Component that receives pre-fetched data as props.",
+      "rationale": "recharts.md §3 flags that Recharts uses browser SVG APIs and cannot render on the server. The pattern `<ServerPage><ClientChart data={...}/></ServerPage>` preserves SSR streaming while isolating the client boundary.",
+      "bridges": ["nextjs", "recharts"],
+      "category": "rendering-boundary"
+    },
+    {
+      "id": "FW-R-007",
+      "rule": "Every `ResponsiveContainer` in a Recharts chart must have a parent element with explicit height (either `h-[360px]`, `style={{ height: 360 }}`, or a flex/grid cell with defined height). When embedded in a Tailwind grid cell, set `grid-rows-[auto_1fr]` on the parent so the chart gets the flex slot.",
+      "rationale": "recharts.md §3 calls out the most common Recharts bug: chart doesn't render because parent has 0 height. Tailwind's default block-level h-auto leaves this ambiguous. A verifiable rule: chart container must have a computed height > 0 in DOM.",
+      "bridges": ["recharts", "tailwind"],
+      "category": "rendering-boundary"
+    },
+    {
+      "id": "FW-R-008",
+      "rule": "All Recharts `<Line>`, `<Area>`, and `<Bar>` components used for real-time (polled) series must set `isAnimationActive={false}`. Animation on 30-second repolls produces a visible stutter.",
+      "rationale": "recharts.md §3 pitfall list: 'isAnimationActive={false} for real-time data to avoid animation stutter on each update.' SWR's `mutate()` triggers React re-render on each poll; Recharts animates on every re-mount of data.",
+      "bridges": ["recharts", "swr"],
+      "category": "rendering-boundary"
+    },
+    {
+      "id": "FW-R-009",
+      "rule": "Tailwind v4 theme tokens declared in `app/globals.css` (inside `@theme { --color-yes, --color-no, --color-accent, ... }`) must also be mirrored in a TypeScript file `lib/chartTheme.ts` that Recharts reads for `stroke` and `fill` props. Never hard-code hex strings inside Recharts JSX.",
+      "rationale": "recharts.md §4 explicitly recommends 'Share a chartTheme.ts object with colors matching Tailwind tokens to avoid hard-coding hex strings.' Tailwind v4 CSS custom properties cannot be consumed by SVG `stroke` attributes directly without a helper.",
+      "bridges": ["tailwind", "recharts"],
+      "category": "theming"
+    },
+    {
+      "id": "FW-R-010",
+      "rule": "FastAPI's `lifespan` asynccontextmanager is the single owner of the SQLAlchemy async engine. Never call `create_async_engine()` from a router, dependency, or background task — import the module-level engine from `backend/app/db.py` (or `main.py`).",
+      "rationale": "sqlalchemy.md §1 and fastapi.md Example 1 show one engine per process, scoped to lifespan. Multiple engines exhaust SQLite's single-writer lock and Postgres connection pool.",
+      "bridges": ["fastapi", "sqlalchemy"],
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-011",
+      "rule": "Every route handler that touches the database must declare `session: AsyncSession = Depends(get_session)` and never create an `AsyncSession` directly. The `get_session` dependency must be an `async def` yielding from `async with SessionLocal() as session:` (not wrapped in `@asynccontextmanager`).",
+      "rationale": "fastapi.md §3 gotchas: 'DI with yield: use Depends(get_session) with AsyncIterator only; don't wrap in @asynccontextmanager.' Direct session creation bypasses FastAPI's exception-safe teardown.",
+      "bridges": ["fastapi", "sqlalchemy"],
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-012",
+      "rule": "SQLAlchemy sessions must never be shared across asyncio tasks, BackgroundTasks, or the polling loop. A background task that writes to DB must open its own `async with SessionLocal() as session:` block.",
+      "rationale": "sqlalchemy.md §3: 'Don't share AsyncSession across tasks. One session per request/task.' FastAPI's `Depends(get_session)` closes the session after the HTTP response; a BackgroundTask running afterward would use a closed session.",
+      "bridges": ["fastapi", "sqlalchemy"],
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-013",
+      "rule": "All SQLAlchemy relationship traversals in async code must be eagerly loaded via `selectinload(...)` or `joinedload(...)` in the `.options()` clause of the query. Never access `market.ticks` after the session closes; the code must query `select(Market).options(selectinload(Market.ticks))` upfront.",
+      "rationale": "sqlalchemy.md §3 gotchas: 'No implicit lazy loading in async. Accessing market.ticks after session close raises MissingGreenlet.' This is the #1 silent async SQLAlchemy bug.",
+      "bridges": ["sqlalchemy", "fastapi"],
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-014",
+      "rule": "`async_sessionmaker(..., expire_on_commit=False)` is mandatory for this project. Never use the default `expire_on_commit=True` — it forces a re-fetch of every attribute after commit, which in async code means re-opening the session.",
+      "rationale": "sqlalchemy.md Example 1 + §3: 'expire_on_commit=False on session factory lets you access attributes after commit without refetch — recommended for web contexts.' Especially critical when returning the ORM object as `response_model`.",
+      "bridges": ["sqlalchemy", "fastapi", "pydantic"],
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-015",
+      "rule": "Every pydantic response model in `backend/app/schemas/` that is returned from a route with `response_model=...` must set `model_config = ConfigDict(from_attributes=True)`. Missing this flag means FastAPI cannot convert ORM instances and returns 500 errors at runtime.",
+      "rationale": "fastapi.md §3: 'from_attributes=True replaces v1's orm_mode = True.' Paired with `expire_on_commit=False`, this is the two-flag pattern that lets route handlers return ORM objects directly.",
+      "bridges": ["pydantic", "sqlalchemy", "fastapi"],
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-016",
+      "rule": "All Alembic migrations for this project must use `render_as_batch=True` in `env.py`'s `context.configure(...)` call, and any column alter / drop must wrap in `op.batch_alter_table(...)`. This is non-negotiable because the project ships with SQLite as the default database.",
+      "rationale": "alembic.md §2 and §4: 'SQLite cannot ALTER COLUMN — always wrap in op.batch_alter_table(...) / enable render_as_batch=True in env.py.' A migration that works on Postgres but not SQLite breaks the local dev loop.",
+      "bridges": ["alembic", "sqlalchemy"],
+      "category": "migration-workflow"
+    },
+    {
+      "id": "FW-R-017",
+      "rule": "Alembic `env.py` must use the async pattern: `async_engine_from_config(...)` + `await connection.run_sync(do_run_migrations)`. The sync pattern (`engine_from_config` + `connection.configure`) will raise `InvalidRequestError` with aiosqlite.",
+      "rationale": "alembic.md §2 and §4: 'Async env.py requires async_engine_from_config + connection.run_sync(do_run_migrations) — plain sync pattern won't work with aiosqlite.'",
+      "bridges": ["alembic", "sqlalchemy"],
+      "category": "migration-workflow"
+    },
+    {
+      "id": "FW-R-018",
+      "rule": "Alembic `target_metadata = Base.metadata` requires an import of `backend.app.models` (or whichever module actually defines the ORM classes) at the top of `env.py`. If models import lazily, autogenerate silently misses them.",
+      "rationale": "alembic.md §4: 'target_metadata = Base.metadata must import the module defining all models, or autogenerate will miss tables.' Verifiable: `alembic revision --autogenerate -m test` must list every ORM class.",
+      "bridges": ["alembic", "sqlalchemy"],
+      "category": "migration-workflow"
+    },
+    {
+      "id": "FW-R-019",
+      "rule": "Data migrations (UPDATE statements, backfills) must be separate Alembic revisions from schema migrations (CREATE/ALTER TABLE). Never mix `op.add_column(...)` and `conn.execute(sa.text('UPDATE ...'))` in the same revision unless the update is required to satisfy a NOT NULL constraint in the same migration — in which case it must use `op.batch_alter_table` to set the column non-nullable only after the update.",
+      "rationale": "alembic.md Example 3 shows the legitimate mix case. For all others, separating schema from data means you can roll back one without the other and the migration history reads as an audit log.",
+      "bridges": ["alembic"],
+      "category": "migration-workflow"
+    },
+    {
+      "id": "FW-R-020",
+      "rule": "CI and pre-test setup scripts must run `alembic upgrade head` before executing pytest against a non-in-memory database. The in-memory test fixture (`sqlite+aiosqlite:///:memory:`) uses `Base.metadata.create_all` directly and does NOT go through Alembic — this is a deliberate speed choice but means migration correctness must be tested separately.",
+      "rationale": "alembic.md §4: 'CI: run alembic upgrade head before tests to ensure schema is current.' pytest.md Example 2 shows the in-memory fixture bypasses migrations. Both paths must exist.",
+      "bridges": ["alembic", "pytest", "sqlalchemy"],
+      "category": "migration-workflow"
+    },
+    {
+      "id": "FW-R-021",
+      "rule": "Backend integration tests must use `httpx.AsyncClient(transport=ASGITransport(app=app))` against the full FastAPI app — not Starlette's `TestClient`. Use `@pytest.mark.asyncio` or project-wide `asyncio_mode = \"auto\"`.",
+      "rationale": "fastapi.md §4 and pytest.md Example 3: 'Use httpx.AsyncClient with ASGITransport (starlette's TestClient is sync and has edge cases with lifespan).' ASGITransport exercises the same code path (including lifespan) as uvicorn production.",
+      "bridges": ["fastapi", "pytest", "httpx"],
+      "category": "testing-composition"
+    },
+    {
+      "id": "FW-R-022",
+      "rule": "The Playwright config's `webServer` array must launch BOTH the Next.js dev server (port 3000) and the FastAPI uvicorn server (port 8000). Both must be declared with their own health URL (`http://localhost:3000` and `http://localhost:8000/docs`) and `reuseExistingServer: !process.env.CI`.",
+      "rationale": "vitest-playwright.md §3: 'Start both servers (Next.js + FastAPI) via webServer array — otherwise E2E tests hit a dead backend.' This is the dual-webServer pattern specific to full-stack Next+Python projects.",
+      "bridges": ["playwright", "nextjs", "fastapi"],
+      "category": "testing-composition"
+    },
+    {
+      "id": "FW-R-023",
+      "rule": "Playwright tests that verify backend error handling must use `page.route('**/api/**', route => route.fulfill({...}))` to intercept network calls, not hit a real backend with synthetic data. Tests that verify happy-path flows must hit the real FastAPI + SQLite webServer instance and seed state via `page.request.post('/api/...')` rather than `page.evaluate`.",
+      "rationale": "vitest-playwright.md §3 and Example 3: 'Avoid page.evaluate for test setup — prefer API calls or page.request to seed state.' Mocking only error paths avoids brittle tests on happy paths while keeping error paths deterministic.",
+      "bridges": ["playwright", "fastapi"],
+      "category": "testing-composition"
+    },
+    {
+      "id": "FW-R-024",
+      "rule": "Vitest cannot render Next.js Server Components. Any `page.tsx` or module using `await headers()`, `await cookies()`, or `await params` must either (a) extract its logic into a pure TS function tested separately, or (b) be tested via Playwright only. Do not try to mock React's Server Component runtime.",
+      "rationale": "vitest-playwright.md §3 Vitest gotchas: 'Server Components can't be rendered by Testing Library — they aren't real React components at runtime. Extract logic into pure functions or plain Client Components for unit testing.'",
+      "bridges": ["vitest", "nextjs"],
+      "category": "testing-composition"
+    },
+    {
+      "id": "FW-R-025",
+      "rule": "Pytest fixtures for async DB sessions must use `@pytest_asyncio.fixture` (not `@pytest.fixture`) even when `asyncio_mode = \"auto\"` is set in `pyproject.toml`. The auto-mode flag applies to test functions, not to fixtures.",
+      "rationale": "pytest.md §5 gotchas: 'asyncio_mode = \"auto\" removes the need to mark every async test; but fixtures still need @pytest_asyncio.fixture (not @pytest.fixture).' A `@pytest.fixture` on an async function silently becomes a coroutine object instead of its awaited value.",
+      "bridges": ["pytest", "sqlalchemy"],
+      "category": "testing-composition"
+    },
+    {
+      "id": "FW-R-026",
+      "rule": "The backtest engine and the live paper-trading engine must share the same event-loop code path. The data-handler layer is polymorphic: `HistoricalDataHandler` replays tick rows from `price_ticks` table; `LiveDataHandler` pulls from the adapter polling loop. The strategy + portfolio + execution layers are identical across both modes.",
+      "rationale": "Architectural spec from semantic-spec.json and feature-discoveries.json: backtests must produce the exact same fills that live would, given identical price inputs. Divergent code paths introduce look-ahead bias and invalidate Sharpe/drawdown metrics.",
+      "bridges": ["fastapi", "pandas", "sqlalchemy"],
+      "category": "backtest-engine-architecture"
+    },
+    {
+      "id": "FW-R-027",
+      "rule": "Market data adapters (Kalshi, Polymarket, Manifold, PredictIt) must implement a common async interface `async def fetch_markets() -> list[NormalizedMarket]` and `async def fetch_ticks(market_id: str) -> list[NormalizedTick]`. The polling loop (a FastAPI `BackgroundTasks` task or an asyncio task started in `lifespan`) calls them on a 30-second interval and writes to `price_ticks`. Never call adapters directly from a route handler — always read from DB.",
+      "rationale": "tech-stack.json and fastapi.md Example 5: separation prevents blocking HTTP requests on upstream adapter latency. Routes read local SQLite (microseconds); the poller fills SQLite (seconds-scale network).",
+      "bridges": ["fastapi", "sqlalchemy"],
+      "category": "adapter-polling"
+    },
+    {
+      "id": "FW-R-028",
+      "rule": "The polling loop for adapters must run inside the same FastAPI process as the API (started in `lifespan` via `asyncio.create_task(...)`), not as a separate worker or cron job. There is no queue (Celery/RQ/APScheduler) in the v1 stack — simplicity over durability.",
+      "rationale": "tech-stack.json deployment = local; fastapi.md §3: 'BackgroundTasks runs in the same worker after response — not durable. Use Celery/RQ/APScheduler for real queues.' For local paper-trading v1, the shared-process model is the simpler, correct choice.",
+      "bridges": ["fastapi"],
+      "category": "adapter-polling"
+    },
+    {
+      "id": "FW-R-029",
+      "rule": "Adapter responses must be normalized to the internal `NormalizedTick { ts: int_ms_utc, yes: float_0_1, no: float_0_1 }` shape at the adapter boundary. The discriminated-union pattern in typescript.md Example 6 has a Python mirror: each adapter module exports a `normalize(raw) -> NormalizedTick` function, and the polling loop calls only `normalize`.",
+      "rationale": "typescript.md Example 6: Kalshi returns `{yes_bid, yes_ask}`, Manifold returns `{prob}`. Polymarket returns `{outcomePrices: [yes, no]}`. Normalization at the boundary means the rest of the code (strategies, charts, DB) never branches on platform.",
+      "bridges": ["typescript", "pydantic", "fastapi"],
+      "category": "adapter-polling"
+    },
+    {
+      "id": "FW-R-030",
+      "rule": "Strategy classes must implement the interface `class Strategy: def decide(self, market: Market, ticks: pd.Series, portfolio: Portfolio) -> Order | None; def on_fill(self, fill: Fill, portfolio: Portfolio) -> None`. Strategies live in `backend/app/strategies/*.py` and are auto-registered by filesystem scan at app startup via `lifespan`. Adding a new strategy file must NOT require editing a registry or restarting anything beyond `uvicorn --reload`.",
+      "rationale": "semantic-spec.json strategy plugin requirement: 'auto-register via filesystem scan; no server restart required on new plugin' under `uvicorn --reload`. pytest.md Example 1 shows the interface shape (kelly_fraction); the class form extends it with state for on_fill.",
+      "bridges": ["fastapi", "pandas"],
+      "category": "strategy-plugin"
+    },
+    {
+      "id": "FW-R-031",
+      "rule": "Strategy `decide()` must receive ticks as a `pd.Series` indexed by `DatetimeIndex` in UTC. Never pass raw tick dicts or NumPy arrays — the quant library (pandas-numpy-scipy.md) assumes DatetimeIndex for rolling windows, resample, and news-spike detection.",
+      "rationale": "pandas-numpy-scipy.md §3: 'Timezones: always construct DatetimeIndex with utc=True. Mixing naive and aware breaks joins.' Every metric (Sharpe, Sortino, max_drawdown, Brier) in that file assumes pd.Series input.",
+      "bridges": ["pandas", "fastapi"],
+      "category": "strategy-plugin"
+    },
+    {
+      "id": "FW-R-032",
+      "rule": "Quant functions (Sharpe, Sortino, max drawdown, Brier, Kelly) must never be called from inside an `async def` endpoint. Wrap in `await asyncio.to_thread(sharpe, returns)` or mount the endpoint as sync `def ...` so FastAPI runs it in a threadpool.",
+      "rationale": "fastapi.md §3 + pandas-numpy-scipy.md §4: pandas/numpy operations are CPU-bound and release the GIL only for specific NumPy ops. A blocking pandas call inside `async def` freezes all other concurrent requests (including the 30s polling loop).",
+      "bridges": ["fastapi", "pandas", "numpy"],
+      "category": "backtest-engine-architecture"
+    },
+    {
+      "id": "FW-R-033",
+      "rule": "SQLAlchemy `DateTime` columns must always be written as UTC, and every `datetime.utcnow` usage must be replaced with `datetime.now(tz=timezone.utc)`. The pandas layer reads these timestamps via `pd.to_datetime(df['ts'], utc=True)`.",
+      "rationale": "sqlalchemy.md Example 2 uses `datetime.utcnow` (a pitfall: returns naive); pandas-numpy-scipy.md §3 mandates `utc=True`. Mixing tz-aware (pandas) with tz-naive (SQLAlchemy default) raises `TypeError` on comparison.",
+      "bridges": ["sqlalchemy", "pandas"],
+      "category": "data-consistency"
+    },
+    {
+      "id": "FW-R-034",
+      "rule": "The `price_ticks` table must have the composite index `(market_id, ts)` (named `ix_market_ts`). Every query that drives a chart or backtest does `WHERE market_id = ? ORDER BY ts` — without the composite index, SQLite falls back to a scan over all ticks across all markets.",
+      "rationale": "sqlalchemy.md Example 2 explicitly declares `__table_args__ = (Index(\"ix_market_ts\", \"market_id\", \"ts\"),)`. alembic.md Example 1 creates it. This is not optional for a 30-second polling workload over months.",
+      "bridges": ["sqlalchemy", "alembic"],
+      "category": "data-consistency"
+    },
+    {
+      "id": "FW-R-035",
+      "rule": "Bulk tick inserts must use `session.execute(insert(PriceTick).values([...]))` with a list of dicts, NOT ORM-instance `session.add_all([...])`. For SQLite + aiosqlite, the bulk-statement path is 10x faster and avoids per-row identity-map overhead.",
+      "rationale": "sqlalchemy.md Example 5 shows the bulk insert pattern; §3 notes 'SQLite + async serializes writes — do not expect real write concurrency.' Every unnecessary round-trip compounds under the single-writer lock.",
+      "bridges": ["sqlalchemy"],
+      "category": "data-consistency"
+    },
+    {
+      "id": "FW-R-036",
+      "rule": "Next.js route handlers that proxy the FastAPI backend (`app/api/backend/:path*`) must set `export const dynamic = 'force-dynamic'` and forward the original request's `Accept` header. Use `next.config.ts` `rewrites()` only for static, header-less proxies; prefer explicit route handlers when any header forwarding is needed.",
+      "rationale": "nextjs.md Example 3 + §3: 'Route handlers need dynamic = \"force-dynamic\" when you read headers or use query params that change per request.' Example 6 shows the rewrite pattern, which is header-lossy.",
+      "bridges": ["nextjs", "fastapi"],
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-037",
+      "rule": "FastAPI `CORSMiddleware` must be added BEFORE `app.include_router(...)` calls in `main.py`, and `allow_origins` must include exactly `http://localhost:3000` in dev. Wildcard `[\"*\"]` is forbidden because the backend will eventually carry credentials for adapter API keys.",
+      "rationale": "fastapi.md Example 1 and §3: 'CORS middleware order: must be added before routers that return errors, else responses miss the CORS headers.' An error response from a router that lacks CORS headers appears as a network error in Next.js fetch.",
+      "bridges": ["fastapi", "nextjs"],
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-038",
+      "rule": "Tailwind v4's `@theme` block is the single source of truth for colors AND spacing; do not install `tailwind.config.js`. Any v3-style config file must be deleted before running `pnpm dev`, or the `@tailwindcss/postcss` plugin will emit conflicting stylesheets.",
+      "rationale": "tailwind.md §4: 'Don't install tailwindcss@3 and v4 plugins side-by-side — the PostCSS plugin is a separate package in v4.' and 'No more content: [] array — delete the old config file when upgrading from v3.'",
+      "bridges": ["tailwind", "nextjs"],
+      "category": "theming"
+    },
+    {
+      "id": "FW-R-039",
+      "rule": "Zod schemas used for frontend form validation (e.g., backtest parameters: `{ strategy_id, start, end, bankroll }`) must match the FastAPI pydantic `CreateBacktestIn` exactly: same field names, same snake_case convention, same bounds (`bankroll: z.number().gt(0)` ↔ `Field(default=10_000, gt=0)`). Use one test that round-trips a valid object through both validators.",
+      "rationale": "typescript.md Example 2 + fastapi.md Example 2: zod and pydantic v2 have equivalent validator semantics (min/max/gt/ge), but field-casing mismatches silently drop values. A contract test prevents drift.",
+      "bridges": ["zod", "pydantic", "fastapi", "nextjs"],
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-040",
+      "rule": "Server Actions in Next.js (`\"use server\"`) that POST to FastAPI must call `revalidatePath(...)` for the page that displays the resulting state. For backtests: POST `/api/backtests` then `revalidatePath('/backtests')`. Never `router.push(...)` inside a Server Action — use the form's redirect response or `revalidatePath` + `redirect`.",
+      "rationale": "nextjs.md Example 5 shows the pattern. Without `revalidatePath`, the user POSTs a backtest but the list page shows the stale pre-submission state until next poll.",
+      "bridges": ["nextjs", "fastapi"],
+      "category": "data-fetching"
+    },
+    {
+      "id": "FW-R-041",
+      "rule": "The ORDER of hydration for a live market detail page is: (1) Server Component pre-fetches `/api/markets/{id}` with `cache: 'no-store'` and the last 100 ticks from `/api/markets/{id}/ticks?limit=100`; (2) passes pre-fetched data as props to a Client Component; (3) Client Component starts SWR with `refreshInterval: 30_000` using the pre-fetched data as `fallbackData`. This avoids the loading-spinner flash on first paint.",
+      "rationale": "nextjs.md Example 4 + recharts.md §4: Server Component SSR gives instant first paint; SWR's `fallbackData` option avoids re-fetching on mount. Both the 30s cadence and the 100-tick window match the project defaults in tech-stack.json.",
+      "bridges": ["nextjs", "swr", "recharts", "fastapi"],
+      "category": "data-fetching"
+    },
+    {
+      "id": "FW-R-042",
+      "rule": "Every new strategy plugin file dropped into `backend/app/strategies/` must carry a sibling test file in `tests/strategies/` that (a) constructs the strategy, (b) feeds it a deterministic `pd.Series` of ticks, (c) asserts a specific decision for at least one input. The strategy auto-registration scan must skip files whose tests do not exist (fail-closed).",
+      "rationale": "semantic-spec.json requires strategies to be verifiable; pytest.md Example 1 shows the pd.Series parametrize pattern. Fail-closed registration prevents half-built strategies from firing on live paper trading.",
+      "bridges": ["fastapi", "pandas", "pytest"],
+      "category": "strategy-plugin"
+    }
+  ]
+}

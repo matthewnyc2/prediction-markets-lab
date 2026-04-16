@@ -1,0 +1,1185 @@
+{
+  "project": "prediction-markets",
+  "phase": "2",
+  "step": "G",
+  "produced_at": "2026-04-16",
+  "total_steps": 99,
+  "total_waves": 4,
+  "parallelization_notes": [
+    "Wave 0: all 'page load' api_calls and all 'click sidebar nav' interactions \u2014 fully independent, parallel-safe",
+    "Wave 1: dependent form inputs (size-input requires side-button selection); strategy toggles require capital set; add-from-backtest requires add-run opened",
+    "Wave 2: submit operations that depend on Wave 1 (submit-paper-trade, toggle-on after capital, add-comparison after picker opened)",
+    "Wave 3+: chained downstream effects (e.g., save-as-comparison depends on run-backtest success)"
+  ],
+  "waves": [
+    {
+      "wave": 0,
+      "size": 40,
+      "parallel_safe": true,
+      "complexity_distribution": {
+        "simple": 33,
+        "moderate": 7,
+        "complex": 0
+      },
+      "interactions": [
+        {
+          "interaction_id": "I-CMP-001",
+          "target_function": "handle_i_cmp_001",
+          "contract_file": "contracts/handle_i_cmp_001.json",
+          "source_state": "compare",
+          "trigger": "page load",
+          "async_mode": "async-await",
+          "complexity": "moderate",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-PF-001",
+          "target_function": "handle_i_pf_001",
+          "contract_file": "contracts/handle_i_pf_001.json",
+          "source_state": "portfolio",
+          "trigger": "page load",
+          "async_mode": "async-await",
+          "complexity": "moderate",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DI-001",
+          "target_function": "handle_i_di_001",
+          "contract_file": "contracts/handle_i_di_001.json",
+          "source_state": "data-ingestion",
+          "trigger": "page load",
+          "async_mode": "async-await",
+          "complexity": "moderate",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-001",
+          "target_function": "handle_i_dash_001",
+          "contract_file": "contracts/handle_i_dash_001.json",
+          "source_state": "dashboard",
+          "trigger": "click on sidebar nav item 'Dashboard' (self)",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-002",
+          "target_function": "handle_i_dash_002",
+          "contract_file": "contracts/handle_i_dash_002.json",
+          "source_state": "dashboard",
+          "trigger": "click on sidebar nav item 'Markets'",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-003",
+          "target_function": "handle_i_dash_003",
+          "contract_file": "contracts/handle_i_dash_003.json",
+          "source_state": "dashboard",
+          "trigger": "click on sidebar nav item 'Strategies'",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-004",
+          "target_function": "handle_i_dash_004",
+          "contract_file": "contracts/handle_i_dash_004.json",
+          "source_state": "dashboard",
+          "trigger": "click on sidebar nav item 'Paper Trades'",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-005",
+          "target_function": "handle_i_dash_005",
+          "contract_file": "contracts/handle_i_dash_005.json",
+          "source_state": "dashboard",
+          "trigger": "click on sidebar nav item 'Backtest'",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-006",
+          "target_function": "handle_i_dash_006",
+          "contract_file": "contracts/handle_i_dash_006.json",
+          "source_state": "dashboard",
+          "trigger": "click on sidebar nav item 'Compare'",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-007",
+          "target_function": "handle_i_dash_007",
+          "contract_file": "contracts/handle_i_dash_007.json",
+          "source_state": "dashboard",
+          "trigger": "click on sidebar nav item 'Portfolio'",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-008",
+          "target_function": "handle_i_dash_008",
+          "contract_file": "contracts/handle_i_dash_008.json",
+          "source_state": "dashboard",
+          "trigger": "click on sidebar nav item 'Data ingestion'",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-009",
+          "target_function": "handle_i_dash_009",
+          "contract_file": "contracts/handle_i_dash_009.json",
+          "source_state": "dashboard",
+          "trigger": "page mount \u2014 initial load of dashboard route",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-010",
+          "target_function": "handle_i_dash_010",
+          "contract_file": "contracts/handle_i_dash_010.json",
+          "source_state": "dashboard",
+          "trigger": "SWR periodic refresh every 30s while dashboard is mounted",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-011",
+          "target_function": "handle_i_dash_011",
+          "contract_file": "contracts/handle_i_dash_011.json",
+          "source_state": "dashboard",
+          "trigger": "hover on equity-curve chart series",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-012",
+          "target_function": "handle_i_dash_012",
+          "contract_file": "contracts/handle_i_dash_012.json",
+          "source_state": "dashboard",
+          "trigger": "click on a row in active-strategies-panel",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-013",
+          "target_function": "handle_i_dash_013",
+          "contract_file": "contracts/handle_i_dash_013.json",
+          "source_state": "dashboard",
+          "trigger": "click on a row in recent-trades-panel",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-014",
+          "target_function": "handle_i_dash_014",
+          "contract_file": "contracts/handle_i_dash_014.json",
+          "source_state": "dashboard",
+          "trigger": "click on 'View all' link in recent-trades-panel header",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-DASH-015",
+          "target_function": "handle_i_dash_015",
+          "contract_file": "contracts/handle_i_dash_015.json",
+          "source_state": "dashboard",
+          "trigger": "no paper-fills exist yet OR <1 day of portfolio history",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-001",
+          "target_function": "handle_i_mkt_001",
+          "contract_file": "contracts/handle_i_mkt_001.json",
+          "source_state": "markets",
+          "trigger": "click on sidebar nav item 'Dashboard'",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-002",
+          "target_function": "handle_i_mkt_002",
+          "contract_file": "contracts/handle_i_mkt_002.json",
+          "source_state": "markets",
+          "trigger": "page mount \u2014 initial load of /markets route",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-003",
+          "target_function": "handle_i_mkt_003",
+          "contract_file": "contracts/handle_i_mkt_003.json",
+          "source_state": "markets",
+          "trigger": "SWR periodic refresh every 30s while markets is mounted",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-004",
+          "target_function": "handle_i_mkt_004",
+          "contract_file": "contracts/handle_i_mkt_004.json",
+          "source_state": "markets",
+          "trigger": "type into search-input (debounced)",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-005",
+          "target_function": "handle_i_mkt_005",
+          "contract_file": "contracts/handle_i_mkt_005.json",
+          "source_state": "markets",
+          "trigger": "click 'All' platform-filter pill",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-006",
+          "target_function": "handle_i_mkt_006",
+          "contract_file": "contracts/handle_i_mkt_006.json",
+          "source_state": "markets",
+          "trigger": "click 'Kalshi' platform-filter pill",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-007",
+          "target_function": "handle_i_mkt_007",
+          "contract_file": "contracts/handle_i_mkt_007.json",
+          "source_state": "markets",
+          "trigger": "click 'Polymarket' platform-filter pill",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-008",
+          "target_function": "handle_i_mkt_008",
+          "contract_file": "contracts/handle_i_mkt_008.json",
+          "source_state": "markets",
+          "trigger": "click 'Manifold' platform-filter pill",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-009",
+          "target_function": "handle_i_mkt_009",
+          "contract_file": "contracts/handle_i_mkt_009.json",
+          "source_state": "markets",
+          "trigger": "click 'PredictIt' platform-filter pill",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-010",
+          "target_function": "handle_i_mkt_010",
+          "contract_file": "contracts/handle_i_mkt_010.json",
+          "source_state": "markets",
+          "trigger": "toggle 'Open only' filter pill",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-011",
+          "target_function": "handle_i_mkt_011",
+          "contract_file": "contracts/handle_i_mkt_011.json",
+          "source_state": "markets",
+          "trigger": "toggle 'Volume >$10k' filter pill",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-012",
+          "target_function": "handle_i_mkt_012",
+          "contract_file": "contracts/handle_i_mkt_012.json",
+          "source_state": "markets",
+          "trigger": "click 'YES' column header",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-013",
+          "target_function": "handle_i_mkt_013",
+          "contract_file": "contracts/handle_i_mkt_013.json",
+          "source_state": "markets",
+          "trigger": "click 'NO' column header",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-014",
+          "target_function": "handle_i_mkt_014",
+          "contract_file": "contracts/handle_i_mkt_014.json",
+          "source_state": "markets",
+          "trigger": "click 'Vol 24h' column header",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-015",
+          "target_function": "handle_i_mkt_015",
+          "contract_file": "contracts/handle_i_mkt_015.json",
+          "source_state": "markets",
+          "trigger": "click 'Close' column header",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-016",
+          "target_function": "handle_i_mkt_016",
+          "contract_file": "contracts/handle_i_mkt_016.json",
+          "source_state": "markets",
+          "trigger": "click on a markets-table row (tr.link)",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-017",
+          "target_function": "handle_i_mkt_017",
+          "contract_file": "contracts/handle_i_mkt_017.json",
+          "source_state": "markets",
+          "trigger": "pagination next/prev when table exceeds threshold",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MKT-018",
+          "target_function": "handle_i_mkt_018",
+          "contract_file": "contracts/handle_i_mkt_018.json",
+          "source_state": "markets",
+          "trigger": "filter combination produces zero rows",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-MD-001",
+          "target_function": "handle_i_md_001",
+          "contract_file": "contracts/handle_i_md_001.json",
+          "source_state": "market-detail",
+          "trigger": "page load",
+          "async_mode": "async-await",
+          "complexity": "moderate",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-STR-001",
+          "target_function": "handle_i_str_001",
+          "contract_file": "contracts/handle_i_str_001.json",
+          "source_state": "strategies",
+          "trigger": "page load",
+          "async_mode": "async-await",
+          "complexity": "moderate",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-PT-001",
+          "target_function": "handle_i_pt_001",
+          "contract_file": "contracts/handle_i_pt_001.json",
+          "source_state": "paper-trades",
+          "trigger": "page load",
+          "async_mode": "async-await",
+          "complexity": "moderate",
+          "depends_on": []
+        },
+        {
+          "interaction_id": "I-BT-001",
+          "target_function": "handle_i_bt_001",
+          "contract_file": "contracts/handle_i_bt_001.json",
+          "source_state": "backtest",
+          "trigger": "page load",
+          "async_mode": "async-await",
+          "complexity": "moderate",
+          "depends_on": []
+        }
+      ]
+    },
+    {
+      "wave": 1,
+      "size": 53,
+      "parallel_safe": true,
+      "complexity_distribution": {
+        "simple": 46,
+        "moderate": 5,
+        "complex": 2
+      },
+      "interactions": [
+        {
+          "interaction_id": "I-CMP-002",
+          "target_function": "handle_i_cmp_002",
+          "contract_file": "contracts/handle_i_cmp_002.json",
+          "source_state": "compare",
+          "trigger": "click add-run button",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-CMP-001"
+          ]
+        },
+        {
+          "interaction_id": "I-CMP-006",
+          "target_function": "handle_i_cmp_006",
+          "contract_file": "contracts/handle_i_cmp_006.json",
+          "source_state": "compare",
+          "trigger": "click remove-run button",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-CMP-001"
+          ]
+        },
+        {
+          "interaction_id": "I-CMP-007",
+          "target_function": "handle_i_cmp_007",
+          "contract_file": "contracts/handle_i_cmp_007.json",
+          "source_state": "compare",
+          "trigger": "edit run label (text input)",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-CMP-001"
+          ]
+        },
+        {
+          "interaction_id": "I-CMP-008",
+          "target_function": "handle_i_cmp_008",
+          "contract_file": "contracts/handle_i_cmp_008.json",
+          "source_state": "compare",
+          "trigger": "TS-03 satisfied condition",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-CMP-001"
+          ]
+        },
+        {
+          "interaction_id": "I-CMP-009",
+          "target_function": "handle_i_cmp_009",
+          "contract_file": "contracts/handle_i_cmp_009.json",
+          "source_state": "compare",
+          "trigger": "click sidebar nav item",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-CMP-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PF-002",
+          "target_function": "handle_i_pf_002",
+          "contract_file": "contracts/handle_i_pf_002.json",
+          "source_state": "portfolio",
+          "trigger": "click timeframe toggle (7d / 30d / 90d / ytd / all)",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PF-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PF-003",
+          "target_function": "handle_i_pf_003",
+          "contract_file": "contracts/handle_i_pf_003.json",
+          "source_state": "portfolio",
+          "trigger": "click Export CSV",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PF-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PF-004",
+          "target_function": "handle_i_pf_004",
+          "contract_file": "contracts/handle_i_pf_004.json",
+          "source_state": "portfolio",
+          "trigger": "click Export JSON",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PF-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PF-005",
+          "target_function": "handle_i_pf_005",
+          "contract_file": "contracts/handle_i_pf_005.json",
+          "source_state": "portfolio",
+          "trigger": "click attribution bar for a strategy",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PF-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PF-006",
+          "target_function": "handle_i_pf_006",
+          "contract_file": "contracts/handle_i_pf_006.json",
+          "source_state": "portfolio",
+          "trigger": "30s poll refresh",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PF-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PF-007",
+          "target_function": "handle_i_pf_007",
+          "contract_file": "contracts/handle_i_pf_007.json",
+          "source_state": "portfolio",
+          "trigger": "insufficient data edge case (sortino <20 trades)",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PF-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PF-008",
+          "target_function": "handle_i_pf_008",
+          "contract_file": "contracts/handle_i_pf_008.json",
+          "source_state": "portfolio",
+          "trigger": "click sidebar nav item",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PF-001"
+          ]
+        },
+        {
+          "interaction_id": "I-DI-002",
+          "target_function": "handle_i_di_002",
+          "contract_file": "contracts/handle_i_di_002.json",
+          "source_state": "data-ingestion",
+          "trigger": "click Sync now on Kalshi row",
+          "async_mode": "async-await",
+          "complexity": "moderate",
+          "depends_on": [
+            "I-DI-001"
+          ]
+        },
+        {
+          "interaction_id": "I-DI-003",
+          "target_function": "handle_i_di_003",
+          "contract_file": "contracts/handle_i_di_003.json",
+          "source_state": "data-ingestion",
+          "trigger": "click Sync now on Polymarket row",
+          "async_mode": "async-await",
+          "complexity": "moderate",
+          "depends_on": [
+            "I-DI-001"
+          ]
+        },
+        {
+          "interaction_id": "I-DI-004",
+          "target_function": "handle_i_di_004",
+          "contract_file": "contracts/handle_i_di_004.json",
+          "source_state": "data-ingestion",
+          "trigger": "click Sync now on Manifold row",
+          "async_mode": "async-await",
+          "complexity": "complex",
+          "depends_on": [
+            "I-DI-001"
+          ]
+        },
+        {
+          "interaction_id": "I-DI-005",
+          "target_function": "handle_i_di_005",
+          "contract_file": "contracts/handle_i_di_005.json",
+          "source_state": "data-ingestion",
+          "trigger": "click Retry on PredictIt row (when rate-limited)",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-DI-001"
+          ]
+        },
+        {
+          "interaction_id": "I-DI-006",
+          "target_function": "handle_i_di_006",
+          "contract_file": "contracts/handle_i_di_006.json",
+          "source_state": "data-ingestion",
+          "trigger": "status transitions healthy \u2192 rate-limited or error",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-DI-001"
+          ]
+        },
+        {
+          "interaction_id": "I-DI-007",
+          "target_function": "handle_i_di_007",
+          "contract_file": "contracts/handle_i_di_007.json",
+          "source_state": "data-ingestion",
+          "trigger": "30s poll refresh",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-DI-001"
+          ]
+        },
+        {
+          "interaction_id": "I-DI-008",
+          "target_function": "handle_i_di_008",
+          "contract_file": "contracts/handle_i_di_008.json",
+          "source_state": "data-ingestion",
+          "trigger": "click sidebar nav item",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-DI-001"
+          ]
+        },
+        {
+          "interaction_id": "I-MD-002",
+          "target_function": "handle_i_md_002",
+          "contract_file": "contracts/handle_i_md_002.json",
+          "source_state": "market-detail",
+          "trigger": "click BUY YES button",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-MD-001"
+          ]
+        },
+        {
+          "interaction_id": "I-MD-003",
+          "target_function": "handle_i_md_003",
+          "contract_file": "contracts/handle_i_md_003.json",
+          "source_state": "market-detail",
+          "trigger": "click BUY NO button",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-MD-001"
+          ]
+        },
+        {
+          "interaction_id": "I-MD-004",
+          "target_function": "handle_i_md_004",
+          "contract_file": "contracts/handle_i_md_004.json",
+          "source_state": "market-detail",
+          "trigger": "change size input",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-MD-001"
+          ]
+        },
+        {
+          "interaction_id": "I-MD-006",
+          "target_function": "handle_i_md_006",
+          "contract_file": "contracts/handle_i_md_006.json",
+          "source_state": "market-detail",
+          "trigger": "submit-paper-trade fails (insufficient bankroll)",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-MD-001"
+          ]
+        },
+        {
+          "interaction_id": "I-MD-007",
+          "target_function": "handle_i_md_007",
+          "contract_file": "contracts/handle_i_md_007.json",
+          "source_state": "market-detail",
+          "trigger": "30s poll refresh",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-MD-001"
+          ]
+        },
+        {
+          "interaction_id": "I-MD-008",
+          "target_function": "handle_i_md_008",
+          "contract_file": "contracts/handle_i_md_008.json",
+          "source_state": "market-detail",
+          "trigger": "click sidebar nav item",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-MD-001"
+          ]
+        },
+        {
+          "interaction_id": "I-STR-005",
+          "target_function": "handle_i_str_005",
+          "contract_file": "contracts/handle_i_str_005.json",
+          "source_state": "strategies",
+          "trigger": "change strategy assigned capital",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-STR-001"
+          ]
+        },
+        {
+          "interaction_id": "I-STR-003",
+          "target_function": "handle_i_str_003",
+          "contract_file": "contracts/handle_i_str_003.json",
+          "source_state": "strategies",
+          "trigger": "toggle any strategy OFF",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-STR-001"
+          ]
+        },
+        {
+          "interaction_id": "I-STR-004",
+          "target_function": "handle_i_str_004",
+          "contract_file": "contracts/handle_i_str_004.json",
+          "source_state": "strategies",
+          "trigger": "change strategy parameter (kelly-fraction, min-edge, window-hours, threshold, spread)",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-STR-001"
+          ]
+        },
+        {
+          "interaction_id": "I-STR-006",
+          "target_function": "handle_i_str_006",
+          "contract_file": "contracts/handle_i_str_006.json",
+          "source_state": "strategies",
+          "trigger": "click running-pnl on a strategy card",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-STR-001"
+          ]
+        },
+        {
+          "interaction_id": "I-STR-007",
+          "target_function": "handle_i_str_007",
+          "contract_file": "contracts/handle_i_str_007.json",
+          "source_state": "strategies",
+          "trigger": "click sidebar nav item",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-STR-001"
+          ]
+        },
+        {
+          "interaction_id": "I-STR-008",
+          "target_function": "handle_i_str_008",
+          "contract_file": "contracts/handle_i_str_008.json",
+          "source_state": "strategies",
+          "trigger": "toggle-on attempt with assigned-capital = 0",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-STR-001"
+          ]
+        },
+        {
+          "interaction_id": "I-STR-009",
+          "target_function": "handle_i_str_009",
+          "contract_file": "contracts/handle_i_str_009.json",
+          "source_state": "strategies",
+          "trigger": "toggle-on attempt exceeding equity",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-STR-001"
+          ]
+        },
+        {
+          "interaction_id": "I-STR-010",
+          "target_function": "handle_i_str_010",
+          "contract_file": "contracts/handle_i_str_010.json",
+          "source_state": "strategies",
+          "trigger": "30s poll refresh",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-STR-001"
+          ]
+        },
+        {
+          "interaction_id": "I-STR-011",
+          "target_function": "handle_i_str_011",
+          "contract_file": "contracts/handle_i_str_011.json",
+          "source_state": "strategies",
+          "trigger": "new strategy .py file dropped in strategies/ directory",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-STR-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PT-002",
+          "target_function": "handle_i_pt_002",
+          "contract_file": "contracts/handle_i_pt_002.json",
+          "source_state": "paper-trades",
+          "trigger": "click status filter pill (All / Open / Closed)",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PT-003",
+          "target_function": "handle_i_pt_003",
+          "contract_file": "contracts/handle_i_pt_003.json",
+          "source_state": "paper-trades",
+          "trigger": "click strategy filter pill (Kelly / Arb / Momentum / Fade / MM / Manual)",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PT-004",
+          "target_function": "handle_i_pt_004",
+          "contract_file": "contracts/handle_i_pt_004.json",
+          "source_state": "paper-trades",
+          "trigger": "click platform filter pill",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PT-005",
+          "target_function": "handle_i_pt_005",
+          "contract_file": "contracts/handle_i_pt_005.json",
+          "source_state": "paper-trades",
+          "trigger": "change date-range picker",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PT-006",
+          "target_function": "handle_i_pt_006",
+          "contract_file": "contracts/handle_i_pt_006.json",
+          "source_state": "paper-trades",
+          "trigger": "click market cell in row",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PT-007",
+          "target_function": "handle_i_pt_007",
+          "contract_file": "contracts/handle_i_pt_007.json",
+          "source_state": "paper-trades",
+          "trigger": "click Export CSV button",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PT-008",
+          "target_function": "handle_i_pt_008",
+          "contract_file": "contracts/handle_i_pt_008.json",
+          "source_state": "paper-trades",
+          "trigger": "click Export JSON button",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PT-009",
+          "target_function": "handle_i_pt_009",
+          "contract_file": "contracts/handle_i_pt_009.json",
+          "source_state": "paper-trades",
+          "trigger": "click column sort (Time / Qty / Entry / Exit / P&L)",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PT-010",
+          "target_function": "handle_i_pt_010",
+          "contract_file": "contracts/handle_i_pt_010.json",
+          "source_state": "paper-trades",
+          "trigger": "30s poll refresh (only when Open filter active)",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-PT-011",
+          "target_function": "handle_i_pt_011",
+          "contract_file": "contracts/handle_i_pt_011.json",
+          "source_state": "paper-trades",
+          "trigger": "click sidebar nav item",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-PT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-BT-002",
+          "target_function": "handle_i_bt_002",
+          "contract_file": "contracts/handle_i_bt_002.json",
+          "source_state": "backtest",
+          "trigger": "change strategy picker",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-BT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-BT-003",
+          "target_function": "handle_i_bt_003",
+          "contract_file": "contracts/handle_i_bt_003.json",
+          "source_state": "backtest",
+          "trigger": "toggle platform in multiselect",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-BT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-BT-004",
+          "target_function": "handle_i_bt_004",
+          "contract_file": "contracts/handle_i_bt_004.json",
+          "source_state": "backtest",
+          "trigger": "change date-range picker",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-BT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-BT-005",
+          "target_function": "handle_i_bt_005",
+          "contract_file": "contracts/handle_i_bt_005.json",
+          "source_state": "backtest",
+          "trigger": "change starting-bankroll input",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-BT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-BT-006",
+          "target_function": "handle_i_bt_006",
+          "contract_file": "contracts/handle_i_bt_006.json",
+          "source_state": "backtest",
+          "trigger": "click run-backtest button",
+          "async_mode": "async-await",
+          "complexity": "complex",
+          "depends_on": [
+            "I-BT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-BT-007",
+          "target_function": "handle_i_bt_007",
+          "contract_file": "contracts/handle_i_bt_007.json",
+          "source_state": "backtest",
+          "trigger": "run-backtest completes successfully",
+          "async_mode": "sync",
+          "complexity": "moderate",
+          "depends_on": [
+            "I-BT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-BT-008",
+          "target_function": "handle_i_bt_008",
+          "contract_file": "contracts/handle_i_bt_008.json",
+          "source_state": "backtest",
+          "trigger": "run-backtest encounters bankruptcy (equity < 0)",
+          "async_mode": "sync",
+          "complexity": "moderate",
+          "depends_on": [
+            "I-BT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-BT-010",
+          "target_function": "handle_i_bt_010",
+          "contract_file": "contracts/handle_i_bt_010.json",
+          "source_state": "backtest",
+          "trigger": "run-backtest fails (e.g., invalid config)",
+          "async_mode": "sync",
+          "complexity": "moderate",
+          "depends_on": [
+            "I-BT-001"
+          ]
+        },
+        {
+          "interaction_id": "I-BT-011",
+          "target_function": "handle_i_bt_011",
+          "contract_file": "contracts/handle_i_bt_011.json",
+          "source_state": "backtest",
+          "trigger": "click sidebar nav item",
+          "async_mode": "sync",
+          "complexity": "simple",
+          "depends_on": [
+            "I-BT-001"
+          ]
+        }
+      ]
+    },
+    {
+      "wave": 2,
+      "size": 5,
+      "parallel_safe": true,
+      "complexity_distribution": {
+        "simple": 3,
+        "moderate": 1,
+        "complex": 1
+      },
+      "interactions": [
+        {
+          "interaction_id": "I-CMP-003",
+          "target_function": "handle_i_cmp_003",
+          "contract_file": "contracts/handle_i_cmp_003.json",
+          "source_state": "compare",
+          "trigger": "pick 'add from backtest'",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-CMP-001",
+            "I-CMP-002"
+          ]
+        },
+        {
+          "interaction_id": "I-CMP-004",
+          "target_function": "handle_i_cmp_004",
+          "contract_file": "contracts/handle_i_cmp_004.json",
+          "source_state": "compare",
+          "trigger": "pick 'add from live session'",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-CMP-001",
+            "I-CMP-002"
+          ]
+        },
+        {
+          "interaction_id": "I-MD-005",
+          "target_function": "handle_i_md_005",
+          "contract_file": "contracts/handle_i_md_005.json",
+          "source_state": "market-detail",
+          "trigger": "click submit-paper-trade",
+          "async_mode": "async-await",
+          "complexity": "complex",
+          "depends_on": [
+            "I-MD-001",
+            "I-MD-002",
+            "I-MD-004"
+          ]
+        },
+        {
+          "interaction_id": "I-STR-002",
+          "target_function": "handle_i_str_002",
+          "contract_file": "contracts/handle_i_str_002.json",
+          "source_state": "strategies",
+          "trigger": "toggle Kelly sizing ON",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-STR-001",
+            "I-STR-005"
+          ]
+        },
+        {
+          "interaction_id": "I-BT-009",
+          "target_function": "handle_i_bt_009",
+          "contract_file": "contracts/handle_i_bt_009.json",
+          "source_state": "backtest",
+          "trigger": "click save-as-comparison button",
+          "async_mode": "async-await",
+          "complexity": "moderate",
+          "depends_on": [
+            "I-BT-001",
+            "I-BT-007"
+          ]
+        }
+      ]
+    },
+    {
+      "wave": 3,
+      "size": 1,
+      "parallel_safe": true,
+      "complexity_distribution": {
+        "simple": 1,
+        "moderate": 0,
+        "complex": 0
+      },
+      "interactions": [
+        {
+          "interaction_id": "I-CMP-005",
+          "target_function": "handle_i_cmp_005",
+          "contract_file": "contracts/handle_i_cmp_005.json",
+          "source_state": "compare",
+          "trigger": "confirm run selection in picker",
+          "async_mode": "async-await",
+          "complexity": "simple",
+          "depends_on": [
+            "I-CMP-001",
+            "I-CMP-003"
+          ]
+        }
+      ]
+    }
+  ],
+  "critical_path": {
+    "description": "Longest dependency chain leading to a terminal state",
+    "path": [
+      "I-DASH-013"
+    ]
+  }
+}

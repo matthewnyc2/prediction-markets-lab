@@ -1,0 +1,448 @@
+{
+  "project": "prediction-markets",
+  "phase": "2",
+  "step": "E",
+  "produced_at": "2026-04-16",
+  "terminal_states_covered": [
+    "TS-01",
+    "TS-02",
+    "TS-03"
+  ],
+  "total_states_in_chain": 16,
+  "total_waves": 4,
+  "per_terminal_backward_chains": [
+    {
+      "terminal_state": "TS-01",
+      "backward": [
+        {
+          "interaction_id": "I-STR-002",
+          "source_state": "strategies",
+          "trigger": "toggle Kelly sizing ON",
+          "target_function": "handle_i_str_002",
+          "async_mode": "async-await",
+          "depends_on": [
+            "I-STR-001",
+            "I-STR-005"
+          ],
+          "produces_signal_for_ts": "TS-01"
+        },
+        {
+          "interaction_id": "I-MD-005",
+          "source_state": "market-detail",
+          "trigger": "click submit-paper-trade",
+          "target_function": "handle_i_md_005",
+          "async_mode": "async-await",
+          "depends_on": [
+            "I-MD-001",
+            "I-MD-002",
+            "I-MD-004"
+          ],
+          "produces_signal_for_ts": "TS-01"
+        },
+        {
+          "interaction_id": "I-DASH-013",
+          "source_state": "dashboard",
+          "trigger": "click on a row in recent-trades-panel",
+          "target_function": "handle_i_dash_013",
+          "async_mode": "sync",
+          "depends_on": [],
+          "produces_signal_for_ts": "TS-01"
+        },
+        {
+          "interaction_id": "I-STR-001",
+          "source_state": "strategies",
+          "trigger": "page load",
+          "target_function": "handle_i_str_001",
+          "async_mode": "async-await",
+          "depends_on": [],
+          "produces_signal_for_ts": null
+        },
+        {
+          "interaction_id": "I-STR-005",
+          "source_state": "strategies",
+          "trigger": "change strategy assigned capital",
+          "target_function": "handle_i_str_005",
+          "async_mode": "sync",
+          "depends_on": [
+            "I-STR-001"
+          ],
+          "produces_signal_for_ts": null
+        },
+        {
+          "interaction_id": "I-MD-001",
+          "source_state": "market-detail",
+          "trigger": "page load",
+          "target_function": "handle_i_md_001",
+          "async_mode": "async-await",
+          "depends_on": [],
+          "produces_signal_for_ts": null
+        },
+        {
+          "interaction_id": "I-MD-002",
+          "source_state": "market-detail",
+          "trigger": "click BUY YES button",
+          "target_function": "handle_i_md_002",
+          "async_mode": "sync",
+          "depends_on": [
+            "I-MD-001"
+          ],
+          "produces_signal_for_ts": null
+        },
+        {
+          "interaction_id": "I-MD-004",
+          "source_state": "market-detail",
+          "trigger": "change size input",
+          "target_function": "handle_i_md_004",
+          "async_mode": "sync",
+          "depends_on": [
+            "I-MD-001"
+          ],
+          "produces_signal_for_ts": null
+        }
+      ]
+    },
+    {
+      "terminal_state": "TS-02",
+      "backward": [
+        {
+          "interaction_id": "I-BT-006",
+          "source_state": "backtest",
+          "trigger": "click run-backtest button",
+          "target_function": "handle_i_bt_006",
+          "async_mode": "async-await",
+          "depends_on": [
+            "I-BT-001"
+          ],
+          "produces_signal_for_ts": "TS-02"
+        },
+        {
+          "interaction_id": "I-BT-007",
+          "source_state": "backtest",
+          "trigger": "run-backtest completes successfully",
+          "target_function": "handle_i_bt_007",
+          "async_mode": "sync",
+          "depends_on": [
+            "I-BT-001"
+          ],
+          "produces_signal_for_ts": "TS-02"
+        },
+        {
+          "interaction_id": "I-BT-001",
+          "source_state": "backtest",
+          "trigger": "page load",
+          "target_function": "handle_i_bt_001",
+          "async_mode": "async-await",
+          "depends_on": [],
+          "produces_signal_for_ts": null
+        }
+      ]
+    },
+    {
+      "terminal_state": "TS-03",
+      "backward": [
+        {
+          "interaction_id": "I-CMP-005",
+          "source_state": "compare",
+          "trigger": "confirm run selection in picker",
+          "target_function": "handle_i_cmp_005",
+          "async_mode": "async-await",
+          "depends_on": [
+            "I-CMP-001",
+            "I-CMP-003"
+          ],
+          "produces_signal_for_ts": "TS-03"
+        },
+        {
+          "interaction_id": "I-CMP-008",
+          "source_state": "compare",
+          "trigger": "TS-03 satisfied condition",
+          "target_function": "handle_i_cmp_008",
+          "async_mode": "sync",
+          "depends_on": [
+            "I-CMP-001"
+          ],
+          "produces_signal_for_ts": "TS-03"
+        },
+        {
+          "interaction_id": "I-CMP-001",
+          "source_state": "compare",
+          "trigger": "page load",
+          "target_function": "handle_i_cmp_001",
+          "async_mode": "async-await",
+          "depends_on": [],
+          "produces_signal_for_ts": null
+        },
+        {
+          "interaction_id": "I-CMP-003",
+          "source_state": "compare",
+          "trigger": "pick 'add from backtest'",
+          "target_function": "handle_i_cmp_003",
+          "async_mode": "async-await",
+          "depends_on": [
+            "I-CMP-001",
+            "I-CMP-002"
+          ],
+          "produces_signal_for_ts": null
+        },
+        {
+          "interaction_id": "I-CMP-002",
+          "source_state": "compare",
+          "trigger": "click add-run button",
+          "target_function": "handle_i_cmp_002",
+          "async_mode": "sync",
+          "depends_on": [
+            "I-CMP-001"
+          ],
+          "produces_signal_for_ts": null
+        }
+      ]
+    }
+  ],
+  "unified_forward_chain": [
+    {
+      "interaction_id": "I-BT-001",
+      "source_state": "backtest",
+      "trigger": "page load",
+      "target_function": "handle_i_bt_001",
+      "async_mode": "async-await",
+      "depends_on": [],
+      "produces_signal_for_ts": null,
+      "terminal_states": [],
+      "wave": 0
+    },
+    {
+      "interaction_id": "I-CMP-001",
+      "source_state": "compare",
+      "trigger": "page load",
+      "target_function": "handle_i_cmp_001",
+      "async_mode": "async-await",
+      "depends_on": [],
+      "produces_signal_for_ts": null,
+      "terminal_states": [],
+      "wave": 0
+    },
+    {
+      "interaction_id": "I-DASH-013",
+      "source_state": "dashboard",
+      "trigger": "click on a row in recent-trades-panel",
+      "target_function": "handle_i_dash_013",
+      "async_mode": "sync",
+      "depends_on": [],
+      "produces_signal_for_ts": "TS-01",
+      "terminal_states": [
+        "TS-01"
+      ],
+      "wave": 0
+    },
+    {
+      "interaction_id": "I-MD-001",
+      "source_state": "market-detail",
+      "trigger": "page load",
+      "target_function": "handle_i_md_001",
+      "async_mode": "async-await",
+      "depends_on": [],
+      "produces_signal_for_ts": null,
+      "terminal_states": [],
+      "wave": 0
+    },
+    {
+      "interaction_id": "I-STR-001",
+      "source_state": "strategies",
+      "trigger": "page load",
+      "target_function": "handle_i_str_001",
+      "async_mode": "async-await",
+      "depends_on": [],
+      "produces_signal_for_ts": null,
+      "terminal_states": [],
+      "wave": 0
+    },
+    {
+      "interaction_id": "I-BT-006",
+      "source_state": "backtest",
+      "trigger": "click run-backtest button",
+      "target_function": "handle_i_bt_006",
+      "async_mode": "async-await",
+      "depends_on": [
+        "I-BT-001"
+      ],
+      "produces_signal_for_ts": "TS-02",
+      "terminal_states": [
+        "TS-02"
+      ],
+      "wave": 1
+    },
+    {
+      "interaction_id": "I-BT-007",
+      "source_state": "backtest",
+      "trigger": "run-backtest completes successfully",
+      "target_function": "handle_i_bt_007",
+      "async_mode": "sync",
+      "depends_on": [
+        "I-BT-001"
+      ],
+      "produces_signal_for_ts": "TS-02",
+      "terminal_states": [
+        "TS-02"
+      ],
+      "wave": 1
+    },
+    {
+      "interaction_id": "I-CMP-002",
+      "source_state": "compare",
+      "trigger": "click add-run button",
+      "target_function": "handle_i_cmp_002",
+      "async_mode": "sync",
+      "depends_on": [
+        "I-CMP-001"
+      ],
+      "produces_signal_for_ts": null,
+      "terminal_states": [],
+      "wave": 1
+    },
+    {
+      "interaction_id": "I-CMP-008",
+      "source_state": "compare",
+      "trigger": "TS-03 satisfied condition",
+      "target_function": "handle_i_cmp_008",
+      "async_mode": "sync",
+      "depends_on": [
+        "I-CMP-001"
+      ],
+      "produces_signal_for_ts": "TS-03",
+      "terminal_states": [
+        "TS-03"
+      ],
+      "wave": 1
+    },
+    {
+      "interaction_id": "I-MD-002",
+      "source_state": "market-detail",
+      "trigger": "click BUY YES button",
+      "target_function": "handle_i_md_002",
+      "async_mode": "sync",
+      "depends_on": [
+        "I-MD-001"
+      ],
+      "produces_signal_for_ts": null,
+      "terminal_states": [],
+      "wave": 1
+    },
+    {
+      "interaction_id": "I-MD-004",
+      "source_state": "market-detail",
+      "trigger": "change size input",
+      "target_function": "handle_i_md_004",
+      "async_mode": "sync",
+      "depends_on": [
+        "I-MD-001"
+      ],
+      "produces_signal_for_ts": null,
+      "terminal_states": [],
+      "wave": 1
+    },
+    {
+      "interaction_id": "I-STR-005",
+      "source_state": "strategies",
+      "trigger": "change strategy assigned capital",
+      "target_function": "handle_i_str_005",
+      "async_mode": "sync",
+      "depends_on": [
+        "I-STR-001"
+      ],
+      "produces_signal_for_ts": null,
+      "terminal_states": [],
+      "wave": 1
+    },
+    {
+      "interaction_id": "I-CMP-003",
+      "source_state": "compare",
+      "trigger": "pick 'add from backtest'",
+      "target_function": "handle_i_cmp_003",
+      "async_mode": "async-await",
+      "depends_on": [
+        "I-CMP-001",
+        "I-CMP-002"
+      ],
+      "produces_signal_for_ts": null,
+      "terminal_states": [],
+      "wave": 2
+    },
+    {
+      "interaction_id": "I-MD-005",
+      "source_state": "market-detail",
+      "trigger": "click submit-paper-trade",
+      "target_function": "handle_i_md_005",
+      "async_mode": "async-await",
+      "depends_on": [
+        "I-MD-001",
+        "I-MD-002",
+        "I-MD-004"
+      ],
+      "produces_signal_for_ts": "TS-01",
+      "terminal_states": [
+        "TS-01"
+      ],
+      "wave": 2
+    },
+    {
+      "interaction_id": "I-STR-002",
+      "source_state": "strategies",
+      "trigger": "toggle Kelly sizing ON",
+      "target_function": "handle_i_str_002",
+      "async_mode": "async-await",
+      "depends_on": [
+        "I-STR-001",
+        "I-STR-005"
+      ],
+      "produces_signal_for_ts": "TS-01",
+      "terminal_states": [
+        "TS-01"
+      ],
+      "wave": 2
+    },
+    {
+      "interaction_id": "I-CMP-005",
+      "source_state": "compare",
+      "trigger": "confirm run selection in picker",
+      "target_function": "handle_i_cmp_005",
+      "async_mode": "async-await",
+      "depends_on": [
+        "I-CMP-001",
+        "I-CMP-003"
+      ],
+      "produces_signal_for_ts": "TS-03",
+      "terminal_states": [
+        "TS-03"
+      ],
+      "wave": 3
+    }
+  ],
+  "waves": {
+    "0": [
+      "I-BT-001",
+      "I-CMP-001",
+      "I-DASH-013",
+      "I-MD-001",
+      "I-STR-001"
+    ],
+    "1": [
+      "I-BT-006",
+      "I-BT-007",
+      "I-CMP-002",
+      "I-CMP-008",
+      "I-MD-002",
+      "I-MD-004",
+      "I-STR-005"
+    ],
+    "2": [
+      "I-CMP-003",
+      "I-MD-005",
+      "I-STR-002"
+    ],
+    "3": [
+      "I-CMP-005"
+    ]
+  },
+  "orphans": [],
+  "gaps": []
+}

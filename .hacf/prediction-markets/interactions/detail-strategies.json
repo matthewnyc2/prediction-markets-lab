@@ -1,0 +1,209 @@
+{
+  "agent": "B2",
+  "screens_covered": ["market-detail", "strategies"],
+  "produced_at": "2026-04-16",
+  "interactions": [
+    {
+      "interaction_id": "I-MD-001",
+      "source_state": "market-detail",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "market-detail",
+      "elements_involved": ["market-title","price-history-chart","recent-fills-table"],
+      "endpoint": "GET /api/markets/{platform}/{market_id} + GET /api/markets/{...}/price-history?window=90d + GET /api/markets/{...}/fills",
+      "rules_referenced": ["FE-R-004","BE-R-002","API-R-*"],
+      "notes": "Parallel initial fetches; 30s SWR poll for current price"
+    },
+    {
+      "interaction_id": "I-MD-002",
+      "source_state": "market-detail",
+      "trigger": "click BUY YES button",
+      "category": "state_change",
+      "target_screen": "market-detail",
+      "elements_involved": ["buy-yes-button","size-input","cost-display","max-loss-display"],
+      "rules_referenced": ["DESIGN-R-*"],
+      "notes": "Selects side; recomputes cost = yes-price × size and max-loss = cost"
+    },
+    {
+      "interaction_id": "I-MD-003",
+      "source_state": "market-detail",
+      "trigger": "click BUY NO button",
+      "category": "state_change",
+      "target_screen": "market-detail",
+      "elements_involved": ["buy-no-button","size-input","cost-display"],
+      "rules_referenced": ["DESIGN-R-*"],
+      "notes": "Side = no; cost = no-price × size"
+    },
+    {
+      "interaction_id": "I-MD-004",
+      "source_state": "market-detail",
+      "trigger": "change size input",
+      "category": "input_change",
+      "target_screen": "market-detail",
+      "elements_involved": ["size-input","cost-display","max-loss-display","submit-paper-trade"],
+      "rules_referenced": ["INV-002","DESIGN-R-*"],
+      "notes": "Integer > 0 required; live-updates computed cost and max-loss; submit enabled only when side selected AND size > 0"
+    },
+    {
+      "interaction_id": "I-MD-005",
+      "source_state": "market-detail",
+      "trigger": "click submit-paper-trade",
+      "category": "api_call",
+      "target_screen": "market-detail",
+      "elements_involved": ["submit-paper-trade","recent-fills-table"],
+      "endpoint": "POST /api/paper-fills",
+      "request_body": {"platform":"...","market_id":"...","side":"yes|no","order_side":"buy","size":"int"},
+      "rules_referenced": ["INV-001","INV-004","INV-007","PR-001","PR-007","BE-R-*"],
+      "notes": "Atomic: creates paper-fill + updates paper-position; invariant INV-007 blocks real trading; success = fill appears in recent-fills-table + portfolio equity updates (CSC-002)"
+    },
+    {
+      "interaction_id": "I-MD-006",
+      "source_state": "market-detail",
+      "trigger": "submit-paper-trade fails (insufficient bankroll)",
+      "category": "state_change",
+      "target_screen": "market-detail",
+      "elements_involved": ["submit-paper-trade"],
+      "rules_referenced": ["INV-008"],
+      "notes": "Backend returns 422; UI shows error toast; button re-enabled"
+    },
+    {
+      "interaction_id": "I-MD-007",
+      "source_state": "market-detail",
+      "trigger": "30s poll refresh",
+      "category": "refresh",
+      "target_screen": "market-detail",
+      "elements_involved": ["market-title","price-history-chart","recent-fills-table"],
+      "endpoint": "GET /api/markets/{...} (price + recent fills)",
+      "rules_referenced": ["FW-R-*"],
+      "notes": "SWR revalidates price + fills; chart isAnimationActive=false"
+    },
+    {
+      "interaction_id": "I-MD-008",
+      "source_state": "market-detail",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "elements_involved": ["sidebar.nav-list.li"],
+      "rules_referenced": ["HTML-R-*"],
+      "notes": "8 nav targets (dashboard, markets, strategies, paper-trades, backtest, compare, portfolio, data-ingestion). Emitted once per target as group."
+    },
+    {
+      "interaction_id": "I-STR-001",
+      "source_state": "strategies",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "strategies",
+      "elements_involved": ["strategy-card-*"],
+      "endpoint": "GET /api/strategies",
+      "rules_referenced": ["BE-R-*","FW-R-*"],
+      "notes": "Fetches 5 strategy cards with state/parameters/capital/pnl; 30s poll refreshes pnl"
+    },
+    {
+      "interaction_id": "I-STR-002",
+      "source_state": "strategies",
+      "trigger": "toggle Kelly sizing ON",
+      "category": "api_call",
+      "target_screen": "strategies",
+      "elements_involved": ["strategy-card-kelly.on-off-toggle"],
+      "endpoint": "POST /api/strategies/kelly-sizing/toggle",
+      "request_body": {"state":"on"},
+      "rules_referenced": ["INV-003","INV-008","FS-001","PR-002","CSC-001"],
+      "notes": "Precondition: assigned-capital > 0 (INV-003); Σ capital of ON strategies ≤ equity (INV-008); state transition logged (PR-002); causes new fills on dashboard (CSC-001)"
+    },
+    {
+      "interaction_id": "I-STR-003",
+      "source_state": "strategies",
+      "trigger": "toggle any strategy OFF",
+      "category": "api_call",
+      "target_screen": "strategies",
+      "elements_involved": ["strategy-card-*.on-off-toggle"],
+      "endpoint": "POST /api/strategies/{id}/toggle",
+      "request_body": {"state":"off"},
+      "rules_referenced": ["PR-002","CSC-007","FS-007"],
+      "notes": "No new paper-fills from this strategy after off timestamp; pnl stops growing; dashboard pill updates"
+    },
+    {
+      "interaction_id": "I-STR-004",
+      "source_state": "strategies",
+      "trigger": "change strategy parameter (kelly-fraction, min-edge, window-hours, threshold, spread)",
+      "category": "input_change",
+      "target_screen": "strategies",
+      "elements_involved": ["strategy-card-*.parameter-input"],
+      "endpoint": "PATCH /api/strategies/{id}/parameters",
+      "rules_referenced": ["BE-R-*","QU-R-024"],
+      "notes": "Debounced 300ms; validated against parameter schema; persisted only if strategy is on"
+    },
+    {
+      "interaction_id": "I-STR-005",
+      "source_state": "strategies",
+      "trigger": "change strategy assigned capital",
+      "category": "input_change",
+      "target_screen": "strategies",
+      "elements_involved": ["strategy-card-*.capital-input"],
+      "endpoint": "PATCH /api/strategies/{id}/capital",
+      "rules_referenced": ["INV-008","FS-001"],
+      "notes": "Validation: ≤ equity − sum(other ON strategies' capital); value 0 blocks toggle-on"
+    },
+    {
+      "interaction_id": "I-STR-006",
+      "source_state": "strategies",
+      "trigger": "click running-pnl on a strategy card",
+      "category": "drilldown",
+      "target_screen": "paper-trades",
+      "elements_involved": ["strategy-card-*.running-pnl"],
+      "rules_referenced": ["HTML-R-*","CSC-003"],
+      "notes": "Navigates to paper-trades with filter source=strategy-id preset"
+    },
+    {
+      "interaction_id": "I-STR-007",
+      "source_state": "strategies",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "elements_involved": ["sidebar.nav-list.li"],
+      "rules_referenced": ["HTML-R-*"],
+      "notes": "Standard sidebar navigation (8 targets)"
+    },
+    {
+      "interaction_id": "I-STR-008",
+      "source_state": "strategies",
+      "trigger": "toggle-on attempt with assigned-capital = 0",
+      "category": "state_change",
+      "target_screen": "strategies",
+      "elements_involved": ["strategy-card-*.on-off-toggle"],
+      "rules_referenced": ["INV-003","FS-001"],
+      "notes": "UI blocks toggle-on; shows inline error 'Assign capital first'"
+    },
+    {
+      "interaction_id": "I-STR-009",
+      "source_state": "strategies",
+      "trigger": "toggle-on attempt exceeding equity",
+      "category": "state_change",
+      "target_screen": "strategies",
+      "elements_involved": ["strategy-card-*.on-off-toggle"],
+      "rules_referenced": ["INV-008"],
+      "notes": "Backend 422; UI shows 'Would exceed available equity' with remaining headroom"
+    },
+    {
+      "interaction_id": "I-STR-010",
+      "source_state": "strategies",
+      "trigger": "30s poll refresh",
+      "category": "refresh",
+      "target_screen": "strategies",
+      "elements_involved": ["strategy-card-*.running-pnl"],
+      "endpoint": "GET /api/strategies",
+      "rules_referenced": ["FW-R-*"],
+      "notes": "Revalidates pnl numbers without animation flash"
+    },
+    {
+      "interaction_id": "I-STR-011",
+      "source_state": "strategies",
+      "trigger": "new strategy .py file dropped in strategies/ directory",
+      "category": "state_change",
+      "target_screen": "strategies",
+      "elements_involved": ["strategy-card-*"],
+      "rules_referenced": ["FW-R-*"],
+      "notes": "Backend filesystem scan auto-registers on next request; UI shows new card on next poll; no server restart required"
+    }
+  ]
+}

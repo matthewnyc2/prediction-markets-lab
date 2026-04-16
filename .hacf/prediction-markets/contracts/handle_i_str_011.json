@@ -1,0 +1,40 @@
+{
+  "contract_id": "C-I-STR-011",
+  "interaction_id": "I-STR-011",
+  "function": {
+    "name": "handle_i_str_011",
+    "module_hint": "frontend.handlers.strategies",
+    "inputs": [
+      {
+        "name": "path",
+        "type": "str"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "strategy_id",
+        "type": "StrategyId"
+      }
+    ]
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": null,
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": []
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "FW-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "strategies",
+    "success_transition": "strategies"
+  }
+}

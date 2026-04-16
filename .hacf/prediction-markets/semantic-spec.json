@@ -1,0 +1,366 @@
+{
+  "project": "prediction-markets",
+  "schema_version": "APR10",
+  "produced_at": "2026-04-16",
+  "source_artifacts": [
+    "stated-intent.txt",
+    "disambiguated.txt",
+    "terminal-states.json",
+    "tech-stack.json",
+    "boundary.txt",
+    "hacf-create-proposal.html"
+  ],
+  "domain_entities": [
+    {
+      "name": "person",
+      "role": "actor",
+      "capabilities": [
+        "submit-paper-trade",
+        "toggle-strategy",
+        "execute-backtest",
+        "save-backtest-as-comparison",
+        "sync-historical-prices",
+        "export-ledger"
+      ],
+      "visible_on": []
+    },
+    {
+      "name": "platform",
+      "role": "value-object",
+      "lifecycle": ["registered"],
+      "visible_on": ["markets", "market-detail", "paper-trades", "data-ingestion", "backtest", "compare"]
+    },
+    {
+      "name": "market",
+      "role": "primary-entity",
+      "lifecycle": ["open", "yes-resolved", "no-resolved", "cancelled"],
+      "owned_by": "platform",
+      "visible_on": ["markets", "market-detail", "paper-trades"]
+    },
+    {
+      "name": "paper-fill",
+      "role": "primary-entity",
+      "lifecycle": ["recorded"],
+      "owned_by": "person",
+      "visible_on": ["dashboard", "paper-trades", "market-detail", "portfolio"]
+    },
+    {
+      "name": "paper-position",
+      "role": "aggregate",
+      "lifecycle": ["open", "closed"],
+      "owned_by": "person",
+      "visible_on": ["paper-trades", "portfolio"]
+    },
+    {
+      "name": "strategy",
+      "role": "primary-entity",
+      "lifecycle": ["registered", "on", "off"],
+      "capabilities": ["execute-strategy-decide", "execute-strategy-on-fill"],
+      "visible_on": ["strategies", "dashboard", "paper-trades"]
+    },
+    {
+      "name": "backtest",
+      "role": "primary-entity",
+      "lifecycle": ["configured", "running", "completed", "failed"],
+      "owned_by": "person",
+      "visible_on": ["backtest", "compare"]
+    },
+    {
+      "name": "comparison-run",
+      "role": "aggregate",
+      "lifecycle": ["added", "removed"],
+      "owned_by": "person",
+      "visible_on": ["compare"]
+    },
+    {
+      "name": "adapter",
+      "role": "service",
+      "lifecycle": ["healthy", "rate-limited", "error", "syncing"],
+      "capabilities": ["ingest-markets", "sync-historical-prices", "stream-live-prices"],
+      "visible_on": ["data-ingestion"]
+    },
+    {
+      "name": "simulated-bankroll",
+      "role": "value-object",
+      "owned_by": "person",
+      "visible_on": ["dashboard", "portfolio", "backtest"]
+    },
+    {
+      "name": "equity",
+      "role": "value-object",
+      "owned_by": "person",
+      "visible_on": ["dashboard", "portfolio"]
+    }
+  ],
+  "invariants": [
+    {
+      "id": "INV-001",
+      "description": "equity equals simulated-bankroll plus realised-pnl plus unrealised-pnl at all times",
+      "entities": ["equity", "simulated-bankroll", "paper-fill", "paper-position"],
+      "expression": "equity == simulated_bankroll + sum(closed_position.realised_pnl) + sum(open_position.unrealised_pnl)"
+    },
+    {
+      "id": "INV-002",
+      "description": "market-price is always in the closed interval [0, 1]",
+      "entities": ["market"],
+      "expression": "0 <= market.price <= 1"
+    },
+    {
+      "id": "INV-003",
+      "description": "A strategy with state = on must have strategy-assigned-capital > 0 at the moment of toggle-on",
+      "entities": ["strategy"],
+      "expression": "strategy.state == 'on' => strategy.assigned_capital > 0 at transition time"
+    },
+    {
+      "id": "INV-004",
+      "description": "Every paper-fill references a market that exists in the markets table and a strategy-id (or 'manual')",
+      "entities": ["paper-fill", "market", "strategy"],
+      "expression": "paper_fill.market_id in markets AND paper_fill.source in (strategy_ids UNION {'manual'})"
+    },
+    {
+      "id": "INV-005",
+      "description": "A paper-position closes when its net quantity returns to zero; its realised-pnl becomes fixed at that moment",
+      "entities": ["paper-position", "paper-fill"],
+      "expression": "sum(fills_for_position.signed_quantity) == 0 => position.status = closed AND position.realised_pnl is final"
+    },
+    {
+      "id": "INV-006",
+      "description": "Backtest results computed from stored-price-history only; never call live adapter endpoints during a backtest run",
+      "entities": ["backtest", "adapter"],
+      "expression": "backtest.execute() reads from stored_price_history; backtest.execute() does not invoke adapter.stream_live_prices"
+    },
+    {
+      "id": "INV-007",
+      "description": "No system code path writes to a platform's real-money trading endpoint",
+      "entities": ["adapter"],
+      "expression": "adapter exposes only READ methods; no method submits a real order"
+    },
+    {
+      "id": "INV-008",
+      "description": "Sum of strategy-assigned-capital across all on-state strategies must not exceed equity",
+      "entities": ["strategy", "equity"],
+      "expression": "sum(s.assigned_capital for s in strategies where s.state == 'on') <= equity"
+    },
+    {
+      "id": "INV-009",
+      "description": "paper-fill.entry-price reflects the slippage-model output, not the raw market-price at the moment of the order",
+      "entities": ["paper-fill"],
+      "expression": "paper_fill.entry_price == slippage_model(market.mid, order.size, market.orderbook)"
+    },
+    {
+      "id": "INV-010",
+      "description": "brier-score is only defined for strategies whose decide() method emits a probability forecast; market-maker is excluded",
+      "entities": ["strategy"],
+      "expression": "brier_score(strategy) defined iff strategy.strategy_id != 'market-maker'"
+    }
+  ],
+  "forbidden_states": [
+    {
+      "id": "FS-001",
+      "description": "A strategy with state = on but strategy-assigned-capital = 0",
+      "entities": ["strategy"],
+      "condition": "strategy.state == 'on' AND strategy.assigned_capital == 0"
+    },
+    {
+      "id": "FS-002",
+      "description": "A paper-fill with price outside [0, 1]",
+      "entities": ["paper-fill"],
+      "condition": "paper_fill.price < 0 OR paper_fill.price > 1"
+    },
+    {
+      "id": "FS-003",
+      "description": "A backtest that completes with null results fields",
+      "entities": ["backtest"],
+      "condition": "backtest.status == 'completed' AND (backtest.result.final_equity == null OR backtest.result.equity_curve == null)"
+    },
+    {
+      "id": "FS-004",
+      "description": "Equity dropping below zero — allowed in backtest (bankruptcy is a valid outcome) but forbidden to display negative equity silently; must be flagged as 'bankrupt'",
+      "entities": ["equity"],
+      "condition": "equity < 0 AND display_label != 'bankrupt'"
+    },
+    {
+      "id": "FS-005",
+      "description": "A comparison-run referencing a backtest-id that no longer exists",
+      "entities": ["comparison-run", "backtest"],
+      "condition": "comparison_run.source_type == 'backtest' AND comparison_run.source_id NOT IN backtests"
+    },
+    {
+      "id": "FS-006",
+      "description": "An adapter reporting status = healthy while last-sync is older than 10× its configured poll interval",
+      "entities": ["adapter"],
+      "condition": "adapter.status == 'healthy' AND (now - adapter.last_sync) > 10 * adapter.poll_interval"
+    },
+    {
+      "id": "FS-007",
+      "description": "A paper-fill with source pointing to a strategy-id whose state is off",
+      "entities": ["paper-fill", "strategy"],
+      "condition": "paper_fill.source in strategy_ids AND strategy[paper_fill.source].state == 'off' AND paper_fill.timestamp > last_off_toggle_ts"
+    }
+  ],
+  "persistence_rules": [
+    {
+      "id": "PR-001",
+      "description": "paper-fill insertion and paper-position update must be atomic in a single transaction",
+      "entities": ["paper-fill", "paper-position"],
+      "type": "atomicity"
+    },
+    {
+      "id": "PR-002",
+      "description": "Strategy state transitions (on/off) are logged with timestamp and previous state",
+      "entities": ["strategy"],
+      "type": "audit"
+    },
+    {
+      "id": "PR-003",
+      "description": "Equity snapshots are persisted at least once per minute while any strategy has state = on, for the equity curve chart",
+      "entities": ["equity"],
+      "type": "retention"
+    },
+    {
+      "id": "PR-004",
+      "description": "Ingest-markets calls are idempotent on (platform, platform-market-id)",
+      "entities": ["market", "adapter"],
+      "type": "idempotency"
+    },
+    {
+      "id": "PR-005",
+      "description": "Deleting a strategy cascades to its associated backtest configurations but not to completed backtest results (history preserved)",
+      "entities": ["strategy", "backtest"],
+      "type": "cascade"
+    },
+    {
+      "id": "PR-006",
+      "description": "Price ticks older than 3 years may be aggregated to daily OHLC to manage database size; raw ticks preserved for ≤3 years",
+      "entities": ["market"],
+      "type": "retention"
+    },
+    {
+      "id": "PR-007",
+      "description": "All writes to paper-fill, paper-position, equity, strategy use a single writer (the FastAPI process) to avoid SQLite write contention",
+      "entities": ["paper-fill", "paper-position", "equity", "strategy"],
+      "type": "consistency"
+    }
+  ],
+  "security_rules": [
+    {
+      "id": "SR-001",
+      "description": "The application binds to 127.0.0.1 only; no external network interface serves the UI",
+      "entities": ["person"],
+      "type": "action-authorization"
+    },
+    {
+      "id": "SR-002",
+      "description": "Adapter API keys (if supplied) are stored in a local .env file, never committed to the repo, never sent to the client",
+      "entities": ["adapter"],
+      "type": "field-visibility"
+    },
+    {
+      "id": "SR-003",
+      "description": "Adapter calls respect each platform's published rate limits; the system applies token-bucket throttling",
+      "entities": ["adapter"],
+      "type": "rate-limit"
+    },
+    {
+      "id": "SR-004",
+      "description": "All simulated-bankroll, equity, and pnl values are owned by the single local person; there is no multi-tenant boundary to enforce",
+      "entities": ["person", "simulated-bankroll", "equity"],
+      "type": "ownership"
+    }
+  ],
+  "hidden_state": [
+    {
+      "id": "HS-001",
+      "description": "Per-strategy running position inventory used by market-maker to manage adverse selection, not directly visible",
+      "entity": "strategy",
+      "property": "internal_inventory",
+      "affects": ["strategies.market-maker-card.parameters", "paper-trades.source-filter"]
+    },
+    {
+      "id": "HS-002",
+      "description": "Last-tick timestamp per market, drives the 'live' indicator on dashboard and informs slippage-model freshness",
+      "entity": "market",
+      "property": "last_tick_at",
+      "affects": ["dashboard.platform-health", "market-detail.price-history-chart", "data-ingestion.last-sync"]
+    },
+    {
+      "id": "HS-003",
+      "description": "Token-bucket state per adapter, not user-facing but determines whether a sync-now request is executed immediately or queued",
+      "entity": "adapter",
+      "property": "rate_limit_tokens",
+      "affects": ["data-ingestion.sync-now-button", "data-ingestion.status-pill"]
+    },
+    {
+      "id": "HS-004",
+      "description": "Computed equity curve cache — recomputed lazily from paper-fill history, invalidated on new fills",
+      "entity": "equity",
+      "property": "curve_cache",
+      "affects": ["dashboard.equity-curve", "portfolio.equity-curve", "backtest.equity-curve"]
+    },
+    {
+      "id": "HS-005",
+      "description": "Strategy state transition log — used for accurate attribution in paper-trades filter",
+      "entity": "strategy",
+      "property": "state_transition_log",
+      "affects": ["paper-trades.filter-strategy", "portfolio.pnl-attribution-bars"]
+    }
+  ],
+  "cross_screen_conditions": [
+    {
+      "id": "CSC-001",
+      "description": "Toggling a strategy on (strategies) within one poll interval must cause new rows to appear on paper-trades and update the active-strategies panel on dashboard",
+      "source_screen": "strategies",
+      "target_screen": "dashboard",
+      "trigger": "strategy.state transitions to 'on'",
+      "effect": "dashboard.active-strategies-panel shows the strategy with 'on' pill; dashboard.recent-trades-panel begins showing new paper-fills sourced from the strategy"
+    },
+    {
+      "id": "CSC-002",
+      "description": "Submitting a paper trade on market-detail updates paper-trades ledger and dashboard recent-trades",
+      "source_screen": "market-detail",
+      "target_screen": "paper-trades",
+      "trigger": "person clicks submit-paper-trade",
+      "effect": "paper-trades ledger shows new row with source='manual'; dashboard recent-trades panel shows new row; portfolio equity and equity-curve update"
+    },
+    {
+      "id": "CSC-003",
+      "description": "A closed paper-position updates portfolio.pnl-attribution-bars, dashboard tiles, and strategies.running-pnl of its source strategy",
+      "source_screen": "paper-trades",
+      "target_screen": "portfolio",
+      "trigger": "paper-position transitions to 'closed'",
+      "effect": "portfolio all-time-pnl and attribution bars update; dashboard brier/sharpe/win-rate tiles recompute; strategies card running-pnl updates"
+    },
+    {
+      "id": "CSC-004",
+      "description": "Saving a backtest as a comparison-run makes it appear on compare",
+      "source_screen": "backtest",
+      "target_screen": "compare",
+      "trigger": "person clicks save-as-comparison-button",
+      "effect": "compare.overlay-pnl-chart adds a new color-coded series; compare.comparison-table appends a new row"
+    },
+    {
+      "id": "CSC-005",
+      "description": "A failed adapter sync surfaces on data-ingestion status-pill and should decrement dashboard's adapter-health indicator",
+      "source_screen": "data-ingestion",
+      "target_screen": "dashboard",
+      "trigger": "adapter.status transitions to 'error' or 'rate-limited'",
+      "effect": "data-ingestion status-pill changes color; dashboard platform-health indicator reflects the degraded state"
+    },
+    {
+      "id": "CSC-006",
+      "description": "Equity going negative (bankruptcy) while backtest is running should display 'BANKRUPT' on backtest results and halt further replay",
+      "source_screen": "backtest",
+      "target_screen": "backtest",
+      "trigger": "equity transitions below 0 during execute-backtest",
+      "effect": "backtest.results-panel shows bankrupt flag; equity-curve terminates; subsequent ticks are not processed"
+    },
+    {
+      "id": "CSC-007",
+      "description": "Toggling a strategy off on the strategies screen stops new paper-fills from that source and updates attribution immediately",
+      "source_screen": "strategies",
+      "target_screen": "dashboard",
+      "trigger": "strategy.state transitions to 'off'",
+      "effect": "no new paper-fills with source=strategy-id after off timestamp; dashboard.active-strategies-panel shows 'off' pill; portfolio.pnl-attribution for that strategy stops growing"
+    }
+  ]
+}

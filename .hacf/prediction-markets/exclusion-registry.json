@@ -1,0 +1,35 @@
+{
+  "project": "prediction-markets",
+  "source": "hacf-create-proposal.html §7 defaults (approved) + boundary.txt + feature-discoveries.json open_questions",
+  "note": "Autonomous domain checklist per HACF Step 12d. Person delegated full autonomy; recommended defaults from feature-discoveries have been adopted.",
+  "excluded": [
+    { "id": "EX-001", "domain": "real-money-execution", "item": "placing real orders on any platform's trading API", "rationale": "boundary.txt B1/B2/INV-007 — system is paper-only; adapters expose READ methods only" },
+    { "id": "EX-002", "domain": "authentication", "item": "user accounts, sessions, login screens, roles", "rationale": "single-person local app; tech-stack.json deployment.auth = 'none'" },
+    { "id": "EX-003", "domain": "cloud-deployment", "item": "deployment beyond localhost — no Vercel, AWS, Docker orchestration", "rationale": "boundary.txt explicit — runs on person's machine only" },
+    { "id": "EX-004", "domain": "mobile-clients", "item": "iOS and Android apps, React Native, responsive breakpoints below tablet width", "rationale": "stated-intent says 'local web application'; mobile is not referenced anywhere" },
+    { "id": "EX-005", "domain": "notifications", "item": "email, push, SMS, webhook fan-out", "rationale": "not referenced in stated-intent; dashboard + screens are the only surface" },
+    { "id": "EX-006", "domain": "news-ingestion-api", "item": "integrated news feed, RSS, sentiment API", "rationale": "news-spike-fade trigger is a PRICE-MOVE proxy (10% / 15min), not a news-event subscription; feature-discoveries STR-04 pitfall acknowledges this" },
+    { "id": "EX-007", "domain": "ml-probability-models", "item": "trained predictors, LLM oracles, neural-net forecasters for Kelly p-source", "rationale": "feature-discoveries OQ-04 recommended default = cross-platform-mean p_source; explicit ML predictors are out of scope" },
+    { "id": "EX-008", "domain": "tax-compliance-reporting", "item": "1099 export, audit trail for regulators, GAAP P&L formats", "rationale": "paper trading is not a real-money activity; boundary.txt excludes this" },
+    { "id": "EX-009", "domain": "multi-user", "item": "shared portfolios, multi-tenant strategies, collaborative backtests", "rationale": "single-person local app; boundary.txt explicit" },
+    { "id": "EX-010", "domain": "non-binary-markets", "item": "manifold MULTIPLE_CHOICE / PSEUDO_NUMERIC / FREE_RESPONSE markets; market-side values beyond yes/no", "rationale": "feature-discoveries OQ-10 recommended default — v1 binary only. Multi-contract PredictIt markets flattened to one-market-per-contract" },
+    { "id": "EX-011", "domain": "platform-fees", "item": "modeling kalshi taker fees (up to 3%), polymarket gas, predictit per-trade fees in paper-fill cost", "rationale": "feature-discoveries OQ-06 recommended default — fees = 0 in strict paper mode; person has not asked for fee realism" },
+    { "id": "EX-012", "domain": "real-time-streaming", "item": "server-sent events, long-polling to client, live tick push to UI", "rationale": "tech-stack.json data_refresh_policy = poll every 30s; UI polls backend for updates" },
+    { "id": "EX-013", "domain": "theme-switching", "item": "light mode, theme toggles, user color customisation", "rationale": "tech-stack.json deployment.theme = 'dark-only'; design-system.md is dark-native" },
+    { "id": "EX-014", "domain": "social-features", "item": "comments, shared strategy recipes, leaderboards, follow/share", "rationale": "not in stated-intent" },
+    { "id": "EX-015", "domain": "bulk-import", "item": "csv import of positions from external brokerage, rolling over a real Kalshi account history", "rationale": "not in stated-intent; paper-fills originate only from submit-paper-trade or strategy.decide" },
+    { "id": "EX-016", "domain": "live-trading-handoff", "item": "a 'go-live' button that flips a strategy from paper to real money", "rationale": "INV-007 hard ban on real trading endpoints; no code path leads from paper to real" },
+    { "id": "EX-017", "domain": "strategy-marketplace", "item": "downloading strategies from an online registry, strategy signing / code validation", "rationale": "strategies/ folder is filesystem-only; person drops python files they trust" },
+    { "id": "EX-018", "domain": "cross-platform-event-auto-matching", "item": "ML or fuzzy-match AUTO pairing of kalshi/polymarket/manifold markets for arbitrage", "rationale": "feature-discoveries OQ-05 recommended default — v1 manual mapping table only; v2 fuzzy-with-human-confirmation is future scope" },
+    { "id": "EX-019", "domain": "shorting-independently", "item": "a 'sell-to-open' short path that bypasses the BUY-NO convention", "rationale": "feature-discoveries OQ-09 recommended default — sell = close existing paper-position; opening a short ≡ BUY on the opposite market-side" }
+  ],
+  "included_from_open_questions": [
+    { "oq_id": "OQ-01", "resolution": "backtest date-range picker disables dates before min(stored-price-history.timestamp) per selected platform" },
+    { "oq_id": "OQ-02", "resolution": "brier-score forecast = entry price from paper-fill; tooltip documents this on the brier tile" },
+    { "oq_id": "OQ-03", "resolution": "cancelled markets → realised-pnl = 0 (cost refunded); excluded from brier-score N; excluded from win-rate denominator" },
+    { "oq_id": "OQ-04", "resolution": "kelly-sizing strategy-parameter p_source = 'cross-platform-mean' by default" },
+    { "oq_id": "OQ-05", "resolution": "cross-platform-arbitrage uses manual mapping table in v1" },
+    { "oq_id": "OQ-07", "resolution": "strategy-parameters include fade_timeout (60min) and close_buffer (15min) defaults; visible on Strategies screen" },
+    { "oq_id": "OQ-08", "resolution": "market-maker passive fills trigger when real top-of-book CROSSES our quoted price; fill size = min(quote_size, opposing-side top-of-book size)" }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "contract_id": "C-I-CMP-002",
+  "interaction_id": "I-CMP-002",
+  "function": {
+    "name": "handle_i_cmp_002",
+    "module_hint": "frontend.handlers.compare",
+    "inputs": [],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": null,
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": []
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "HTML-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "compare",
+    "success_transition": "compare"
+  }
+}

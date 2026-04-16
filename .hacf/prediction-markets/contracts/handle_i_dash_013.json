@@ -1,0 +1,37 @@
+{
+  "contract_id": "C-I-DASH-013",
+  "interaction_id": "I-DASH-013",
+  "function": {
+    "name": "handle_i_dash_013",
+    "module_hint": "frontend.handlers.dashboard",
+    "inputs": [],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": null,
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": []
+  },
+  "preconditions": [
+    {
+      "ref": "INV-004",
+      "condition": "paper_fill.market_id exists in markets AND paper_fill.source in (strategy_ids \u222a {'manual'})"
+    }
+  ],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "HTML-R-022",
+      "INV-004",
+      "CSC-002"
+    ],
+    "external_rule_refs": [],
+    "source_state": "dashboard",
+    "success_transition": "market-detail"
+  }
+}

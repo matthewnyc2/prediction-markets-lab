@@ -1,0 +1,26 @@
+{
+  "screen": "strategies",
+  "rendering_status": "confirmed",
+  "data_elements": [
+    { "name": "strategy-card-kelly",              "type": "card", "strategy-id": "kelly-sizing",            "parameters": ["kelly-fraction","assigned-capital"] },
+    { "name": "strategy-card-arb",                "type": "card", "strategy-id": "cross-platform-arbitrage","parameters": ["min-edge","assigned-capital"] },
+    { "name": "strategy-card-momentum",           "type": "card", "strategy-id": "closing-momentum",        "parameters": ["window-hours","assigned-capital"] },
+    { "name": "strategy-card-news-fade",          "type": "card", "strategy-id": "news-spike-fade",         "parameters": ["move-threshold-pct","time-window-min","assigned-capital"] },
+    { "name": "strategy-card-market-maker",       "type": "card", "strategy-id": "market-maker",            "parameters": ["spread-cents","assigned-capital"] }
+  ],
+  "card_contents": {
+    "fields": ["strategy-name","one-line-description","on-off-pill","parameters","running-pnl"]
+  },
+  "interactive_elements": [
+    { "name": "strategy-on-off-toggle",  "type": "toggle" },
+    { "name": "parameter-input",         "type": "number-input" },
+    { "name": "capital-input",           "type": "number-input" }
+  ],
+  "navigation_paths": [
+    { "from": "strategies", "to": "paper-trades", "trigger": "click running-pnl", "filter": "source = strategy-id" }
+  ],
+  "conditional_displays": [
+    { "element": "running-pnl",   "condition": "shows '—' when strategy is off or has zero trades" },
+    { "element": "toggle-on",     "condition": "requires assigned-capital > 0 to activate" }
+  ]
+}

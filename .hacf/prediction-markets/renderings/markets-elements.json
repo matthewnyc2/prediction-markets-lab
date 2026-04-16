@@ -1,0 +1,26 @@
+{
+  "screen": "markets",
+  "rendering_status": "confirmed",
+  "data_elements": [
+    { "name": "markets-table", "type": "table", "columns": ["platform-chip","market-title","yes-price","no-price","volume-24h","close-date"] },
+    { "name": "platform-count-pill-kalshi",    "type": "pill", "label": "Kalshi"     },
+    { "name": "platform-count-pill-polymarket","type": "pill", "label": "Polymarket" },
+    { "name": "platform-count-pill-manifold",  "type": "pill", "label": "Manifold"   },
+    { "name": "platform-count-pill-predictit", "type": "pill", "label": "PredictIt"  }
+  ],
+  "interactive_elements": [
+    { "name": "platform-filter-pill",  "type": "toggle",  "values": ["all","kalshi","polymarket","manifold","predictit"] },
+    { "name": "open-only-filter",      "type": "toggle" },
+    { "name": "volume-threshold-filter","type": "toggle", "threshold-value": 10000 },
+    { "name": "search-input",          "type": "text-input",    "placeholder": "search market title" },
+    { "name": "column-sort",           "type": "sortable-column" },
+    { "name": "market-row-link",       "type": "link",  "action": "navigate to market-detail" }
+  ],
+  "navigation_paths": [
+    { "from": "markets", "to": "market-detail", "trigger": "click market row" }
+  ],
+  "conditional_displays": [
+    { "element": "markets-table",     "condition": "displays rows matching active platform + filter combination" },
+    { "element": "empty-state-panel", "condition": "shown when markets-table is empty" }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "contract_id": "C-I-PF-002",
+  "interaction_id": "I-PF-002",
+  "function": {
+    "name": "handle_i_pf_002",
+    "module_hint": "backend.handlers.portfolio",
+    "inputs": [
+      {
+        "name": "strategy_id",
+        "type": "StrategyId"
+      },
+      {
+        "name": "state",
+        "type": "Literal['on','off']"
+      }
+    ],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 8000,
+    "retry_policy": {
+      "max_retries": 2,
+      "backoff": "linear",
+      "base_ms": 300
+    },
+    "concurrency_policy": "cancel-previous",
+    "idempotency_rule": "idempotent-read",
+    "ui_locking_rule": "table-skeleton-during-fetch",
+    "failure_transitions": [
+      {
+        "condition": "http-error",
+        "transition": "portfolio",
+        "ui_effect": "table-error-state-with-retry"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "portfolio",
+        "ui_effect": "table-error-state-with-retry"
+      }
+    ],
+    "side_effects": []
+  },
+  "preconditions": [],
+  "postconditions": [
+    {
+      "ref": "PR-002",
+      "condition": "strategy_state_log row appended with previous + new state"
+    },
+    {
+      "ref": "CSC-001 or CSC-007",
+      "condition": "dashboard active-strategies-panel reflects new state"
+    }
+  ],
+  "references": {
+    "validation_rule_refs": [
+      "QU-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "portfolio",
+    "success_transition": "portfolio"
+  }
+}

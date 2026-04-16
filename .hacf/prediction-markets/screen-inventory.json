@@ -1,0 +1,15 @@
+{
+  "project": "prediction-markets",
+  "source": "hacf-create-proposal.html (approved 2026-04-16)",
+  "screens": [
+    { "screen": "dashboard",       "source": "stated-intent", "elements_file": "renderings/dashboard-elements.json" },
+    { "screen": "markets",         "source": "stated-intent", "elements_file": "renderings/markets-elements.json" },
+    { "screen": "market-detail",   "source": "stated-intent", "elements_file": "renderings/market-detail-elements.json" },
+    { "screen": "strategies",      "source": "stated-intent", "elements_file": "renderings/strategies-elements.json" },
+    { "screen": "paper-trades",    "source": "stated-intent", "elements_file": "renderings/paper-trades-elements.json" },
+    { "screen": "backtest",        "source": "stated-intent", "elements_file": "renderings/backtest-elements.json" },
+    { "screen": "compare",         "source": "stated-intent", "elements_file": "renderings/compare-elements.json" },
+    { "screen": "portfolio",       "source": "stated-intent", "elements_file": "renderings/portfolio-elements.json" },
+    { "screen": "data-ingestion",  "source": "stated-intent", "elements_file": "renderings/data-ingestion-elements.json" }
+  ]
+}

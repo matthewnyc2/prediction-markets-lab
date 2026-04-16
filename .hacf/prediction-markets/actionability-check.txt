@@ -1,0 +1,16 @@
+Actionability check confirmed.
+
+Beginning state:
+No tooling exists to safely test prediction market strategies. To experiment with Kalshi, Polymarket, Manifold, or PredictIt strategies, real money would need to be risked or trades manually simulated in a spreadsheet, with no structured way to measure performance or replay historical markets.
+
+Transformations:
+1. Historical market data from all four platforms is ingested and stored locally
+2. A paper trading engine simulates order execution against that data without touching real funds
+3. Pluggable strategy modules (Kelly sizing, arb scanner, closing momentum, news spike fade, market maker) can be attached and run
+4. A backtester replays strategies against historical markets and produces scored results
+5. A portfolio tracker computes P&L, Brier score, Sharpe ratio, and win rate in real time and historically
+
+End states (observable success conditions):
+- The application can be opened, a strategy toggled on, and paper trades execute against live or historical market data
+- A backtest runs and returns scored results (P&L curve, Sharpe ratio, win rate, Brier score) without any real money changing hands
+- Strategy performance can be compared across platforms and time ranges from a single local dashboard

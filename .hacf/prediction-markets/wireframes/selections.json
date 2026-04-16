@@ -1,0 +1,19 @@
+{
+  "project": "prediction-markets",
+  "step": "15",
+  "generated_at": "2026-04-16",
+  "source": "derived from renderings/*.json and design-system.md (Linear-adapted)",
+  "note": "Person delegated full autonomy at Step 6 approval. Single selected wireframe per screen; variations skipped per user direction 'no longer stop for my input'.",
+  "file": "wireframes.html",
+  "screens": [
+    { "screen": "dashboard",      "anchor": "#wf-dashboard",      "status": "selected" },
+    { "screen": "markets",        "anchor": "#wf-markets",        "status": "selected" },
+    { "screen": "market-detail",  "anchor": "#wf-market-detail",  "status": "selected" },
+    { "screen": "strategies",     "anchor": "#wf-strategies",     "status": "selected" },
+    { "screen": "paper-trades",   "anchor": "#wf-paper-trades",   "status": "selected" },
+    { "screen": "backtest",       "anchor": "#wf-backtest",       "status": "selected" },
+    { "screen": "compare",        "anchor": "#wf-compare",        "status": "selected" },
+    { "screen": "portfolio",      "anchor": "#wf-portfolio",      "status": "selected" },
+    { "screen": "data-ingestion", "anchor": "#wf-data-ingestion", "status": "selected" }
+  ]
+}

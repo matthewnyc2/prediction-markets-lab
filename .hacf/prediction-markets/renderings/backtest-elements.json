@@ -1,0 +1,26 @@
+{
+  "screen": "backtest",
+  "rendering_status": "confirmed",
+  "data_elements": [
+    { "name": "final-equity-tile", "type": "metric", "format": "currency" },
+    { "name": "sharpe-tile",       "type": "metric", "format": "decimal-2" },
+    { "name": "brier-tile",        "type": "metric", "format": "decimal-3" },
+    { "name": "win-rate-tile",     "type": "metric", "format": "percent" },
+    { "name": "equity-curve",      "type": "chart"  }
+  ],
+  "interactive_elements": [
+    { "name": "strategy-picker",       "type": "dropdown", "options": ["kelly-sizing","cross-platform-arbitrage","closing-momentum","news-spike-fade","market-maker"] },
+    { "name": "platform-multiselect",  "type": "multi-toggle", "options": ["kalshi","polymarket","manifold","predictit"] },
+    { "name": "date-range-picker",     "type": "date-range-picker" },
+    { "name": "starting-bankroll",     "type": "number-input", "default": 10000, "units": "usd" },
+    { "name": "run-backtest-button",   "type": "button" },
+    { "name": "save-as-comparison-button", "type": "button" }
+  ],
+  "navigation_paths": [
+    { "from": "backtest", "to": "compare", "trigger": "click save-as-comparison-button" }
+  ],
+  "conditional_displays": [
+    { "element": "results-panel",      "condition": "hidden until run-backtest-button clicked at least once" },
+    { "element": "run-backtest-button","condition": "enabled only when strategy-picker, platform-multiselect (≥1), date-range, and bankroll all valid" }
+  ]
+}

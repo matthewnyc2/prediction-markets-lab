@@ -1,0 +1,35 @@
+{
+  "contract_id": "C-I-PF-008",
+  "interaction_id": "I-PF-008",
+  "function": {
+    "name": "handle_i_pf_008",
+    "module_hint": "frontend.handlers.portfolio",
+    "inputs": [
+      {
+        "name": "nav_target",
+        "type": "ScreenId"
+      }
+    ],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": null,
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": []
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "HTML-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "portfolio",
+    "success_transition": "sidebar-target-screen"
+  }
+}

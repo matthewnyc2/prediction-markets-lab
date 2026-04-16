@@ -1,0 +1,73 @@
+Boundary Declaration — prediction-markets
+Step 13 · Derived from stated-intent.txt + terminal-states.json + tech-stack.json
+Confirmed via HTML proposal (hacf-create-proposal.html, approved 2026-04-16).
+
+---
+
+ABOVE THE BOUNDARY — the system's job (we will build this)
+
+UI layer
+ - Next.js web application rendering the nine canonical screens
+ - Dark-theme visual system per design-system.md
+ - Charts (equity curve, price history, P&L attribution, overlay comparison)
+ - Sidebar navigation with the nine screen targets
+ - Client-side state for filters, selected rows, and drafts
+
+Backend service
+ - FastAPI process exposing REST endpoints for:
+   · markets (list, detail, price history)
+   · orders / paper-fills (submit, ledger, filter)
+   · strategies (list, toggle, parameters, capital)
+   · backtests (configure, run, results)
+   · comparison-runs (add, remove, list)
+   · portfolio (equity, metrics, attribution, export)
+   · adapters (status, sync, last-sync)
+ - Paper trading engine: slippage-model execution, paper-position bookkeeping
+ - Backtest engine: event-driven replay over stored-price-history
+ - Metrics computation: brier-score, sharpe-ratio, sortino-ratio, win-rate, max-drawdown
+ - Five built-in strategies implementing decide + on-fill
+
+Data layer
+ - SQLite (upgrade path Postgres) storing:
+   · markets, price ticks, paper-fills, paper-positions, equity snapshots
+   · strategy configurations and state
+   · backtest configs and results
+ - Alembic migrations
+
+Platform adapters
+ - One Python module per platform (kalshi, polymarket, manifold, predictit)
+ - Read-only calls to each platform's public API
+ - Normalisation into shared schema
+ - Rate-limit respect and retry with backoff
+
+Paper-trade orchestration
+ - Polling loop (30s default) for live price feeds
+ - On-demand sync for historical price data
+ - Strategy decide() invoked per market tick when strategy-state = on
+ - Simulated fills routed through slippage-model
+
+---
+
+BELOW THE BOUNDARY — assumed external (we do NOT build this)
+
+ - Real trading execution. The app never places a real order on any platform.
+ - Authentication / identity. Runs only on the person's local machine; no users, sessions, or roles.
+ - Cloud infrastructure. No deployment beyond localhost.
+ - Data-source reliability. If a platform's public API is down or rate-limits us, the adapter reports error status; recovery is the platform's responsibility, not ours.
+ - News ingestion. The news-spike-fade strategy triggers on price-move magnitude (10% in 15min) as a PROXY for news; no dedicated news API is integrated.
+ - Machine-learning probability models. Strategies operate on explicit rules; no trained predictors are in scope.
+ - Tax reporting, regulatory filings, audit trails for compliance. Not applicable for paper trading.
+ - Multi-user portfolios, shared strategy runs, cloud sync. Single-person local app.
+ - Mobile clients. Web only.
+ - Email / push / SMS notifications. Not in scope.
+ - Platform-specific write operations (deposits, withdrawals, real orders). Explicitly out.
+
+---
+
+BOUNDARY INVARIANTS (must hold by construction)
+
+ B1. No code path in the system shall write to or authenticate with any platform's real-money trading endpoint. Adapters expose READ methods only.
+ B2. All trades are paper-fills. There is no `Order` model that represents a real order.
+ B3. simulated-bankroll, equity, and pnl are usd-denominated internal numbers. They have no external settlement.
+ B4. The system stores only publicly-obtainable market data. No user account data, no platform credentials beyond optional read-only API keys.
+ B5. The boundary does not move once declared. Feature additions post-approval must either fit above the line or be rejected.

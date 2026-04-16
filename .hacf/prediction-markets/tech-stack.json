@@ -1,0 +1,85 @@
+{
+  "project": "prediction-markets",
+  "confirmed_at": "2026-04-16",
+  "confirmation_source": "hacf-create-proposal.html §6, approved by person",
+  "frontend": {
+    "framework": "next.js",
+    "version": "15.x",
+    "language": "typescript",
+    "styling": "tailwindcss",
+    "styling_version": "4.x",
+    "charts": "recharts",
+    "testing": "vitest + playwright",
+    "package_manager": "pnpm",
+    "rationale": "Local dev single-command; built-in api routes share a process with the ui; data-dense trading ui renders fast; tailwind keeps visual consistency across nine screens"
+  },
+  "backend": {
+    "framework": "fastapi",
+    "language": "python",
+    "language_version": "3.12",
+    "async_runtime": "uvicorn",
+    "quant_libraries": ["pandas", "numpy", "scipy"],
+    "data_access": "sqlalchemy",
+    "migrations": "alembic",
+    "testing": "pytest",
+    "dependency_manager": "uv",
+    "rationale": "Python's quant ecosystem (pandas/numpy/scipy) is mandatory for brier/sharpe/sortino/kelly computation and backtest replay; fastapi is async-native with automatic openapi"
+  },
+  "database": {
+    "default": "sqlite",
+    "upgrade_path": "postgres",
+    "orm": "sqlalchemy",
+    "rationale": "Zero-config local-first; upgrade only if data volume demands"
+  },
+  "adapters": {
+    "pattern": "one-module-per-platform",
+    "modules": [
+      { "platform": "kalshi",     "file": "adapters/kalshi.py",     "auth": "api-key-optional" },
+      { "platform": "polymarket", "file": "adapters/polymarket.py", "auth": "none-for-read" },
+      { "platform": "manifold",   "file": "adapters/manifold.py",   "auth": "api-key-optional" },
+      { "platform": "predictit",  "file": "adapters/predictit.py",  "auth": "none-for-read" }
+    ],
+    "shared_schema": "normalised-market, normalised-price-tick"
+  },
+  "strategy_plugin_interface": {
+    "pattern": "python-class-with-decide-and-on-fill",
+    "auto_register_dir": "strategies/",
+    "class_contract": {
+      "methods": [
+        { "name": "decide",  "signature": "decide(self, market_state) -> list[order]" },
+        { "name": "on_fill", "signature": "on_fill(self, paper_fill) -> None" }
+      ],
+      "required_metadata": ["strategy-id", "display-name", "parameters-schema"]
+    },
+    "built_in_strategies": [
+      "kelly-sizing",
+      "cross-platform-arbitrage",
+      "closing-momentum",
+      "news-spike-fade",
+      "market-maker"
+    ]
+  },
+  "deployment": {
+    "mode": "local-only",
+    "auth": "none",
+    "startup": "npm run dev + uvicorn",
+    "export_formats": ["csv", "json"],
+    "theme": "dark-only"
+  },
+  "data_refresh_policy": {
+    "live_poll_interval_seconds": 30,
+    "historical_sync": "on-demand",
+    "websocket_support": "if platform exposes it, else poll"
+  },
+  "slippage_model": {
+    "default": "mid-price-plus-minus-1-cent",
+    "fallback_when_size_crosses_spread": "top-of-book-walk"
+  },
+  "defaults": {
+    "starting_simulated_bankroll_usd": 10000,
+    "closing_momentum_window_hours": 6,
+    "news_fade_trigger_pct": 10,
+    "news_fade_window_minutes": 15,
+    "market_maker_spread_cents": 2
+  }
+}

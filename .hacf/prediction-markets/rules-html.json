@@ -1,0 +1,271 @@
+{
+  "source": "HTML wireframes",
+  "source_file": "wireframes/wireframes.html",
+  "extracted_at": "2026-04-16",
+  "rules": [
+    {
+      "id": "HTML-R-001",
+      "rule": "App shell MUST be a two-column CSS grid with grid-template-columns: 200px 1fr at widths >900px; the 200px left column is the sidebar, the 1fr right column is the main content area.",
+      "rationale": "wireframes.html .app sets grid-template-columns: 200px 1fr; every screen reuses this exact layout.",
+      "screens": ["dashboard","markets","market-detail","strategies","paper-trades","backtest","compare","portfolio","data-ingestion"],
+      "element": "app-shell",
+      "category": "layout"
+    },
+    {
+      "id": "HTML-R-002",
+      "rule": "At viewport <=900px the sidebar MUST collapse to a 64px icon rail (grid-template-columns: 64px 1fr) and the .brand text label, .nav-list span.label text, and .nav-list .badge MUST all be hidden (display:none).",
+      "rationale": "wireframes.html @media (max-width: 900px) sets .app grid-template-columns: 64px 1fr and hides .brand span, .nav-list li span.label, .nav-list li .badge.",
+      "screens": ["dashboard","markets","market-detail","strategies","paper-trades","backtest","compare","portfolio","data-ingestion"],
+      "element": "sidebar@responsive",
+      "category": "responsive"
+    },
+    {
+      "id": "HTML-R-003",
+      "rule": "The sidebar nav MUST render exactly these 9 items in this exact order: Dashboard, Markets, Strategies, Paper Trades, Backtest, Compare, Portfolio, Data ingestion. No additional nav items may be inserted and none may be reordered.",
+      "rationale": "Every <ul class=\"nav-list\"> block in wireframes.html lists these 8 li entries (plus an implicit 'current screen' as active); screen-inventory.json enumerates 9 canonical screens (Dashboard is the first).",
+      "screens": ["dashboard","markets","market-detail","strategies","paper-trades","backtest","compare","portfolio","data-ingestion"],
+      "element": "sidebar.nav-list",
+      "category": "navigation"
+    },
+    {
+      "id": "HTML-R-004",
+      "rule": "The active nav item MUST be marked with class 'active' which sets background var(--bg-elevated) and MUST render a 2px-wide accent-colored vertical bar (::before pseudo-element) along the item's left edge inset 8px from top and bottom.",
+      "rationale": "wireframes.html .nav-list li.active and .nav-list li.active::before define this indicator on every screen's sidebar.",
+      "screens": ["dashboard","markets","market-detail","strategies","paper-trades","backtest","compare","portfolio","data-ingestion"],
+      "element": "sidebar.nav-list li.active",
+      "category": "navigation"
+    },
+    {
+      "id": "HTML-R-005",
+      "rule": "Nav items MAY display a numeric badge (e.g. Markets count 4218, Strategies count 3) rendered as an accent-subtle pill with mono font; badge element uses class 'badge' and MUST be hidden when sidebar is collapsed at <=900px.",
+      "rationale": "wireframes.html nav badges appear on Markets and Strategies only; .nav-list li .badge styling uses var(--accent-subtle) and var(--mono) and is hidden in the @media block.",
+      "screens": ["dashboard","markets","market-detail","strategies","paper-trades","backtest","compare","portfolio","data-ingestion"],
+      "element": "sidebar.nav-list li .badge",
+      "category": "navigation"
+    },
+    {
+      "id": "HTML-R-006",
+      "rule": "The dashboard tile row MUST render 4 metric tiles (Equity, Brier score, Sharpe, Win rate) in a CSS grid with grid-template-columns: repeat(4, 1fr) at widths >900px. Each tile MUST render three stacked elements in order: .k (uppercase overline label), .v (mono value, 20px), .d (mono detail line).",
+      "rationale": "wireframes.html .tiles selector uses repeat(4, 1fr) and each .tile contains .k/.v/.d children; dashboard-elements.json confirms the four metrics.",
+      "screens": ["dashboard","portfolio"],
+      "element": "main .tiles",
+      "category": "layout"
+    },
+    {
+      "id": "HTML-R-007",
+      "rule": "At viewport <=900px, .tiles, .grid-2, and .grid-3 MUST reflow to 2-column layout (grid-template-columns: 1fr 1fr). Do not hide tiles or collapse to single-column at this breakpoint.",
+      "rationale": "wireframes.html @media (max-width: 900px) overrides these three grid containers to two columns.",
+      "screens": ["dashboard","markets","market-detail","strategies","paper-trades","backtest","compare","portfolio","data-ingestion"],
+      "element": ".tiles, .grid-2, .grid-3",
+      "category": "responsive"
+    },
+    {
+      "id": "HTML-R-008",
+      "rule": "Status pills MUST use class 'pill' plus one of four state modifiers: .on (success green), .off (neutral grey), .warn (amber), .danger (red). Each pill MUST render a leading 5x5px colored dot (::before pseudo-element) unless the additional .plain class is applied.",
+      "rationale": "wireframes.html .pill.on/.off/.warn/.danger map to --success/--neutral-pill/--warning/--danger tokens; .pill::before renders the status dot and .pill.plain disables it.",
+      "screens": ["dashboard","markets","paper-trades","data-ingestion","strategies"],
+      "element": ".pill",
+      "category": "state-display"
+    },
+    {
+      "id": "HTML-R-009",
+      "rule": "Platform identity MUST be rendered as a .chip element with a platform-specific left-inset border (box-shadow inset 2px 0 0 0): Kalshi uses accent cyan, Polymarket uses #a78bfa purple, Manifold uses warning amber, PredictIt uses success green. Chip text is uppercase 3-letter abbreviation (KAL, POLY, MAN, PRE).",
+      "rationale": "wireframes.html .chip.kalshi/.polymarket/.manifold/.predictit each declare the inset box-shadow accent; all markets/trades/ingestion rows use the 3-letter abbreviation.",
+      "screens": ["dashboard","markets","market-detail","paper-trades","backtest","compare","data-ingestion"],
+      "element": ".chip",
+      "category": "state-display"
+    },
+    {
+      "id": "HTML-R-010",
+      "rule": "Trade/order side MUST be displayed with a .side-pill element using mono font, uppercase text: .side-pill.yes uses success-subtle background + success text, .side-pill.no uses danger-subtle background + danger text. Labels are 'BUY YES', 'SELL YES', 'BUY NO', or 'SELL NO'.",
+      "rationale": "wireframes.html .side-pill.yes/.no styles and the dashboard/paper-trades/market-detail rows exclusively use these four label variants.",
+      "screens": ["dashboard","market-detail","paper-trades"],
+      "element": ".side-pill",
+      "category": "state-display"
+    },
+    {
+      "id": "HTML-R-011",
+      "rule": "Numeric table columns MUST carry the class 'num' which applies font-family var(--mono), text-align: right, and font-variant-numeric: tabular-nums. Apply to BOTH the <th> and every <td> in that column.",
+      "rationale": "wireframes.html td.num, th.num rule covers YES/NO price, Vol 24h, Close, Qty, Entry, Exit, P&L, Markets, Rows columns across all tables.",
+      "screens": ["markets","market-detail","paper-trades","compare","data-ingestion","dashboard"],
+      "element": "table th.num, table td.num",
+      "category": "typography"
+    },
+    {
+      "id": "HTML-R-012",
+      "rule": "Table headers MUST use font-size 11px, color var(--fg-mute), font-weight 510, text-transform: uppercase, letter-spacing 0.08em, and a single-border-bottom with var(--border). Do not style <th> with regular body text weight or case.",
+      "rationale": "wireframes.html th selector defines this explicit header typography; every screen's data table follows it.",
+      "screens": ["markets","paper-trades","compare","data-ingestion","dashboard","market-detail"],
+      "element": "table th",
+      "category": "typography"
+    },
+    {
+      "id": "HTML-R-013",
+      "rule": "On the Markets screen, every data row MUST carry class 'link' and cursor: pointer so the entire row is clickable to open the market-detail screen. Non-link tables on other screens MUST omit the .link class.",
+      "rationale": "wireframes.html tr.link is applied only inside the #wf-markets table; markets-elements.json navigation_paths defines 'click market row -> market-detail'.",
+      "screens": ["markets"],
+      "element": "table tr.link",
+      "category": "navigation"
+    },
+    {
+      "id": "HTML-R-014",
+      "rule": "All tables MUST apply a subtle row-hover background (var(--bg-overlay)) via tr:hover td. Tables MUST NOT have zebra striping; separators are 1px bottom borders using var(--border-subtle), removed on the last row.",
+      "rationale": "wireframes.html tr:hover td, th/td border-bottom, and tr:last-child td { border-bottom: none } define this uniformly.",
+      "screens": ["dashboard","markets","market-detail","paper-trades","compare","data-ingestion"],
+      "element": "table tr, table td",
+      "category": "layout"
+    },
+    {
+      "id": "HTML-R-015",
+      "rule": "Filter bars MUST be a flex row (.filter-bar) with gap 8px, flex-wrap enabled, and MUST use a `<span style=\"flex:1\"></span>` spacer to push action buttons (Export CSV, Export JSON, Run) to the right edge. Filter toggles use .pill.accent.plain for the selected state and .pill.off for unselected.",
+      "rationale": "wireframes.html .filter-bar selector and the Markets + Paper-Trades filter bars both use the flex:1 spacer pattern and the pill.accent.plain / pill.off toggle convention.",
+      "screens": ["markets","paper-trades"],
+      "element": ".filter-bar",
+      "category": "layout"
+    },
+    {
+      "id": "HTML-R-016",
+      "rule": "The Markets filter bar MUST include these controls in this order: text search input (min-width 240px), 'All' pill, one pill per platform (Kalshi/Polymarket/Manifold/PredictIt) showing current count, right-spacer, 'Open only' pill, 'Volume >$10k' pill.",
+      "rationale": "wireframes.html #wf-markets .filter-bar renders exactly this sequence; markets-elements.json confirms platform-filter-pill, search-input, open-only-filter, and volume-threshold-filter (threshold 10000).",
+      "screens": ["markets"],
+      "element": "#wf-markets .filter-bar",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-017",
+      "rule": "The Paper-Trades filter bar MUST contain status pills (All/Open/Closed), a 1px vertical divider, strategy pills (Kelly/Arb/Momentum/Fade/MM/Manual), a right-spacer, and two ghost-style action buttons (Export CSV, Export JSON).",
+      "rationale": "wireframes.html #wf-paper-trades .filter-bar contains these exact groups; paper-trades-elements.json confirms filter-status, filter-strategy, export-csv, export-json.",
+      "screens": ["paper-trades"],
+      "element": "#wf-paper-trades .filter-bar",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-018",
+      "rule": "Equity/performance curve charts MUST use a line (stroke-width 1.6) plus an area gradient fill (linearGradient top stop-opacity ~0.18-0.22, bottom stop-opacity 0), colored cyan (#7dd3fc) for live equity and green (#34d399) for backtest output. Do not render equity curves as bar charts or as plain lines without the gradient fill.",
+      "rationale": "wireframes.html Dashboard equity-curve uses #gEq (cyan gradient) + cyan polyline; Backtest equity-curve uses #gBt (green gradient) + green polyline; both follow the same pattern.",
+      "screens": ["dashboard","backtest","portfolio"],
+      "element": ".chart-well.tall svg",
+      "category": "chart-presence"
+    },
+    {
+      "id": "HTML-R-019",
+      "rule": "The Compare screen overlay chart MUST render multiple polyline series simultaneously, each in a distinct color drawn from the token set (cyan #7dd3fc, warning #fbbf24, danger #f87171 at minimum). Each row in the comparison table MUST display a 8x8px circle indicator in the row's series color as a legend.",
+      "rationale": "wireframes.html #wf-compare SVG shows three polylines in these three token colors and each comparison-table row prefixes the run-label with an 8x8 bg-colored circle.",
+      "screens": ["compare"],
+      "element": "#wf-compare .chart-well",
+      "category": "chart-presence"
+    },
+    {
+      "id": "HTML-R-020",
+      "rule": "The Portfolio P&L-attribution chart MUST render as a row of vertical stacked bars, one bar per strategy, with height proportional to |contribution|. Bars MUST color-code sign: positive contributions use green gradient (#34d399 -> #059669), negative contributions use red gradient (#f87171 -> #b91c1c), mixed/amber contributions use warning gradient (#fbbf24 -> #d97706).",
+      "rationale": "wireframes.html #wf-portfolio attribution chart renders inline div bars with exactly these three gradient stops; portfolio-elements.json confirms pnl-attribution-bars with bars-per-strategy.",
+      "screens": ["portfolio"],
+      "element": "#wf-portfolio pnl-attribution-bars",
+      "category": "chart-presence"
+    },
+    {
+      "id": "HTML-R-021",
+      "rule": "Chart wells MUST use class 'chart-well' which is var(--bg-elevated) background, 1px border, radius-lg, padding 10px, and MUST have a defined height (default 180px; add .tall modifier for 240px). Never render a chart inside an unsized container.",
+      "rationale": "wireframes.html .chart-well sets height: 180px; .chart-well.tall overrides to 240px; recharts rule FE-R-022 already flags the unsized-parent bug.",
+      "screens": ["dashboard","market-detail","backtest","compare","portfolio"],
+      "element": ".chart-well",
+      "category": "layout"
+    },
+    {
+      "id": "HTML-R-022",
+      "rule": "The Dashboard MUST render, in top-to-bottom order: (1) head with h2 'Portfolio overview' + sub-line, (2) 4-tile metrics row, (3) tall equity curve chart-well, (4) grid-2 with 'Active strategies' table on the left and 'Recent paper trades' table on the right.",
+      "rationale": "wireframes.html #wf-dashboard main section follows exactly this vertical stack; dashboard-elements.json enumerates these 7 data elements.",
+      "screens": ["dashboard"],
+      "element": "#wf-dashboard .main",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-023",
+      "rule": "The Market-Detail screen MUST render a grid-2: left cell contains the 90-day YES price chart (tall chart-well) with an overline caption showing 'current / high / low' values; right cell contains the paper-trade ticket card.inset with BUY-YES and BUY-NO buttons, size input, 'Cost / max loss' readout, and a full-width primary 'Submit paper trade' button.",
+      "rationale": "wireframes.html #wf-market-detail grid-2 block; market-detail-elements.json confirms buy-yes/buy-no, size-input, submit-paper-trade, cost and max-loss computed outputs.",
+      "screens": ["market-detail"],
+      "element": "#wf-market-detail .grid-2",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-024",
+      "rule": "The Strategies screen MUST render a grid-2 of strategy cards (one per registered strategy) plus a final dashed-border 'drop-zone' card instructing users to 'Drop a .py file in strategies/ to register a new plugin'. Card count is 5 strategies + 1 drop zone = 6 cells.",
+      "rationale": "wireframes.html #wf-strategies grid-2 contains 5 .card.inset entries plus a trailing dashed-border card; strategies-elements.json lists five strategy cards (kelly/arb/momentum/news-fade/market-maker).",
+      "screens": ["strategies"],
+      "element": "#wf-strategies .grid-2",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-025",
+      "rule": "Each strategy card MUST contain a card-head row with h3 name + on/off pill, a one-line dim description paragraph (font-size 12px), and a single mono line showing key parameters + 'P&L <value>'. P&L value uses .pos/.neg helper classes; show '—' when strategy is off or has zero trades.",
+      "rationale": "wireframes.html every #wf-strategies .card.inset follows this exact three-part template; strategies-elements.json card_contents lists these same fields.",
+      "screens": ["strategies"],
+      "element": "#wf-strategies .card.inset",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-026",
+      "rule": "The Backtest screen MUST render a grid-2 where the left cell is a configuration card.inset (Strategy dropdown, Platforms chip row, Date range input, Starting bankroll input, primary 'Run backtest' button) and the right cell contains a 2x2 results-tiles grid followed by the equity-curve chart-well.tall and a 'Save as comparison' ghost button.",
+      "rationale": "wireframes.html #wf-backtest grid-2 structure + backtest-elements.json listing strategy-picker, platform-multiselect, date-range-picker, starting-bankroll, run-backtest-button, save-as-comparison-button, 4 tiles, and equity-curve.",
+      "screens": ["backtest"],
+      "element": "#wf-backtest .grid-2",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-027",
+      "rule": "The Data-Ingestion screen MUST render one table row per adapter (Kalshi, Polymarket, Manifold, PredictIt) with columns: Platform (chip + name), Status pill, Last sync (mono dim timestamp), Markets count (num), Rows count (num, allow 'M' suffix for millions), Action button. Status 'healthy' uses .pill.on 'HEALTHY'; 'rate-limited' uses .pill.warn 'RATE LIMITED'.",
+      "rationale": "wireframes.html #wf-data-ingestion table has exactly these 4 rows and 6 columns; data-ingestion-elements.json defines status_values and rows.",
+      "screens": ["data-ingestion"],
+      "element": "#wf-data-ingestion table",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-028",
+      "rule": "The Data-Ingestion screen MUST render a dim footnote paragraph below the adapters table explaining that PredictIt data is recorded live only (no historical API) and that backtests on PredictIt can only cover dates from first live-sync onward.",
+      "rationale": "wireframes.html #wf-data-ingestion ends with a <p class=\"dim\"> containing this exact note; it encodes a real data-availability constraint that users must see.",
+      "screens": ["data-ingestion"],
+      "element": "#wf-data-ingestion .main > p.dim",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-029",
+      "rule": "Action buttons MUST use .btn with exactly one variant class: .btn.primary (accent background, dark text), .btn.ghost (overlay background, bordered), or .btn.danger (danger-subtle background, danger text + border). The Submit paper trade and Run backtest buttons MUST be .btn.primary with width:100% inside their forms.",
+      "rationale": "wireframes.html .btn.primary/.ghost/.danger definitions; submit-paper-trade and Run backtest buttons use style=\"width:100%\".",
+      "screens": ["market-detail","backtest","paper-trades","data-ingestion"],
+      "element": ".btn",
+      "category": "typography"
+    },
+    {
+      "id": "HTML-R-030",
+      "rule": "Screen headers (.screen-header) MUST render a 2-digit zero-padded ordinal (01-09) in accent mono 12px, followed by the screen title in sans 15px 600-weight, and a right-aligned URL pill in mono 11px showing the route (e.g. 'localhost:3000/markets'). The ordinals and titles are canonical: 01 Dashboard, 02 Markets, 03 Market detail, 04 Strategies, 05 Paper Trades, 06 Backtest, 07 Compare, 08 Portfolio, 09 Data ingestion.",
+      "rationale": "wireframes.html every .screen-header block follows exactly this structure with these ordinals and titles; they align 1:1 with screen-inventory.json.",
+      "screens": ["dashboard","markets","market-detail","strategies","paper-trades","backtest","compare","portfolio","data-ingestion"],
+      "element": ".screen-header",
+      "category": "navigation"
+    },
+    {
+      "id": "HTML-R-031",
+      "rule": "Positive monetary/percentage values MUST use class 'pos' (color var(--success)); negative values MUST use class 'neg' (color var(--danger)); inactive/empty values MUST use class 'dim' (color var(--fg-mute)) with a literal em-dash '—' glyph. Do not color positive values blue or negative values orange.",
+      "rationale": "wireframes.html .pos/.neg/.dim utility classes; all P&L cells across dashboard/paper-trades/compare/portfolio use these consistently and show '—' when unavailable.",
+      "screens": ["dashboard","paper-trades","compare","portfolio","strategies","backtest"],
+      "element": ".pos, .neg, .dim",
+      "category": "state-display"
+    },
+    {
+      "id": "HTML-R-032",
+      "rule": "Timestamps in tables MUST be rendered with class 'mono dim' showing HH:MM 24-hour format (e.g. '14:02') for intraday rows, and HH:MM:SS for precise sync timestamps (Data-Ingestion last-sync). Do not use 12-hour AM/PM or localized date strings inside these tables.",
+      "rationale": "wireframes.html dashboard and paper-trades tables all use <td class=\"mono dim\">14:02</td> style; data-ingestion uses HH:MM:SS (14:04:02) for Last sync.",
+      "screens": ["dashboard","market-detail","paper-trades","data-ingestion"],
+      "element": "table td.mono.dim",
+      "category": "typography"
+    },
+    {
+      "id": "HTML-R-033",
+      "rule": "Body root MUST set font-variant-numeric: tabular-nums globally so every digit across the app has fixed width, and the .mono utility + <code> MUST additionally apply the var(--mono) monospace family with tabular-nums. Prices, counts, timestamps, P&L, and durations MUST never render with proportional-width digits.",
+      "rationale": "wireframes.html body selector sets font-variant-numeric: tabular-nums; .mono rule also applies it. This aligns with FE-R-019 (tailwind mono/tabular-nums) but is enforced at the app-shell level here.",
+      "screens": ["dashboard","markets","market-detail","strategies","paper-trades","backtest","compare","portfolio","data-ingestion"],
+      "element": "body, .mono",
+      "category": "typography"
+    }
+  ]
+}

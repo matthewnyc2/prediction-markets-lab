@@ -1,0 +1,3107 @@
+{
+  "project": "prediction-markets",
+  "generated_at": "2026-04-16",
+  "phase": "2",
+  "step": "A",
+  "total_rules": 297,
+  "sources_merged": [
+    "seed",
+    "html",
+    "design",
+    "api",
+    "framework"
+  ],
+  "all_rules": [
+    {
+      "id": "BE-R-001",
+      "technology": "fastapi",
+      "rule": "Pin fastapi@0.115.x, pydantic@2.9.x or 2.10.x, uvicorn[standard]@0.32.x, starlette>=0.40,<1.0, and Python >=3.12,<3.13. Do not mix pydantic v1 into this stack.",
+      "rationale": "FastAPI 0.115 requires pydantic v2 only; the version compatibility table pins these ranges together to avoid breakage.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-002",
+      "technology": "fastapi",
+      "rule": "Write endpoints as `async def` whenever they touch the database, HTTP, or WebSockets so they can use async drivers without blocking the event loop.",
+      "rationale": "Async endpoints integrate with async DB drivers (aiosqlite/asyncpg) as shown in Example 3; sync handlers forfeit concurrency benefits.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-003",
+      "technology": "fastapi",
+      "rule": "Never call blocking/CPU-bound code (pandas, numpy, heavy loops) directly inside `async def`. Wrap with `await asyncio.to_thread(...)` or use a sync `def` endpoint (FastAPI runs those in a threadpool).",
+      "rationale": "Gotcha 3.1 explicitly warns that blocking calls inside async freeze the event loop.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-004",
+      "technology": "fastapi",
+      "rule": "Use pydantic v2 APIs only: `.model_dump()` (not `.dict()`), `.model_validate()` (not `.parse_obj()`), and `model_config = ConfigDict(...)` (not inner `Config` class).",
+      "rationale": "Gotcha 3.2 flags these as the pydantic v2 migration points; v1 calls will raise or silently mis-serialize.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-005",
+      "technology": "fastapi",
+      "rule": "For any response model populated from ORM objects, set `model_config = ConfigDict(from_attributes=True)`. Do not use v1's `orm_mode = True`.",
+      "rationale": "Shown in MarketOut (Example 2); gotcha 3.3 confirms `from_attributes=True` is the v2 replacement.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-006",
+      "technology": "fastapi",
+      "rule": "For PATCH-style partial updates, call `.model_dump(exclude_unset=True)` so unset fields are not written with defaults.",
+      "rationale": "Gotcha 3.4 notes default behavior changed in v2; PATCH semantics require explicit exclude_unset.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-007",
+      "technology": "fastapi",
+      "rule": "Always declare `response_model=` on routes that return ORM objects (e.g. `response_model=list[MarketOut]`). Missing it leaks internal DB fields to the client.",
+      "rationale": "Gotcha 3.7 explicitly warns forgotten response_model leaks DB fields; Examples 3 show the pattern.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-008",
+      "technology": "fastapi",
+      "rule": "Constrain numeric query/body fields with pydantic `Field(ge=..., le=..., gt=...)` instead of runtime checks. E.g. probabilities use `Field(ge=0, le=1)`, bankroll uses `Field(gt=0)`.",
+      "rationale": "Example 2 uses Field constraints on yes_price/no_price/volume_24h/bankroll for automatic validation and OpenAPI docs.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-009",
+      "technology": "fastapi",
+      "rule": "Use `typing.Literal` for fixed enumerations like Platform = Literal[\"kalshi\",\"polymarket\",\"manifold\",\"predictit\"] rather than free-form strings.",
+      "rationale": "Example 2 defines Platform as a Literal so FastAPI validates and documents the allowed values.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-010",
+      "technology": "fastapi",
+      "rule": "Expose the DB session as a dependency via `async def get_session() -> AsyncIterator[AsyncSession]` using `async with SessionLocal() as session: yield session`, then inject with `session: AsyncSession = Depends(get_session)`.",
+      "rationale": "Example 4 shows the canonical DI pattern; gotcha 3.5 warns not to wrap it in @asynccontextmanager.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-011",
+      "technology": "fastapi",
+      "rule": "Do NOT decorate DI yield-based dependencies with `@asynccontextmanager`. FastAPI's `Depends` expects a plain async generator returning an `AsyncIterator`.",
+      "rationale": "Gotcha 3.5 explicitly prohibits wrapping yield-based Depends in asynccontextmanager.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-012",
+      "technology": "fastapi",
+      "rule": "Manage engine lifecycle with FastAPI lifespan: define `@asynccontextmanager async def lifespan(app)` with startup before `yield` and `await engine.dispose()` after. Pass via `FastAPI(..., lifespan=lifespan)`.",
+      "rationale": "Example 1 shows lifespan replacing deprecated on_event startup/shutdown hooks and properly disposing the engine.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-013",
+      "technology": "fastapi",
+      "rule": "Add `CORSMiddleware` before mounting routers and list explicit origins (e.g. `http://localhost:3000`). Adding it after routers means error responses miss CORS headers.",
+      "rationale": "Gotcha 3.6 explicitly calls out middleware ordering; Example 1 shows CORS added before include_router.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-014",
+      "technology": "fastapi",
+      "rule": "Return `HTTPException(status_code=404, detail=\"...\")` on missing resources rather than returning None or 200 with empty body.",
+      "rationale": "Example 3 `get_market` raises 404 via HTTPException when session.get returns None.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-015",
+      "technology": "fastapi",
+      "rule": "For job-start endpoints (backtests etc.) return HTTP 202 Accepted with a `{job_id, status}` body; do not block the request on the work.",
+      "rationale": "Example 5 uses `@router.post(\"\", status_code=202)` and returns job_id/status for the async backtest kickoff.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-016",
+      "technology": "fastapi",
+      "rule": "Use `BackgroundTasks` only for fire-and-forget in-process work tied to a single response. For durable, retryable, or cross-worker queues use Celery / RQ / APScheduler.",
+      "rationale": "Gotcha 3.8 warns BackgroundTasks run in the same worker after response and are not durable.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-017",
+      "technology": "fastapi",
+      "rule": "Prefer WebSockets (`@router.websocket`) for high-frequency live data such as per-market tick streams; use regular REST + polling for low-frequency summaries.",
+      "rationale": "Example 6 defines `/stream/{market_id}` pushing ticks with `await asyncio.sleep(0.25)`, the intended live-tick pattern.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-018",
+      "technology": "fastapi",
+      "rule": "Always handle `WebSocketDisconnect` inside WebSocket endpoints (try/except around the send loop) so disconnects don't raise to the ASGI layer.",
+      "rationale": "Example 6 wraps the stream loop in try/except WebSocketDisconnect.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-019",
+      "technology": "fastapi",
+      "rule": "Register custom domain exceptions (e.g. `AdapterError`) via `@app.exception_handler(...)` returning a `JSONResponse` with a 502 upstream-failure status for adapter errors.",
+      "rationale": "Example 7 shows AdapterError mapped to status 502 with `{platform, detail}` payload.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-020",
+      "technology": "fastapi",
+      "rule": "Test async endpoints with `httpx.AsyncClient(transport=ASGITransport(app=app))`; avoid starlette's sync `TestClient` which has edge cases with lifespan.",
+      "rationale": "Section 4 explicitly recommends httpx AsyncClient + ASGITransport over TestClient.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-021",
+      "technology": "fastapi",
+      "rule": "Do not ship production with `uvicorn --reload`; reload is dev-only.",
+      "rationale": "Gotcha 3.9 warns against reload in production.",
+      "source_file": "fastapi.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-022",
+      "technology": "sqlalchemy",
+      "rule": "Use SQLAlchemy 2.x typed declarative style: subclass `DeclarativeBase` and declare columns as `Mapped[T] = mapped_column(...)`. Do not use the pre-2.0 `Column(...)` / legacy declarative_base pattern.",
+      "rationale": "Section 1 mandates typed Mapped[] style; Example 2 models all use `Mapped[...] = mapped_column(...)`.",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-023",
+      "technology": "sqlalchemy",
+      "rule": "Create the async engine with `create_async_engine(url, pool_pre_ping=True)` and a session factory via `async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)`.",
+      "rationale": "Example 1 shows this exact configuration; gotcha 3.2 explains expire_on_commit=False is recommended for web contexts.",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-024",
+      "technology": "sqlalchemy",
+      "rule": "Use `sqlite+aiosqlite:///...` for local dev. The upgrade path to Postgres is `postgresql+asyncpg://user:pass@host/db` with increased `pool_size=10, max_overflow=20`.",
+      "rationale": "Example 1 documents DATABASE_URL and gotcha 3.8 describes the Postgres upgrade path.",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-025",
+      "technology": "sqlalchemy",
+      "rule": "Never rely on implicit lazy loading in async code. Eager-load relationships with `.options(selectinload(Model.relation))` or `joinedload(...)` in the initial query.",
+      "rationale": "Section 1 and gotcha 3.1 state lazy access after session close raises `MissingGreenlet`; Example 4 shows selectinload usage.",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-026",
+      "technology": "sqlalchemy",
+      "rule": "Do not share an `AsyncSession` across asyncio tasks. Scope one session per request / per task via the Depends(get_session) pattern.",
+      "rationale": "Gotcha 3.5 forbids sharing AsyncSession across tasks.",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-027",
+      "technology": "sqlalchemy",
+      "rule": "For primary-key lookups use `await session.get(Model, pk)`; for unique single-row queries use `.scalar_one_or_none()` rather than `.first()`.",
+      "rationale": "Gotchas 3.6 and 3.7 prefer scalar_one_or_none and session.get for clarity and speed.",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-028",
+      "technology": "sqlalchemy",
+      "rule": "Use the 2.0 unified statement API: `select()/insert()/update()/delete()` passed to `await session.execute(stmt)`; extract rows with `.scalars().all()` or `.scalar_one_or_none()`.",
+      "rationale": "Section 1 and Example 3 use the unified API exclusively (e.g. `select(Market).limit(limit)` then `result.scalars().all()`).",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-029",
+      "technology": "sqlalchemy",
+      "rule": "For bulk insert of high-volume rows (e.g. price ticks), use `insert(Model).values([...])` with a single `await session.execute(stmt)` + one commit, not a loop of `session.add`.",
+      "rationale": "Example 5 demonstrates the bulk-insert performance path for tick ingestion.",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-030",
+      "technology": "sqlalchemy",
+      "rule": "For multi-statement transactions use `async with session.begin():` \u2014 it auto-commits on success and rolls back on exception. Do not add a manual commit inside the block.",
+      "rationale": "Example 6 shows transaction scope via session.begin() with comment 'No explicit commit needed'.",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-031",
+      "technology": "sqlalchemy",
+      "rule": "Assume SQLite + aiosqlite serializes writes; do not design for concurrent write throughput on SQLite. Plan multi-writer workloads for the Postgres upgrade path.",
+      "rationale": "Gotcha 3.3 notes aiosqlite serialises writes with no real write concurrency.",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-032",
+      "technology": "sqlalchemy",
+      "rule": "Declare cascade on owning relationships where deletes should propagate (e.g. `relationship(back_populates=..., cascade=\"all, delete-orphan\")`) and pair with `ForeignKey(..., ondelete=\"CASCADE\")` on the child.",
+      "rationale": "Example 2 Market.ticks uses cascade='all, delete-orphan' with PriceTick.market_id FK ondelete='CASCADE'.",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-033",
+      "technology": "sqlalchemy",
+      "rule": "Add composite indexes via `__table_args__ = (Index(\"ix_...\", col_a, col_b),)` for frequent range queries (e.g. market_id + ts for tick lookups).",
+      "rationale": "Example 2 PriceTick defines Index('ix_market_ts', 'market_id', 'ts') for the tick-by-market-time access pattern.",
+      "source_file": "sqlalchemy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-034",
+      "technology": "alembic",
+      "rule": "Pin `alembic@1.13.x` paired with SQLAlchemy 2.x; older alembic versions do not support the Mapped[] typed metadata correctly.",
+      "rationale": "Section 1 and the compatibility table pin alembic ^1.13 as SQLAlchemy 2.x compatible.",
+      "source_file": "alembic.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-035",
+      "technology": "alembic",
+      "rule": "For async SQLAlchemy, `env.py` MUST use `async_engine_from_config(..., poolclass=pool.NullPool)` with `connection.run_sync(do_run_migrations)` inside `asyncio.run(run_migrations_online())`. The plain sync template will not work with aiosqlite/asyncpg.",
+      "rationale": "Section 2 env.py template and gotcha 4.5 explicitly require the async pattern.",
+      "source_file": "alembic.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-036",
+      "technology": "alembic",
+      "rule": "Configure `context.configure(..., render_as_batch=True)` in `do_run_migrations` whenever the target DB is SQLite; without it column drops/alters fail.",
+      "rationale": "Gotcha 4.1 and the env.py comment state render_as_batch is essential for SQLite table-rewrite operations.",
+      "source_file": "alembic.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-037",
+      "technology": "alembic",
+      "rule": "Wrap any SQLite ALTER/DROP column operation in `with op.batch_alter_table(\"t\") as batch:` \u2014 SQLite cannot ALTER COLUMN natively.",
+      "rationale": "Example 2 and gotcha 4.1 show batch_alter_table as the required pattern.",
+      "source_file": "alembic.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-038",
+      "technology": "alembic",
+      "rule": "Keep data migrations separate in logic: add column nullable, run `op.get_bind().execute(sa.text(...))` to backfill, then use batch_alter_table to set NOT NULL and add constraints.",
+      "rationale": "Example 3 demonstrates the add-backfill-tighten pattern for adding a non-null `slug`.",
+      "source_file": "alembic.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-039",
+      "technology": "alembic",
+      "rule": "Set `target_metadata = Base.metadata` in env.py AND import the module(s) declaring every model before autogenerate runs, or autogenerate will silently miss tables.",
+      "rationale": "Gotcha 4.4 warns the models module must be imported for autogenerate to see all tables.",
+      "source_file": "alembic.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-040",
+      "technology": "alembic",
+      "rule": "Always review autogenerated migrations before committing \u2014 autogenerate misses CheckConstraint, server-default mismatches, and enum changes.",
+      "rationale": "Gotcha 4.2 enumerates what autogenerate misses and mandates manual review.",
+      "source_file": "alembic.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-041",
+      "technology": "alembic",
+      "rule": "Never edit a migration that has been applied to a shared database; create a new forward migration instead.",
+      "rationale": "Gotcha 4.3 explicitly forbids mutating applied migrations.",
+      "source_file": "alembic.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-042",
+      "technology": "alembic",
+      "rule": "Run `alembic upgrade head` in CI before the test suite so tests execute against current schema.",
+      "rationale": "Gotcha 4.7 mandates CI runs upgrade head before tests.",
+      "source_file": "alembic.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-043",
+      "technology": "alembic",
+      "rule": "When migrating SQLite to Postgres, dump data, run fresh migrations on Postgres, then restore via SQL. Do not rely on Alembic to migrate data across dialects.",
+      "rationale": "Gotcha 4.6 states Alembic does not migrate data across dialects.",
+      "source_file": "alembic.md",
+      "_source": "seed"
+    },
+    {
+      "id": "BE-R-044",
+      "technology": "alembic",
+      "rule": "Use `alembic upgrade head --sql > upgrade.sql` to preview DDL before applying to production databases.",
+      "rationale": "Example 4 CLI recipe shows offline SQL generation for pre-deployment review.",
+      "source_file": "alembic.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-001",
+      "technology": "nextjs",
+      "rule": "Use the App Router (app/ directory) exclusively; do not create a pages/ directory. Route segments must be organized as app/<route>/page.tsx with layout.tsx, loading.tsx, error.tsx, and not-found.tsx conventions.",
+      "rationale": "Next.js 15 defaults to App Router and the project tech-kb standardizes on it. Mixing Pages Router creates two routing models and duplicate data-fetching paradigms.",
+      "source_file": "nextjs.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-002",
+      "technology": "nextjs",
+      "rule": "Components are Server Components by default. Only add the \"use client\" directive when the component needs browser APIs, event handlers, React state/effects, or next/navigation client hooks. Push the client boundary as deep in the tree as possible.",
+      "rationale": "tech-kb: '\"use client\" is viral downward for bundling but components imported above can still be Server Components \u2014 keep the boundary as deep as possible.' Preserves RSC bundle savings.",
+      "source_file": "nextjs.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-003",
+      "technology": "nextjs",
+      "rule": "In route segments, type params and searchParams as Promise<...> and await them. Do not treat them as synchronous objects. Same rule for cookies(), headers(), and draftMode().",
+      "rationale": "Breaking change in Next 15: these request APIs are now async. tech-kb Example 4 shows the required Promise-typed PageProps pattern.",
+      "source_file": "nextjs.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-004",
+      "technology": "nextjs",
+      "rule": "Every fetch() call must explicitly declare its caching behavior: either next: { revalidate: n } for ISR, cache: 'force-cache' for static, or cache: 'no-store' for dynamic. Do not rely on implicit caching.",
+      "rationale": "Next 15 removed default fetch caching. tech-kb gotcha: '`fetch` is uncached by default in 15. Explicitly opt in.' Explicit intent avoids accidental staleness or per-request over-fetching.",
+      "source_file": "nextjs.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-005",
+      "technology": "nextjs",
+      "rule": "Route handlers (app/**/route.ts) that read headers, cookies, or request-specific search params must declare `export const dynamic = 'force-dynamic'`. Handlers that proxy user-scoped backend calls must never be statically cached.",
+      "rationale": "tech-kb: 'Route handlers need dynamic = \"force-dynamic\" when you read headers or use query params that change per request; otherwise they get cached statically at build.'",
+      "source_file": "nextjs.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-006",
+      "technology": "nextjs",
+      "rule": "Server Actions must live in files marked with \"use server\" at the top, must validate all FormData input before use, and must call revalidatePath / revalidateTag for any affected route after mutation.",
+      "rationale": "tech-kb Example 5 demonstrates the pattern. Without revalidation, downstream Server Components show stale data; without validation, untrusted FormData reaches the backend.",
+      "source_file": "nextjs.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-007",
+      "technology": "nextjs",
+      "rule": "Set reactStrictMode: true and experimental.typedRoutes: true in next.config.ts. Backend proxy paths must be declared via rewrites() (e.g. /api/backend/:path* -> 127.0.0.1:8000/api/:path*), not hardcoded in client code.",
+      "rationale": "tech-kb Example 6 shows this exact config. Typed routes catches dead links at compile time; centralized rewrite keeps the backend origin configurable.",
+      "source_file": "nextjs.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-008",
+      "technology": "nextjs",
+      "rule": "Data-fetching page components should wrap their rendering children in <Suspense fallback={...}> so streaming works. Prefer passing fetched data into a presentational child over fetching inside a client child.",
+      "rationale": "tech-kb Example 1 (MarketsPage) wraps MarketTable in Suspense; this enables React 19 streaming SSR and preserves the server/client split.",
+      "source_file": "nextjs.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-009",
+      "technology": "typescript",
+      "rule": "tsconfig.json must have strict: true, noUncheckedIndexedAccess: true, noImplicitOverride: true, exactOptionalPropertyTypes: true, noFallthroughCasesInSwitch: true, and isolatedModules: true. allowJs must be false.",
+      "rationale": "tech-kb section 2 recommends these exact flags for frontend tsconfig. noUncheckedIndexedAccess and exactOptionalPropertyTypes catch real bugs on market/tick data arrays and optional fields.",
+      "source_file": "typescript.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-010",
+      "technology": "typescript",
+      "rule": "Do not use `any`. Use `unknown` for untrusted inputs and narrow via type guards, zod parsing, or discriminated-union switches. Exhaustive switches must end with `const _: never = x` default for compile-time exhaustiveness.",
+      "rationale": "tech-kb gotcha: 'Avoid any; prefer unknown then narrow.' Example 1 shows the `never` exhaustiveness pattern for Order state unions.",
+      "source_file": "typescript.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-011",
+      "technology": "typescript",
+      "rule": "All data crossing the network boundary (responses from FastAPI, Server Action inputs, route handler bodies) must be validated with a zod schema via Schema.parse() or Schema.safeParse(). Derive TypeScript types with z.infer<typeof Schema>.",
+      "rationale": "tech-kb Example 2 (MarketSchema) pairs zod runtime validation with z.infer so the type and runtime shape cannot drift. Without this, backend schema changes silently corrupt the UI.",
+      "source_file": "typescript.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-012",
+      "technology": "typescript",
+      "rule": "Use `as const satisfies T` for constant object literals (registries, config maps). Do not use `as T` casts \u2014 they widen and hide errors. Reserved for cases where `satisfies` genuinely cannot express the intent.",
+      "rationale": "tech-kb gotcha: 'as const satisfies T is better than as T \u2014 satisfies does not widen literals.' Example 3 shows the STRATEGIES registry pattern used to derive StrategyId = keyof typeof STRATEGIES.",
+      "source_file": "typescript.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-013",
+      "technology": "typescript",
+      "rule": "Pin zod to ^3.23.x. Do not mix zod v3 and v4 in the same project. @types/react must be pinned to ^19 to match React 19 event types.",
+      "rationale": "tech-kb gotchas: 'Don't mix zod versions \u2014 v4 has breaking API changes' and 'In React 19, event types from @types/react@19 differ subtly from 18 \u2014 pin @types/react@^19.'",
+      "source_file": "typescript.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-014",
+      "technology": "typescript",
+      "rule": "Prefer Result<T,E> or ok/err discriminated unions over throwing for expected failures at I/O boundaries (fetch, parse). Reserve thrown exceptions for genuinely unexpected conditions.",
+      "rationale": "tech-kb Example 4 defines Result<T,E> with safeFetch \u2014 makes error paths explicit in the type system and forces call sites to handle them.",
+      "source_file": "typescript.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-015",
+      "technology": "tailwind",
+      "rule": "Use Tailwind CSS v4 CSS-first config. Do not create tailwind.config.js or tailwind.config.ts. Theme tokens live in an @theme { ... } block inside app/globals.css. CSS entry must be `@import \"tailwindcss\";` \u2014 never the old @tailwind base/components/utilities triad.",
+      "rationale": "tech-kb section 1 mandates CSS-first config; gotcha: 'No more content: [] array \u2014 delete the old config file when upgrading from v3.'",
+      "source_file": "tailwind.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-016",
+      "technology": "tailwind",
+      "rule": "Because the deployment theme is dark-only, force dark mode with `@variant dark (&:where(:root, :root *));` in globals.css and set color-scheme: dark on :root. Do not ship a light-mode toggle or rely on prefers-color-scheme.",
+      "rationale": "tech-kb section 2 example shows the exact @variant directive. Comment: 'Force dark mode always \u2014 deployment.theme = \"dark-only\"'.",
+      "source_file": "tailwind.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-017",
+      "technology": "tailwind",
+      "rule": "All colors, spacing, radii, and fonts must be sourced from the @theme tokens (--color-yes, --color-no, --color-accent, --color-bg, --color-surface, --color-text, --spacing-gutter, --radius-card, etc.) defined in globals.css. Do not hardcode hex colors in className strings; prefer theme-named utilities (text-yes, bg-surface) or var(--color-*).",
+      "rationale": "tech-kb gotcha: 'Arbitrary values bg-[#123] still work; prefer theme tokens for consistency.' Shared palette is required for chart components to visually match UI.",
+      "source_file": "tailwind.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-018",
+      "technology": "tailwind",
+      "rule": "For shared styles, use the @utility directive (e.g. @utility live-dot) rather than @apply in component CSS. Use oklch()/lab() color functions over hex for new token additions.",
+      "rationale": "tech-kb: '@apply still works but is discouraged in v4 for shared styles \u2014 use @utility instead' and 'Colors in v4 accept oklch()/lab() \u2014 prefer them over hex for perceptually uniform palettes.'",
+      "source_file": "tailwind.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-019",
+      "technology": "tailwind",
+      "rule": "Numeric content (prices in cents, volumes, PnL, timestamps) must render with font-mono or tabular-nums so digits align and do not jitter on updates. Pair with right-aligned text for columnar data.",
+      "rationale": "tech-kb Example 3 table row uses font-mono text-right for pnl; Example 1 uses font-mono for YES/NO prices. Prediction-market UIs update in place and non-tabular digits shift visibly.",
+      "source_file": "tailwind.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-020",
+      "technology": "tailwind",
+      "rule": "Do not install tailwindcss@3 alongside v4 plugins. PostCSS plugin is @tailwindcss/postcss (separate package in v4). Do not add autoprefixer \u2014 Lightning CSS handles it.",
+      "rationale": "tech-kb gotcha + version table: 'autoprefixer NOT NEEDED in v4 \u2014 Lightning CSS handles it' and 'Don't install tailwindcss@3 and v4 plugins side-by-side.'",
+      "source_file": "tailwind.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-021",
+      "technology": "recharts",
+      "rule": "Every file that renders a Recharts chart must begin with \"use client\". Chart components must never be imported directly into Server Components; wrap them in a thin client component.",
+      "rationale": "tech-kb gotcha: 'Must be Client Component \u2014 add \"use client\". Recharts uses browser SVG APIs.' Section 4: 'Route chart components through \"use client\" wrappers; keep page shells Server Components.'",
+      "source_file": "recharts.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-022",
+      "technology": "recharts",
+      "rule": "Wrap charts in <ResponsiveContainer width=\"100%\" height={N}> with an explicit height (or place inside a parent with a defined height). Never use ResponsiveContainer inside an unsized flex/grid cell.",
+      "rationale": "tech-kb gotcha: 'ResponsiveContainer needs a parent with a defined height (or explicit height prop). A common bug is \"chart doesn't render\" \u2014 check parent has height.'",
+      "source_file": "recharts.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-023",
+      "technology": "recharts",
+      "rule": "For time-series axes use type=\"number\", scale=\"time\", numeric Unix-ms timestamps in dataKey, and a tickFormatter that calls new Date(v).toLocale...(). Do not use string timestamps as x values.",
+      "rationale": "tech-kb gotcha: 'For time axes, use type=\"number\" + scale=\"time\" + numeric Unix-ms ts. Strings work but sort alphabetically.' Example 1 is the reference implementation.",
+      "source_file": "recharts.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-024",
+      "technology": "recharts",
+      "rule": "Set isAnimationActive={false} on Line/Area/Bar for any chart that updates on live data (polled every 30s per live_poll_interval_seconds). Set dot={false} on Line charts with more than ~100 points.",
+      "rationale": "tech-kb gotchas: 'isAnimationActive={false} for real-time data to avoid animation stutter on each update' and 'dot={false} for lines with >100 points \u2014 per-point dots tank rendering.'",
+      "source_file": "recharts.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-025",
+      "technology": "recharts",
+      "rule": "Chart colors must be sourced from a shared chartTheme.ts object whose values mirror the Tailwind @theme tokens (--color-yes, --color-no, --color-accent, --color-border, --color-text-muted). Do not hardcode hex strings in chart props.",
+      "rationale": "tech-kb section 4: 'Share a chartTheme.ts object with colors matching Tailwind tokens to avoid hard-coding hex strings.' Keeps palette in one source of truth.",
+      "source_file": "recharts.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-026",
+      "technology": "recharts",
+      "rule": "Tooltip styling must be set via the contentStyle inline prop, not via className. Tooltip labelFormatter / formatter callbacks must return the same unit the YAxis displays (e.g. cents with \u00a2 suffix for prices).",
+      "rationale": "tech-kb gotcha: 'Tooltip contentStyle must be inline; class-based styling is unreliable.' Example 1 shows the formatter returning `${(v * 100).toFixed(2)}\u00a2` to match the YAxis tickFormatter.",
+      "source_file": "recharts.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-027",
+      "technology": "recharts",
+      "rule": "Pin recharts to ^2.13.x. Do not upgrade to recharts@3.x. For live-updating data feeds use SWR or react-query with refetchInterval: 30_000 (matches live_poll_interval_seconds) \u2014 do not re-implement polling with raw setInterval inside chart components.",
+      "rationale": "tech-kb gotcha: 'recharts@3.x is available but has breaking changes \u2014 stick to 2.13.x for stability.' Section 4 specifies the 30s poll interval aligned with data_refresh_policy.",
+      "source_file": "recharts.md",
+      "_source": "seed"
+    },
+    {
+      "id": "FE-R-028",
+      "technology": "recharts",
+      "rule": "When multiple charts share an x-axis (e.g. price + volume for the same market), give them the same syncId so hover crosshairs align. Use <ReferenceLine> / <ReferenceArea> for event annotations (news spikes, resolution times) rather than a separate chart.",
+      "rationale": "tech-kb Example 4 demonstrates syncId for linked price/volume charts; Example 6 shows ReferenceArea+ReferenceLine for news annotations.",
+      "source_file": "recharts.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-001",
+      "rule": "Price series MUST be represented as pandas.Series indexed by DatetimeIndex constructed with utc=True.",
+      "rationale": "Mixing naive and tz-aware datetimes breaks joins/resample; UTC is the project canonical timezone.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-002",
+      "rule": "Prediction market prices MUST be stored as decimal probabilities in [0, 1] (yes/no columns), not percentages.",
+      "rationale": "Brier score and Kelly formulas assume p in [0,1]; downstream resampling (ohlc) and forecasts expect this scale.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-003",
+      "rule": "Simple returns MUST use pandas.Series.pct_change(); log returns MUST use np.log(prices / prices.shift(1)).dropna(). Do not substitute one for the other.",
+      "rationale": "pct_change yields simple returns; log returns are required for additive compounding across periods.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-004",
+      "rule": "Sharpe ratio MUST annualise using sqrt(periods_per_year) * mean(excess) / std(excess, ddof=1), where excess = returns - rf/periods_per_year.",
+      "rationale": "Canonical annualised Sharpe formula per Example 2; ddof=1 matches sample std (Excel STDEV) finance convention.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-005",
+      "rule": "Sharpe implementations MUST guard against sigma == 0 or np.isnan(sigma) by returning 0.0 instead of dividing.",
+      "rationale": "Zero-volatility and all-NaN windows otherwise produce inf/NaN, poisoning downstream aggregation.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-006",
+      "rule": "Sortino ratio MUST define downside deviation as sqrt(mean(excess[excess < 0] ** 2)), NOT the std of negative returns.",
+      "rationale": "Example 3 defines dd as RMS of negative excess returns; using std(negatives) silently changes semantics.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-007",
+      "rule": "Sortino implementations MUST return 0.0 when downside deviation is 0 or NaN.",
+      "rationale": "Periods with no losses otherwise produce inf; return 0.0 keeps ratios comparable and aggregable.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-008",
+      "rule": "Max drawdown MUST be computed as (equity / equity.cummax()) - 1.0, with trough = dd.idxmin() and peak = equity.loc[:trough].idxmax(). Returns MUST be (float(dd.min()), peak, trough).",
+      "rationale": "Example 4 fixes the canonical algorithm; alternative peak-detection orderings silently produce wrong peak dates.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-009",
+      "rule": "Brier score for binary outcomes MUST be mean((forecasts - outcomes) ** 2) where forecasts in [0,1] and outcomes in {0,1}.",
+      "rationale": "Standard Brier definition per Example 5; applies to YES-probability forecasts only.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-010",
+      "rule": "Brier Skill Score MUST use the realised outcome mean as climatology when climatology is None, and MUST return 0.0 when the reference Brier is 0.",
+      "rationale": "Example 5 uses outcomes.mean() as default climatology; zero-reference guard prevents division by zero.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-011",
+      "rule": "Kelly fraction for binary payoff MUST be f = (b * p_win - q) / b where q = 1 - p_win and b = net odds, and MUST be clamped to [0.0, 1.0].",
+      "rationale": "Example 6 formula; clamping enforces full-Kelly cap and prevents negative (short) or >100% bankroll exposure.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-012",
+      "rule": "Kelly implementations MUST return 0.0 when b <= 0 and MUST wrap divisions in np.errstate(divide='ignore', invalid='ignore') for vectorised variants.",
+      "rationale": "Example 6 guards against non-positive odds and suppresses NumPy warnings during masked vectorisation.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-013",
+      "rule": "Rolling z-score MUST divide by sd.replace(0, np.nan) (ddof=1), never by raw std, to avoid silent inf values.",
+      "rationale": "Example 7 explicitly replaces zero std with NaN so downstream masks can drop degenerate windows.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-014",
+      "rule": "Hot-path metric computations MUST be vectorised with .to_numpy() + numpy ops; pure-Python loops and DataFrame.iterrows() are BANNED for any series exceeding 1000 rows.",
+      "rationale": "iterrows is orders of magnitude slower and allocates per-row Series objects; project pitfall section mandates vectorisation.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-015",
+      "rule": "Group-aggregations MUST prefer groupby(...).agg({...}) over groupby(...).apply(lambda ...).",
+      "rationale": "Performance tips section: .agg dispatches to C paths while .apply boxes each group through Python.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-016",
+      "rule": "Metric functions MUST be pure: inputs are pandas/numpy objects, outputs are floats/tuples, NO file, network, or database I/O inside the function body.",
+      "rationale": "All Example 2-6 functions take Series and return scalars; keeps metrics unit-testable and deterministic.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-017",
+      "rule": "Inputs to scipy.stats functions MUST be .dropna()'d before the call; do NOT rely on scipy to skip NaN.",
+      "rationale": "Gotcha section: scipy.stats returns NaN if ANY input is NaN, silently invalidating t-tests and p-values.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-018",
+      "rule": "For mixed/object dtype Series use pd.isna; reserve np.isnan for strictly numeric float arrays.",
+      "rationale": "Gotcha section: np.isnan raises on object dtype; pd.isna is the safe default for heterogeneous columns.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-019",
+      "rule": "Masked writes MUST use df.loc[mask, col] = value; chained assignment df[col][mask] = value is BANNED.",
+      "rationale": "Gotcha section: chained assignment silently fails with SettingWithCopyWarning, producing non-persistent writes.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-020",
+      "rule": "Default risk-free rate for Sharpe/Sortino is rf = 0.0; default periods_per_year = 252. Any override MUST be passed explicitly, and for 24/7 prediction markets callers SHOULD use a market-appropriate factor (e.g., 365 for daily, 8760 for hourly, 525600 for 1-min bars) rather than 252.",
+      "rationale": "Example 2-3 pin defaults to 252 (equities trading-day convention); prediction markets trade continuously so annualisation factor must reflect bar cadence.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-021",
+      "rule": ".rolling(window) outputs MUST be handled either via .dropna() or min_periods=1; consumers MUST NOT assume the first (window-1) rows are valid.",
+      "rationale": "Gotcha section: rolling emits NaN during warm-up; ignoring this contaminates downstream means and z-scores.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-022",
+      "rule": "Tick dataframes MUST be set_index('ts').sort_index() after pd.to_datetime(..., utc=True) before any resample or join.",
+      "rationale": "Example 1 mandates this pipeline; unsorted DatetimeIndex causes incorrect resample buckets and resample-order bugs.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-023",
+      "rule": "Equity curves MUST be built as starting_bankroll + fills.sort_values('ts')['pnl'].cumsum(), indexed by fill timestamp and named 'equity'.",
+      "rationale": "Example 10 canonical construction; unsorted fills produce non-monotonic equity and invalid drawdown calculations.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-024",
+      "rule": "News-spike detection MUST use prices.pct_change(window).abs() >= trigger_pct with project defaults trigger_pct=0.10 and window_min=15.",
+      "rationale": "Example 8 pins default thresholds; diverging values across modules breaks alert reproducibility.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "QU-R-025",
+      "rule": "Version pins: pandas ^2.2, numpy ^1.26 (pin <2.0 unless all transitive deps confirmed NumPy-2-compatible), scipy ^1.14, python 3.12. Do NOT use np.cast or np.float_ (removed in NumPy 2.x); use np.float64.",
+      "rationale": "Version compatibility matrix + gotcha: NumPy 2.x is ABI-breaking and removed deprecated aliases; silent imports fail at runtime.",
+      "source_file": "pandas-numpy-scipy.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-001",
+      "rule": "Pin testing tooling to the declared versions (pytest 8.3.x, pytest-asyncio 0.24.x, pytest-cov 5.0.x, httpx 0.27.x, Python 3.12; vitest 2.1.x, @testing-library/react 16.x, @playwright/test 1.48.x, Node 20 LTS) and do not upgrade ad hoc.",
+      "rationale": "Tech KB declares explicit version pins so async, React 19, and Playwright browser binaries stay mutually compatible; drift causes subtle fixture or JSX breakage.",
+      "source_file": "pytest.md, vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-002",
+      "rule": "Set asyncio_mode = \"auto\" in pyproject.toml [tool.pytest.ini_options] and use @pytest_asyncio.fixture (not @pytest.fixture) for any async fixture.",
+      "rationale": "asyncio_mode=auto removes the need to mark every async test, but fixtures still require the asyncio-aware decorator; mixing them silently skips setup.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-003",
+      "rule": "Always configure pytest with addopts including -ra --strict-markers --strict-config and --cov=backend --cov-report=term-missing, and register every custom marker in pyproject.toml.",
+      "rationale": "--strict-markers prevents typo markers from silently being ignored; --strict-config surfaces misconfiguration; coverage output on every run keeps gaps visible.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-004",
+      "rule": "Use @pytest.mark.parametrize to cover boundary cases explicitly (e.g., Kelly fraction at p=0.5, p<0.5 clamped to 0, p>0.5 positive) and assign readable ids via pytest.param(..., id=\"...\").",
+      "rationale": "Parametrize with named ids surfaces exactly which boundary failed; the KB's kelly_fraction and sharpe examples show boundary + alternating cases are mandatory.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-005",
+      "rule": "Compare floats with pytest.approx(..., rel=..., abs=...), never with ==.",
+      "rationale": "Direct float equality is listed as a gotcha that \"will burn you\"; approx pins tolerance explicitly.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-006",
+      "rule": "Keep DB and HTTP fixtures function-scoped by default; only promote to session scope (like the in-memory async engine) when state must persist across the whole run, and always teardown with yield.",
+      "rationale": "Function-scope is the pytest default and prevents cross-test state leakage; session scope is reserved for expensive objects like the SQLAlchemy async engine.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-007",
+      "rule": "Integration tests against FastAPI must use httpx.AsyncClient with ASGITransport(app=app) and base_url=\"http://test\" inside an async context manager, not a live network server.",
+      "rationale": "ASGITransport runs the app in-process for deterministic, fast integration tests without binding a port; the KB uses this pattern for /api/markets.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-008",
+      "rule": "Mock outbound adapter HTTP calls (Kalshi, Polymarket, etc.) with respx_mock inside async tests rather than hitting real APIs.",
+      "rationale": "respx mocks httpx at the transport layer so adapter unit/integration tests stay deterministic and offline-safe; the KB shows the polymarket fetch_market example.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-009",
+      "rule": "Provide factory fixtures (e.g., make_market) that accept **overrides over sensible defaults; do not hand-construct model objects in each test.",
+      "rationale": "Factories centralize defaults (id, platform, prices, closes_at) so tests stay focused on the variable under test and resist schema churn.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-010",
+      "rule": "Freeze time with @freeze_time (freezegun / pytest-freezegun) for any code that reads the current time, and seed randomness to prevent flaky runs.",
+      "rationale": "The KB's news_spike_cutoff test demonstrates deterministic time; freezing time and seeding RNG are the documented flakiness-prevention mechanisms.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-011",
+      "rule": "Use monkeypatch.setenv for env var mutation inside tests; never mutate os.environ directly.",
+      "rationale": "monkeypatch auto-reverts at test teardown; direct os.environ edits leak state across tests.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-012",
+      "rule": "Tag slow or external-dependency tests with @pytest.mark.integration or @pytest.mark.slow so the default fast run is `pytest -m \"not integration and not slow\"`.",
+      "rationale": "Marker-driven selection keeps CI fast tiers clean; the KB registers unit/integration/slow markers for exactly this purpose.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-013",
+      "rule": "Enforce a minimum coverage gate of --cov-fail-under=80 in CI, and ensure critical paths (paper-fill insertion, strategy decide loop, metric computation, backtest replay) each have dedicated tests.",
+      "rationale": "The KB documents `pytest --cov=backend --cov-fail-under=80` as the canonical gate; these domains are the load-bearing logic of the system.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-014",
+      "rule": "Place shared fixtures in conftest.py at the appropriate directory level; remember the closest conftest.py wins and can shadow higher-scope fixtures.",
+      "rationale": "The KB calls out conftest shadowing as a gotcha; placing fixtures thoughtfully avoids accidental overrides.",
+      "source_file": "pytest.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-015",
+      "rule": "Configure Vitest with environment=\"jsdom\", globals=true, setupFiles=[\"./vitest.setup.ts\"], include=[\"**/*.{test,spec}.{ts,tsx}\"], exclude=[\"**/node_modules/**\", \"**/e2e/**\"], and coverage thresholds lines: 70.",
+      "rationale": "Excluding e2e keeps Playwright specs out of the Vitest runner; the KB's config is the documented baseline.",
+      "source_file": "vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-016",
+      "rule": "In vitest.setup.ts import \"@testing-library/jest-dom/vitest\" (not the non-vitest entry) and register afterEach(cleanup) from @testing-library/react.",
+      "rationale": "Wrong jest-dom entry silently omits matchers; missing cleanup leaks DOM between component tests.",
+      "source_file": "vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-017",
+      "rule": "Write React component tests with @testing-library/react using role-based queries (getByRole, getByLabel) and userEvent for interactions; assert visible text/state, not implementation details.",
+      "rationale": "The MarketCard and PlatformSelect examples query by role and visible text, which mirrors real user behavior and survives refactors.",
+      "source_file": "vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-018",
+      "rule": "Do not attempt to render React Server Components through Testing Library; extract logic into pure functions or Client Components for unit testing.",
+      "rationale": "RSCs are not real React components at runtime and cannot be rendered by RTL; the KB lists this as a gotcha.",
+      "source_file": "vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-019",
+      "rule": "Mock fetch in component/unit tests with vi.stubGlobal(\"fetch\", ...); when using vi.mock(...), remember it is hoisted and use vi.hoisted() if the factory must reference outer variables.",
+      "rationale": "vi.mock hoisting is a documented footgun; stubGlobal is the KB's recommended pattern for fetch.",
+      "source_file": "vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-020",
+      "rule": "For time-dependent component logic (debounce, polling) use vi.useFakeTimers() + vi.advanceTimersByTime(...) and always restore with vi.useRealTimers() at the end.",
+      "rationale": "Fake timers are the deterministic way to test debounced UI; forgetting to restore leaks timers across tests.",
+      "source_file": "vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-021",
+      "rule": "Run Playwright E2E with a dual webServer array starting both Next.js (`pnpm dev` on 3000) and FastAPI (`uv run uvicorn backend.app.main:app --port 8000`), each with reuseExistingServer: !process.env.CI and timeout 120_000.",
+      "rationale": "E2E tests will hit a dead backend if only Next is started; the dual webServer pattern is the KB's prescribed setup.",
+      "source_file": "vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-022",
+      "rule": "Playwright config must set baseURL=\"http://localhost:3000\", retries: process.env.CI ? 2 : 0, trace: \"on-first-retry\", screenshot: \"only-on-failure\", and declare projects for chromium and firefox.",
+      "rationale": "These settings give CI retry-on-flake with trace artifacts for debugging while keeping local runs fast and deterministic.",
+      "source_file": "vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-023",
+      "rule": "Never call page.waitForTimeout or arbitrary sleeps in Playwright; rely on built-in auto-waiting via waitForSelector and expect(...).toBeVisible/toHaveURL/toContainText.",
+      "rationale": "The KB explicitly flags waitForTimeout as flaky; auto-waiting assertions are deterministic.",
+      "source_file": "vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-024",
+      "rule": "Seed backend state in E2E via page.request or direct API calls, not page.evaluate, and mock backend failures with page.route(\"**/api/...\", route => route.fulfill({ status, body })) to exercise error UI paths.",
+      "rationale": "page.evaluate for setup is brittle; route.fulfill is the KB-recommended way to simulate 502s and verify error surfaces.",
+      "source_file": "vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "TE-R-025",
+      "rule": "Name tests descriptively in given-when-then style (e.g., \"filter by kalshi\", \"handles backend 502\", \"test_list_markets_empty\") so failure output reads as a sentence.",
+      "rationale": "The KB's examples consistently use descriptive, behavior-oriented names; this keeps CI logs interpretable without opening the code.",
+      "source_file": "pytest.md, vitest-playwright.md",
+      "_source": "seed"
+    },
+    {
+      "id": "HTML-R-001",
+      "rule": "App shell MUST be a two-column CSS grid with grid-template-columns: 200px 1fr at widths >900px; the 200px left column is the sidebar, the 1fr right column is the main content area.",
+      "rationale": "wireframes.html .app sets grid-template-columns: 200px 1fr; every screen reuses this exact layout.",
+      "screens": [
+        "dashboard",
+        "markets",
+        "market-detail",
+        "strategies",
+        "paper-trades",
+        "backtest",
+        "compare",
+        "portfolio",
+        "data-ingestion"
+      ],
+      "element": "app-shell",
+      "category": "layout",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-002",
+      "rule": "At viewport <=900px the sidebar MUST collapse to a 64px icon rail (grid-template-columns: 64px 1fr) and the .brand text label, .nav-list span.label text, and .nav-list .badge MUST all be hidden (display:none).",
+      "rationale": "wireframes.html @media (max-width: 900px) sets .app grid-template-columns: 64px 1fr and hides .brand span, .nav-list li span.label, .nav-list li .badge.",
+      "screens": [
+        "dashboard",
+        "markets",
+        "market-detail",
+        "strategies",
+        "paper-trades",
+        "backtest",
+        "compare",
+        "portfolio",
+        "data-ingestion"
+      ],
+      "element": "sidebar@responsive",
+      "category": "responsive",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-003",
+      "rule": "The sidebar nav MUST render exactly these 9 items in this exact order: Dashboard, Markets, Strategies, Paper Trades, Backtest, Compare, Portfolio, Data ingestion. No additional nav items may be inserted and none may be reordered.",
+      "rationale": "Every <ul class=\"nav-list\"> block in wireframes.html lists these 8 li entries (plus an implicit 'current screen' as active); screen-inventory.json enumerates 9 canonical screens (Dashboard is the first).",
+      "screens": [
+        "dashboard",
+        "markets",
+        "market-detail",
+        "strategies",
+        "paper-trades",
+        "backtest",
+        "compare",
+        "portfolio",
+        "data-ingestion"
+      ],
+      "element": "sidebar.nav-list",
+      "category": "navigation",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-004",
+      "rule": "The active nav item MUST be marked with class 'active' which sets background var(--bg-elevated) and MUST render a 2px-wide accent-colored vertical bar (::before pseudo-element) along the item's left edge inset 8px from top and bottom.",
+      "rationale": "wireframes.html .nav-list li.active and .nav-list li.active::before define this indicator on every screen's sidebar.",
+      "screens": [
+        "dashboard",
+        "markets",
+        "market-detail",
+        "strategies",
+        "paper-trades",
+        "backtest",
+        "compare",
+        "portfolio",
+        "data-ingestion"
+      ],
+      "element": "sidebar.nav-list li.active",
+      "category": "navigation",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-005",
+      "rule": "Nav items MAY display a numeric badge (e.g. Markets count 4218, Strategies count 3) rendered as an accent-subtle pill with mono font; badge element uses class 'badge' and MUST be hidden when sidebar is collapsed at <=900px.",
+      "rationale": "wireframes.html nav badges appear on Markets and Strategies only; .nav-list li .badge styling uses var(--accent-subtle) and var(--mono) and is hidden in the @media block.",
+      "screens": [
+        "dashboard",
+        "markets",
+        "market-detail",
+        "strategies",
+        "paper-trades",
+        "backtest",
+        "compare",
+        "portfolio",
+        "data-ingestion"
+      ],
+      "element": "sidebar.nav-list li .badge",
+      "category": "navigation",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-006",
+      "rule": "The dashboard tile row MUST render 4 metric tiles (Equity, Brier score, Sharpe, Win rate) in a CSS grid with grid-template-columns: repeat(4, 1fr) at widths >900px. Each tile MUST render three stacked elements in order: .k (uppercase overline label), .v (mono value, 20px), .d (mono detail line).",
+      "rationale": "wireframes.html .tiles selector uses repeat(4, 1fr) and each .tile contains .k/.v/.d children; dashboard-elements.json confirms the four metrics.",
+      "screens": [
+        "dashboard",
+        "portfolio"
+      ],
+      "element": "main .tiles",
+      "category": "layout",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-007",
+      "rule": "At viewport <=900px, .tiles, .grid-2, and .grid-3 MUST reflow to 2-column layout (grid-template-columns: 1fr 1fr). Do not hide tiles or collapse to single-column at this breakpoint.",
+      "rationale": "wireframes.html @media (max-width: 900px) overrides these three grid containers to two columns.",
+      "screens": [
+        "dashboard",
+        "markets",
+        "market-detail",
+        "strategies",
+        "paper-trades",
+        "backtest",
+        "compare",
+        "portfolio",
+        "data-ingestion"
+      ],
+      "element": ".tiles, .grid-2, .grid-3",
+      "category": "responsive",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-008",
+      "rule": "Status pills MUST use class 'pill' plus one of four state modifiers: .on (success green), .off (neutral grey), .warn (amber), .danger (red). Each pill MUST render a leading 5x5px colored dot (::before pseudo-element) unless the additional .plain class is applied.",
+      "rationale": "wireframes.html .pill.on/.off/.warn/.danger map to --success/--neutral-pill/--warning/--danger tokens; .pill::before renders the status dot and .pill.plain disables it.",
+      "screens": [
+        "dashboard",
+        "markets",
+        "paper-trades",
+        "data-ingestion",
+        "strategies"
+      ],
+      "element": ".pill",
+      "category": "state-display",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-009",
+      "rule": "Platform identity MUST be rendered as a .chip element with a platform-specific left-inset border (box-shadow inset 2px 0 0 0): Kalshi uses accent cyan, Polymarket uses #a78bfa purple, Manifold uses warning amber, PredictIt uses success green. Chip text is uppercase 3-letter abbreviation (KAL, POLY, MAN, PRE).",
+      "rationale": "wireframes.html .chip.kalshi/.polymarket/.manifold/.predictit each declare the inset box-shadow accent; all markets/trades/ingestion rows use the 3-letter abbreviation.",
+      "screens": [
+        "dashboard",
+        "markets",
+        "market-detail",
+        "paper-trades",
+        "backtest",
+        "compare",
+        "data-ingestion"
+      ],
+      "element": ".chip",
+      "category": "state-display",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-010",
+      "rule": "Trade/order side MUST be displayed with a .side-pill element using mono font, uppercase text: .side-pill.yes uses success-subtle background + success text, .side-pill.no uses danger-subtle background + danger text. Labels are 'BUY YES', 'SELL YES', 'BUY NO', or 'SELL NO'.",
+      "rationale": "wireframes.html .side-pill.yes/.no styles and the dashboard/paper-trades/market-detail rows exclusively use these four label variants.",
+      "screens": [
+        "dashboard",
+        "market-detail",
+        "paper-trades"
+      ],
+      "element": ".side-pill",
+      "category": "state-display",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-011",
+      "rule": "Numeric table columns MUST carry the class 'num' which applies font-family var(--mono), text-align: right, and font-variant-numeric: tabular-nums. Apply to BOTH the <th> and every <td> in that column.",
+      "rationale": "wireframes.html td.num, th.num rule covers YES/NO price, Vol 24h, Close, Qty, Entry, Exit, P&L, Markets, Rows columns across all tables.",
+      "screens": [
+        "markets",
+        "market-detail",
+        "paper-trades",
+        "compare",
+        "data-ingestion",
+        "dashboard"
+      ],
+      "element": "table th.num, table td.num",
+      "category": "typography",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-012",
+      "rule": "Table headers MUST use font-size 11px, color var(--fg-mute), font-weight 510, text-transform: uppercase, letter-spacing 0.08em, and a single-border-bottom with var(--border). Do not style <th> with regular body text weight or case.",
+      "rationale": "wireframes.html th selector defines this explicit header typography; every screen's data table follows it.",
+      "screens": [
+        "markets",
+        "paper-trades",
+        "compare",
+        "data-ingestion",
+        "dashboard",
+        "market-detail"
+      ],
+      "element": "table th",
+      "category": "typography",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-013",
+      "rule": "On the Markets screen, every data row MUST carry class 'link' and cursor: pointer so the entire row is clickable to open the market-detail screen. Non-link tables on other screens MUST omit the .link class.",
+      "rationale": "wireframes.html tr.link is applied only inside the #wf-markets table; markets-elements.json navigation_paths defines 'click market row -> market-detail'.",
+      "screens": [
+        "markets"
+      ],
+      "element": "table tr.link",
+      "category": "navigation",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-014",
+      "rule": "All tables MUST apply a subtle row-hover background (var(--bg-overlay)) via tr:hover td. Tables MUST NOT have zebra striping; separators are 1px bottom borders using var(--border-subtle), removed on the last row.",
+      "rationale": "wireframes.html tr:hover td, th/td border-bottom, and tr:last-child td { border-bottom: none } define this uniformly.",
+      "screens": [
+        "dashboard",
+        "markets",
+        "market-detail",
+        "paper-trades",
+        "compare",
+        "data-ingestion"
+      ],
+      "element": "table tr, table td",
+      "category": "layout",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-015",
+      "rule": "Filter bars MUST be a flex row (.filter-bar) with gap 8px, flex-wrap enabled, and MUST use a `<span style=\"flex:1\"></span>` spacer to push action buttons (Export CSV, Export JSON, Run) to the right edge. Filter toggles use .pill.accent.plain for the selected state and .pill.off for unselected.",
+      "rationale": "wireframes.html .filter-bar selector and the Markets + Paper-Trades filter bars both use the flex:1 spacer pattern and the pill.accent.plain / pill.off toggle convention.",
+      "screens": [
+        "markets",
+        "paper-trades"
+      ],
+      "element": ".filter-bar",
+      "category": "layout",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-016",
+      "rule": "The Markets filter bar MUST include these controls in this order: text search input (min-width 240px), 'All' pill, one pill per platform (Kalshi/Polymarket/Manifold/PredictIt) showing current count, right-spacer, 'Open only' pill, 'Volume >$10k' pill.",
+      "rationale": "wireframes.html #wf-markets .filter-bar renders exactly this sequence; markets-elements.json confirms platform-filter-pill, search-input, open-only-filter, and volume-threshold-filter (threshold 10000).",
+      "screens": [
+        "markets"
+      ],
+      "element": "#wf-markets .filter-bar",
+      "category": "element-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-017",
+      "rule": "The Paper-Trades filter bar MUST contain status pills (All/Open/Closed), a 1px vertical divider, strategy pills (Kelly/Arb/Momentum/Fade/MM/Manual), a right-spacer, and two ghost-style action buttons (Export CSV, Export JSON).",
+      "rationale": "wireframes.html #wf-paper-trades .filter-bar contains these exact groups; paper-trades-elements.json confirms filter-status, filter-strategy, export-csv, export-json.",
+      "screens": [
+        "paper-trades"
+      ],
+      "element": "#wf-paper-trades .filter-bar",
+      "category": "element-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-018",
+      "rule": "Equity/performance curve charts MUST use a line (stroke-width 1.6) plus an area gradient fill (linearGradient top stop-opacity ~0.18-0.22, bottom stop-opacity 0), colored cyan (#7dd3fc) for live equity and green (#34d399) for backtest output. Do not render equity curves as bar charts or as plain lines without the gradient fill.",
+      "rationale": "wireframes.html Dashboard equity-curve uses #gEq (cyan gradient) + cyan polyline; Backtest equity-curve uses #gBt (green gradient) + green polyline; both follow the same pattern.",
+      "screens": [
+        "dashboard",
+        "backtest",
+        "portfolio"
+      ],
+      "element": ".chart-well.tall svg",
+      "category": "chart-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-019",
+      "rule": "The Compare screen overlay chart MUST render multiple polyline series simultaneously, each in a distinct color drawn from the token set (cyan #7dd3fc, warning #fbbf24, danger #f87171 at minimum). Each row in the comparison table MUST display a 8x8px circle indicator in the row's series color as a legend.",
+      "rationale": "wireframes.html #wf-compare SVG shows three polylines in these three token colors and each comparison-table row prefixes the run-label with an 8x8 bg-colored circle.",
+      "screens": [
+        "compare"
+      ],
+      "element": "#wf-compare .chart-well",
+      "category": "chart-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-020",
+      "rule": "The Portfolio P&L-attribution chart MUST render as a row of vertical stacked bars, one bar per strategy, with height proportional to |contribution|. Bars MUST color-code sign: positive contributions use green gradient (#34d399 -> #059669), negative contributions use red gradient (#f87171 -> #b91c1c), mixed/amber contributions use warning gradient (#fbbf24 -> #d97706).",
+      "rationale": "wireframes.html #wf-portfolio attribution chart renders inline div bars with exactly these three gradient stops; portfolio-elements.json confirms pnl-attribution-bars with bars-per-strategy.",
+      "screens": [
+        "portfolio"
+      ],
+      "element": "#wf-portfolio pnl-attribution-bars",
+      "category": "chart-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-021",
+      "rule": "Chart wells MUST use class 'chart-well' which is var(--bg-elevated) background, 1px border, radius-lg, padding 10px, and MUST have a defined height (default 180px; add .tall modifier for 240px). Never render a chart inside an unsized container.",
+      "rationale": "wireframes.html .chart-well sets height: 180px; .chart-well.tall overrides to 240px; recharts rule FE-R-022 already flags the unsized-parent bug.",
+      "screens": [
+        "dashboard",
+        "market-detail",
+        "backtest",
+        "compare",
+        "portfolio"
+      ],
+      "element": ".chart-well",
+      "category": "layout",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-022",
+      "rule": "The Dashboard MUST render, in top-to-bottom order: (1) head with h2 'Portfolio overview' + sub-line, (2) 4-tile metrics row, (3) tall equity curve chart-well, (4) grid-2 with 'Active strategies' table on the left and 'Recent paper trades' table on the right.",
+      "rationale": "wireframes.html #wf-dashboard main section follows exactly this vertical stack; dashboard-elements.json enumerates these 7 data elements.",
+      "screens": [
+        "dashboard"
+      ],
+      "element": "#wf-dashboard .main",
+      "category": "element-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-023",
+      "rule": "The Market-Detail screen MUST render a grid-2: left cell contains the 90-day YES price chart (tall chart-well) with an overline caption showing 'current / high / low' values; right cell contains the paper-trade ticket card.inset with BUY-YES and BUY-NO buttons, size input, 'Cost / max loss' readout, and a full-width primary 'Submit paper trade' button.",
+      "rationale": "wireframes.html #wf-market-detail grid-2 block; market-detail-elements.json confirms buy-yes/buy-no, size-input, submit-paper-trade, cost and max-loss computed outputs.",
+      "screens": [
+        "market-detail"
+      ],
+      "element": "#wf-market-detail .grid-2",
+      "category": "element-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-024",
+      "rule": "The Strategies screen MUST render a grid-2 of strategy cards (one per registered strategy) plus a final dashed-border 'drop-zone' card instructing users to 'Drop a .py file in strategies/ to register a new plugin'. Card count is 5 strategies + 1 drop zone = 6 cells.",
+      "rationale": "wireframes.html #wf-strategies grid-2 contains 5 .card.inset entries plus a trailing dashed-border card; strategies-elements.json lists five strategy cards (kelly/arb/momentum/news-fade/market-maker).",
+      "screens": [
+        "strategies"
+      ],
+      "element": "#wf-strategies .grid-2",
+      "category": "element-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-025",
+      "rule": "Each strategy card MUST contain a card-head row with h3 name + on/off pill, a one-line dim description paragraph (font-size 12px), and a single mono line showing key parameters + 'P&L <value>'. P&L value uses .pos/.neg helper classes; show '\u2014' when strategy is off or has zero trades.",
+      "rationale": "wireframes.html every #wf-strategies .card.inset follows this exact three-part template; strategies-elements.json card_contents lists these same fields.",
+      "screens": [
+        "strategies"
+      ],
+      "element": "#wf-strategies .card.inset",
+      "category": "element-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-026",
+      "rule": "The Backtest screen MUST render a grid-2 where the left cell is a configuration card.inset (Strategy dropdown, Platforms chip row, Date range input, Starting bankroll input, primary 'Run backtest' button) and the right cell contains a 2x2 results-tiles grid followed by the equity-curve chart-well.tall and a 'Save as comparison' ghost button.",
+      "rationale": "wireframes.html #wf-backtest grid-2 structure + backtest-elements.json listing strategy-picker, platform-multiselect, date-range-picker, starting-bankroll, run-backtest-button, save-as-comparison-button, 4 tiles, and equity-curve.",
+      "screens": [
+        "backtest"
+      ],
+      "element": "#wf-backtest .grid-2",
+      "category": "element-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-027",
+      "rule": "The Data-Ingestion screen MUST render one table row per adapter (Kalshi, Polymarket, Manifold, PredictIt) with columns: Platform (chip + name), Status pill, Last sync (mono dim timestamp), Markets count (num), Rows count (num, allow 'M' suffix for millions), Action button. Status 'healthy' uses .pill.on 'HEALTHY'; 'rate-limited' uses .pill.warn 'RATE LIMITED'.",
+      "rationale": "wireframes.html #wf-data-ingestion table has exactly these 4 rows and 6 columns; data-ingestion-elements.json defines status_values and rows.",
+      "screens": [
+        "data-ingestion"
+      ],
+      "element": "#wf-data-ingestion table",
+      "category": "element-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-028",
+      "rule": "The Data-Ingestion screen MUST render a dim footnote paragraph below the adapters table explaining that PredictIt data is recorded live only (no historical API) and that backtests on PredictIt can only cover dates from first live-sync onward.",
+      "rationale": "wireframes.html #wf-data-ingestion ends with a <p class=\"dim\"> containing this exact note; it encodes a real data-availability constraint that users must see.",
+      "screens": [
+        "data-ingestion"
+      ],
+      "element": "#wf-data-ingestion .main > p.dim",
+      "category": "element-presence",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-029",
+      "rule": "Action buttons MUST use .btn with exactly one variant class: .btn.primary (accent background, dark text), .btn.ghost (overlay background, bordered), or .btn.danger (danger-subtle background, danger text + border). The Submit paper trade and Run backtest buttons MUST be .btn.primary with width:100% inside their forms.",
+      "rationale": "wireframes.html .btn.primary/.ghost/.danger definitions; submit-paper-trade and Run backtest buttons use style=\"width:100%\".",
+      "screens": [
+        "market-detail",
+        "backtest",
+        "paper-trades",
+        "data-ingestion"
+      ],
+      "element": ".btn",
+      "category": "typography",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-030",
+      "rule": "Screen headers (.screen-header) MUST render a 2-digit zero-padded ordinal (01-09) in accent mono 12px, followed by the screen title in sans 15px 600-weight, and a right-aligned URL pill in mono 11px showing the route (e.g. 'localhost:3000/markets'). The ordinals and titles are canonical: 01 Dashboard, 02 Markets, 03 Market detail, 04 Strategies, 05 Paper Trades, 06 Backtest, 07 Compare, 08 Portfolio, 09 Data ingestion.",
+      "rationale": "wireframes.html every .screen-header block follows exactly this structure with these ordinals and titles; they align 1:1 with screen-inventory.json.",
+      "screens": [
+        "dashboard",
+        "markets",
+        "market-detail",
+        "strategies",
+        "paper-trades",
+        "backtest",
+        "compare",
+        "portfolio",
+        "data-ingestion"
+      ],
+      "element": ".screen-header",
+      "category": "navigation",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-031",
+      "rule": "Positive monetary/percentage values MUST use class 'pos' (color var(--success)); negative values MUST use class 'neg' (color var(--danger)); inactive/empty values MUST use class 'dim' (color var(--fg-mute)) with a literal em-dash '\u2014' glyph. Do not color positive values blue or negative values orange.",
+      "rationale": "wireframes.html .pos/.neg/.dim utility classes; all P&L cells across dashboard/paper-trades/compare/portfolio use these consistently and show '\u2014' when unavailable.",
+      "screens": [
+        "dashboard",
+        "paper-trades",
+        "compare",
+        "portfolio",
+        "strategies",
+        "backtest"
+      ],
+      "element": ".pos, .neg, .dim",
+      "category": "state-display",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-032",
+      "rule": "Timestamps in tables MUST be rendered with class 'mono dim' showing HH:MM 24-hour format (e.g. '14:02') for intraday rows, and HH:MM:SS for precise sync timestamps (Data-Ingestion last-sync). Do not use 12-hour AM/PM or localized date strings inside these tables.",
+      "rationale": "wireframes.html dashboard and paper-trades tables all use <td class=\"mono dim\">14:02</td> style; data-ingestion uses HH:MM:SS (14:04:02) for Last sync.",
+      "screens": [
+        "dashboard",
+        "market-detail",
+        "paper-trades",
+        "data-ingestion"
+      ],
+      "element": "table td.mono.dim",
+      "category": "typography",
+      "_source": "html"
+    },
+    {
+      "id": "HTML-R-033",
+      "rule": "Body root MUST set font-variant-numeric: tabular-nums globally so every digit across the app has fixed width, and the .mono utility + <code> MUST additionally apply the var(--mono) monospace family with tabular-nums. Prices, counts, timestamps, P&L, and durations MUST never render with proportional-width digits.",
+      "rationale": "wireframes.html body selector sets font-variant-numeric: tabular-nums; .mono rule also applies it. This aligns with FE-R-019 (tailwind mono/tabular-nums) but is enforced at the app-shell level here.",
+      "screens": [
+        "dashboard",
+        "markets",
+        "market-detail",
+        "strategies",
+        "paper-trades",
+        "backtest",
+        "compare",
+        "portfolio",
+        "data-ingestion"
+      ],
+      "element": "body, .mono",
+      "category": "typography",
+      "_source": "html"
+    },
+    {
+      "id": "DESIGN-R-001",
+      "rule": "Define all color tokens in the @theme block of app/globals.css. Never hardcode hex values (e.g. #7dd3fc, #34d399, #f87171) in className strings, inline styles, or chart props \u2014 always reference var(--accent), var(--success), var(--danger), etc.",
+      "rationale": "Centralized tokens keep Tailwind utilities, Recharts components, and custom CSS visually in sync; hardcoded hex silently drifts from the theme when tokens change.",
+      "category": "color",
+      "tokens_affected": [
+        "--accent",
+        "--success",
+        "--danger",
+        "--warning",
+        "--bg",
+        "--bg-panel",
+        "--bg-surface",
+        "--bg-elevated",
+        "--fg",
+        "--fg-secondary",
+        "--fg-dim",
+        "--fg-mute"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-002",
+      "rule": "Use --accent (#7dd3fc sky-cyan) ONLY for interactive chrome: primary CTAs, links, active nav items, focus rings, sort indicators, and the default chart series stroke. Never use --accent for body text, decorative accents, or non-interactive labels.",
+      "rationale": "Single chromatic accent on achromatic surfaces is Linear's core pattern. Using accent on non-interactive elements destroys its affordance signal and drowns out real CTAs.",
+      "category": "color",
+      "tokens_affected": [
+        "--accent",
+        "--accent-hover",
+        "--accent-subtle",
+        "--accent-border"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-003",
+      "rule": "Gain/positive P&L/BUY YES MUST use --success (#34d399) for foreground text and --success-subtle (rgba(52,211,153,0.14)) for badge backgrounds. Loss/negative P&L/BUY NO MUST use --danger (#f87171) / --danger-subtle. Never substitute generic green/red hex values.",
+      "rationale": "Unambiguous P&L signaling is non-negotiable in a trading UI. Token-enforced semantic mapping prevents an inconsistent red/green palette across tables, tiles, pills, and charts.",
+      "category": "color",
+      "tokens_affected": [
+        "--success",
+        "--success-subtle",
+        "--danger",
+        "--danger-subtle"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-004",
+      "rule": "Warning/caution states (rate-limited adapters, fade signals, news-spike alerts) MUST use --warning (#fbbf24) / --warning-subtle \u2014 not --accent and not --danger.",
+      "rationale": "Amber encodes a distinct degraded-but-not-broken state; confusing warning with error (danger) or with info (accent) leads operators to misread adapter health at a glance.",
+      "category": "color",
+      "tokens_affected": [
+        "--warning",
+        "--warning-subtle"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-005",
+      "rule": "Page background MUST be --bg (#0b0f17). Sidebar and docked panels MUST be --bg-panel (#0f1011). Card surfaces MUST be --bg-surface (#111826). Tiles, tooltips, and hover-elevated cards MUST be --bg-elevated (#182236). These tiers are ordinal \u2014 never elevate a tile onto the sidebar surface or drop a card below the page background.",
+      "rationale": "Linear communicates elevation through luminance stepping on dark surfaces. Violating the tier order breaks the visual depth model and makes nested surfaces unreadable.",
+      "category": "color",
+      "tokens_affected": [
+        "--bg",
+        "--bg-panel",
+        "--bg-surface",
+        "--bg-elevated"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-006",
+      "rule": "Borders MUST use semi-transparent white tokens: --border (rgba(255,255,255,0.08)) for default cards/inputs/rows, --border-subtle (rgba(255,255,255,0.05)) for list/row dividers, --border-strong (#1f2a40) for sidebar/panel separators, --border-accent (#2b3a58) for focused inputs. Do not invent custom border colors.",
+      "rationale": "Semi-transparent borders adapt to underlying surface luminance; opaque custom borders visibly break when the surface beneath changes.",
+      "category": "color",
+      "tokens_affected": [
+        "--border",
+        "--border-subtle",
+        "--border-strong",
+        "--border-accent"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-007",
+      "rule": "Text color MUST be selected from the five-step foreground ramp: --fg for primary, --fg-secondary for long-form body, --fg-dim for metadata/labels, --fg-mute for placeholders/overlines, --fg-disabled for disabled states. Never use raw white (#fff) or arbitrary gray hex values for text.",
+      "rationale": "The ramp is tuned for cool-cast readability on the dark surface tiers; skipping levels produces inconsistent contrast and breaks the hierarchy between primary content and chrome.",
+      "category": "color",
+      "tokens_affected": [
+        "--fg",
+        "--fg-secondary",
+        "--fg-dim",
+        "--fg-mute",
+        "--fg-disabled"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-008",
+      "rule": "Body, UI chrome, nav, buttons, and headings MUST use the Inter stack: Inter Variable, Inter, -apple-system, Segoe UI, Roboto, system-ui, sans-serif. Do not apply Inter to numeric data cells.",
+      "rationale": "Inter is the designated proportional face; mixing other sans fonts breaks vertical rhythm, and applying Inter to numbers loses tabular alignment.",
+      "category": "typography",
+      "tokens_affected": [
+        "--font-sans"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-009",
+      "rule": "All prices, percentages, P&L values, Brier scores, Sharpe ratios, quantities, timestamps, tickers, and code snippets MUST be set in the Mono stack: Berkeley Mono, JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace. JetBrains Mono is the required free fallback when Berkeley Mono is unlicensed.",
+      "rationale": "Mono stack with stable glyph widths is required for columnar alignment; fallback ordering guarantees a licensed face is always available without shipping the paid primary.",
+      "category": "typography",
+      "tokens_affected": [
+        "--font-mono"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-010",
+      "rule": "Every numeric cell or value MUST have font-variant-numeric: tabular-nums applied (via font-mono utility, tnum OpenType feature, or direct CSS). The global stylesheet must include \"cv01\", \"ss03\", \"tnum\" in font-feature-settings so digit widths lock by default.",
+      "rationale": "Proportional digits cause visible horizontal jitter every tick update; tabular-nums is mandatory for readable, non-juddering price columns and P&L streams.",
+      "category": "typography",
+      "tokens_affected": [
+        "--font-mono",
+        "font-feature-settings"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-011",
+      "rule": "Use weight 510 as the workhorse medium for UI labels, nav items, button text, pills, captions, and overlines. Reserve 400 for body prose, 500 for mono values, 600 for H1-H3 headings, 650 for display.",
+      "rationale": "Weight 510 is Linear's variable-font trick for optical medium that sits between regular and semibold \u2014 it disambiguates labels from body without the heaviness of 600 on small UI.",
+      "category": "typography",
+      "tokens_affected": [
+        "font-weight: 510"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-012",
+      "rule": "Overline / micro-label text (tile labels, section overlines) MUST be Inter 11px / weight 510 / uppercase / letter-spacing 0.08em / color var(--fg-mute). Never apply uppercase to body, button, or nav text.",
+      "rationale": "The overline is the only place uppercase is permitted; using caps elsewhere breaks Linear's quiet hierarchy and reduces legibility on data-dense screens.",
+      "category": "typography",
+      "tokens_affected": [
+        "--fg-mute"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-013",
+      "rule": "Typographic scale is fixed: Display 30/650, H1 24/600, H2 20/600, H3 16/600, Body 14/400, Body Medium 14/510, Small 13/400, Caption 12/510, Micro 11/510, Tile Value mono 20/500, Table Cell mono 13/400, Price Big mono 24/500, Code mono 12/400. Do not introduce off-scale sizes or weights.",
+      "rationale": "A locked scale is what keeps a data-dense dashboard calm; arbitrary sizes (e.g. 15px, 17px) visibly misalign grids and table headers.",
+      "category": "typography",
+      "tokens_affected": [],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-014",
+      "rule": "Spacing MUST use the 4px-based token scale: --space-1 4px, --space-2 8px, --space-3 12px, --space-4 16px, --space-5 20px, --space-6 24px, --space-8 32px, --space-10 40px, --space-12 48px, --space-16 64px. The dominant rhythm is 4 \u2192 8 \u2192 16 \u2192 24 \u2192 32. Never use arbitrary pixel values (e.g. 5px, 7px, 18px) for padding or margin.",
+      "rationale": "Every surface aligns to a 4px grid; off-grid spacing produces sub-pixel drift that accumulates across a multi-panel dashboard.",
+      "category": "spacing",
+      "tokens_affected": [
+        "--space-1",
+        "--space-2",
+        "--space-3",
+        "--space-4",
+        "--space-5",
+        "--space-6",
+        "--space-8",
+        "--space-10",
+        "--space-12",
+        "--space-16"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-015",
+      "rule": "Table body rows (td) MUST cap vertical padding at 12px (padding 10px 8px is the reference default). Never exceed 12px Y-padding on dense data tables (Markets, Paper Trades, Portfolio, Compare).",
+      "rationale": "Dense trading tables must show 20+ rows without scrolling; exceeding 12px Y-padding pushes below-the-fold content off-screen on standard laptop viewports.",
+      "category": "spacing",
+      "tokens_affected": [
+        "--space-3"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-016",
+      "rule": "Default card padding is --space-5 (20px); compact tile padding is 12px 16px; table header/body padding is 10px 8px; button padding is 8px 14px; icon button padding is 6px; input padding is 8px 10px; pill/badge padding is 2px 8px (or 2px 10px for adapter status).",
+      "rationale": "Component-specific padding constants are what give Linear its tight but breathable feel; ad-hoc padding produces visually inconsistent component widths and heights across screens.",
+      "category": "spacing",
+      "tokens_affected": [
+        "--space-2",
+        "--space-3",
+        "--space-4",
+        "--space-5"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-017",
+      "rule": "Border radius MUST be selected from the token scale: --radius-xs 2px (inline badges, dots), --radius-sm 4px (small chips, platform chips, side pills), --radius-md 6px (buttons, inputs, toolbar items, tooltips), --radius-lg 8px (cards default, tiles, dropdowns, chart containers), --radius-xl 12px (featured cards, hero panels), --radius-2xl 14px (page-level screen frames), --radius-full 9999px (pills, status chips, adapter status), --radius-circle 50% (icon buttons, avatars, dots).",
+      "rationale": "A fixed radius scale per component role is what makes nested surfaces read correctly; random radii make cards-inside-cards look misaligned.",
+      "category": "radius",
+      "tokens_affected": [
+        "--radius-xs",
+        "--radius-sm",
+        "--radius-md",
+        "--radius-lg",
+        "--radius-xl",
+        "--radius-2xl",
+        "--radius-full",
+        "--radius-circle"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-018",
+      "rule": "Elevation on dark surfaces MUST be communicated by background luminance stepping (bg-panel \u2192 bg-surface \u2192 bg-elevated), NOT by drop shadows. Reserve --shadow-md and --shadow-lg strictly for floating/overlay surfaces: dropdowns, popovers, modals, command palette, tooltips.",
+      "rationale": "Drop shadows on flat cards create a noisy, glowing look on dark UI; luminance stepping is the native dark-mode technique and reads as depth without visual clutter.",
+      "category": "shadow",
+      "tokens_affected": [
+        "--shadow-none",
+        "--shadow-sm",
+        "--shadow-md",
+        "--shadow-lg",
+        "--shadow-inset"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-019",
+      "rule": "Cards MUST default to --shadow-none. Apply --shadow-sm (border-as-shadow ring) only on hover for clickable cards. Dropdowns and hover-elevated cards use --shadow-md. Modals, command palette, and popovers use --shadow-lg. Chart wells use --shadow-inset.",
+      "rationale": "Shadow-per-role is load-bearing for the depth model; mis-applied shadows either flatten hierarchy (modal with --shadow-sm) or noise up static layouts (card with --shadow-lg).",
+      "category": "shadow",
+      "tokens_affected": [
+        "--shadow-none",
+        "--shadow-sm",
+        "--shadow-md",
+        "--shadow-lg",
+        "--shadow-inset"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-020",
+      "rule": "Keyboard focus rings on all interactive elements (buttons, inputs, links, nav items, icon buttons) MUST be --shadow-focus (0 0 0 2px rgba(125,211,252,0.35)). Do not use default browser outlines and do not substitute a solid border for the ring.",
+      "rationale": "Accessible focus signaling is a hard requirement; a single consistent cyan ring also aligns with keyboard-first Linear navigation patterns.",
+      "category": "shadow",
+      "tokens_affected": [
+        "--shadow-focus"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-021",
+      "rule": "Button variants are exactly four: Primary (bg --accent, text #0b0f17, radius --radius-md, Inter 14/510, padding 8px 14px), Ghost/Secondary (bg --bg-overlay, text --fg, border 1px --border, same sizing), Destructive (bg --danger-subtle, text --danger, border 1px rgba(248,113,113,0.24), same sizing), Icon (transparent bg, padding 6px, radius --radius-md, color --fg-dim hover --fg). Do not create additional button variants.",
+      "rationale": "A bounded variant set keeps the CTA hierarchy legible; bespoke buttons (outline-accent, filled-success-button, etc.) erode the primary-vs-ghost distinction.",
+      "category": "component",
+      "tokens_affected": [
+        "--accent",
+        "--accent-hover",
+        "--bg-overlay",
+        "--bg-overlay-hover",
+        "--danger",
+        "--danger-subtle",
+        "--fg",
+        "--fg-dim",
+        "--border",
+        "--radius-md"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-022",
+      "rule": "Primary button text color MUST be #0b0f17 (explicit dark, matching --bg) on the cyan --accent background \u2014 NOT --fg and NOT white. This is the only place a hardcoded hex is permitted because the cyan requires a specific dark foreground for WCAG contrast.",
+      "rationale": "#7dd3fc cyan on white text fails contrast; cyan on near-black (#0b0f17) passes AA and is the only legible primary CTA combination.",
+      "category": "component",
+      "tokens_affected": [
+        "--accent"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-023",
+      "rule": "Card component MUST be: bg --bg-surface, border 1px --border, radius --radius-xl (12px), padding --space-5 (20px), shadow --shadow-none default / --shadow-sm on hover-if-clickable, header uses H3 (Inter 16/600) with optional overline micro-label in --fg-mute.",
+      "rationale": "Card is the default container; pinning its exact spec keeps every dashboard screen (Markets, Strategies, Backtest, etc.) visually homogeneous.",
+      "category": "component",
+      "tokens_affected": [
+        "--bg-surface",
+        "--border",
+        "--radius-xl",
+        "--space-5",
+        "--fg-mute"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-024",
+      "rule": "Tile component (metric tile for equity, Brier, Sharpe, win rate) is distinct from Card: bg --bg-elevated (NOT --bg-surface), radius --radius-lg (8px, NOT --radius-xl), padding 12px 16px. Structure is three stacked rows: overline Label (Inter 11/510 uppercase --fg-mute) \u2192 Value (Mono 20/500 --fg tabular-nums) \u2192 optional Delta (Mono 11, --success if positive / --danger if negative). Grid is repeat(4, 1fr) desktop, repeat(2, 1fr) \u2264700px.",
+      "rationale": "Tiles and Cards serve different roles \u2014 tiles show one metric, cards contain mixed content. Collapsing them visually (e.g. using --bg-surface on a tile) makes the dashboard read as a wall of identical boxes.",
+      "category": "component",
+      "tokens_affected": [
+        "--bg-elevated",
+        "--radius-lg",
+        "--fg",
+        "--fg-mute",
+        "--success",
+        "--danger"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-025",
+      "rule": "Table MUST use border-collapse: collapse, width 100%, header th in Inter 11/510 uppercase 0.08em tracking color --fg-mute with border-bottom 1px --border, body td padding 10px 8px with border-bottom 1px --border-subtle, last row no border-bottom, row hover bg rgba(255,255,255,0.02). No zebra striping \u2014 rely on the whisper-thin --border-subtle per row.",
+      "rationale": "Zebra striping fights with the dark luminance-stepping model and breaks when rows highlight; whisper dividers scale to any row count without visual noise.",
+      "category": "component",
+      "tokens_affected": [
+        "--border",
+        "--border-subtle",
+        "--fg-mute"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-026",
+      "rule": "Numeric table columns MUST be right-aligned and use font-mono + tabular-nums. Use semantic classes: .pos \u2192 color --success, .neg \u2192 color --danger, .dim \u2192 color --fg-mute. Sort indicator on the active sorted header is a small caret in --accent.",
+      "rationale": "Right-aligned, tabular-nums, tokenized semantic classes are what make a long P&L column readable at a glance; left-aligned or proportional digits make scanning impossible.",
+      "category": "component",
+      "tokens_affected": [
+        "--success",
+        "--danger",
+        "--fg-mute",
+        "--accent"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-027",
+      "rule": "Sidebar MUST be width 180px (collapsible to 56px icon-only), bg --bg-panel, border-right 1px --border-strong, padding 14px 12px. Nav li uses Inter 12-13px weight 510, color --fg-dim, padding 7px 8px, radius --radius-md. Hover sets bg --bg-overlay-hover / color --fg. Active sets bg --bg-elevated / color --fg with an optional 2px left --accent bar flush with the item. Nav list is exactly 8 items: Dashboard, Markets, Strategies, Paper Trades, Backtest, Compare, Portfolio, Data Ingestion.",
+      "rationale": "Sidebar content is the top-level navigation contract; adding or removing items without updating screen-inventory.json breaks the routing contract.",
+      "category": "component",
+      "tokens_affected": [
+        "--bg-panel",
+        "--bg-overlay-hover",
+        "--bg-elevated",
+        "--border-strong",
+        "--fg",
+        "--fg-dim",
+        "--accent",
+        "--radius-md"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-028",
+      "rule": "Sidebar badges (count, status) MUST be text 10px color --accent, bg --accent-subtle, radius 10px, padding 1px 6px. Do not use --success-subtle or --danger-subtle for sidebar nav badges \u2014 those are reserved for pill components.",
+      "rationale": "Nav badges are informational counts, not status signals; using trading-semantic colors on nav creates false P&L associations.",
+      "category": "component",
+      "tokens_affected": [
+        "--accent",
+        "--accent-subtle"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-029",
+      "rule": "Chart container MUST be: bg --bg-elevated, border 1px --border, radius --radius-lg (8px), padding 10px. Inner grid lines use --border-subtle. Axis labels are mono 11px --fg-mute tabular-nums. Default series stroke is --accent with a linear-gradient fill from rgba(125,211,252,0.18) to transparent. Positive regions fill --success, negative regions fill --danger. Multi-series (Compare) palette is fixed: cyan \u2192 emerald \u2192 amber \u2192 #a78bfa violet \u2192 #f472b6 pink (max 5 runs).",
+      "rationale": "Chart theme must mirror UI tokens exactly (via chartTheme.ts) so a positive equity curve reads the same green as a positive P&L cell; divergence between Recharts and CSS tokens breaks the visual grammar.",
+      "category": "component",
+      "tokens_affected": [
+        "--bg-elevated",
+        "--border",
+        "--border-subtle",
+        "--accent",
+        "--success",
+        "--danger",
+        "--fg-mute",
+        "--radius-lg"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-030",
+      "rule": "Chart tooltip MUST be: bg --bg-elevated, border 1px --border, radius --radius-md, padding 8px 10px, mono 12px, shadow --shadow-md. Tooltip styling must be applied via Recharts contentStyle (inline), never via className.",
+      "rationale": "Recharts tooltip className styling is unreliable (documented gotcha); inline contentStyle is the only supported customization path and keeps the tooltip token-aligned.",
+      "category": "component",
+      "tokens_affected": [
+        "--bg-elevated",
+        "--border",
+        "--radius-md",
+        "--shadow-md"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-031",
+      "rule": "Input component MUST be: bg --bg-overlay, text --fg Inter 14/400, placeholder --fg-mute, border 1px --border, radius --radius-md, padding 8px 10px. Focus MUST set border to --accent-border AND apply --shadow-focus. Disabled state uses color --fg-disabled and bg rgba(255,255,255,0.01). Numeric inputs (size, price, bankroll) MUST use mono + tabular-nums and be right-aligned.",
+      "rationale": "Input focus state needs both a color and a ring because the semi-transparent border alone is invisible at a glance; numeric inputs must align with their display counterparts in tables/tiles.",
+      "category": "component",
+      "tokens_affected": [
+        "--bg-overlay",
+        "--fg",
+        "--fg-mute",
+        "--fg-disabled",
+        "--border",
+        "--accent-border",
+        "--radius-md",
+        "--shadow-focus"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-032",
+      "rule": "Side pill (BUY YES / BUY NO / SELL YES / SELL NO) MUST render: YES variant with bg --success-subtle, text --success; NO variant with bg --danger-subtle, text --danger. Padding 2px 8px, radius --radius-sm, font mono 11px weight 500 uppercase. Never invert YES/NO colors or use --accent for side pills.",
+      "rationale": "YES=success / NO=danger mapping is the trading UI's most load-bearing semantic. Inverting them would actively mislead traders placing paper orders.",
+      "category": "component",
+      "tokens_affected": [
+        "--success",
+        "--success-subtle",
+        "--danger",
+        "--danger-subtle",
+        "--radius-sm"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-033",
+      "rule": "Adapter status pill MUST render exactly three variants with a leading dot \u25cf: HEALTHY (bg --success-subtle, text --success), RATE LIMITED (bg --warning-subtle, text --warning), ERROR (bg --danger-subtle, text --danger). Padding 2px 10px, radius --radius-full, font Inter 11/510 uppercase letter-spacing 0.04em. Do not add additional status states without updating this rule.",
+      "rationale": "Adapter health is a ternary state surfaced on the Data Ingestion screen; the three-variant contract must match the backend's adapter-health enum exactly.",
+      "category": "component",
+      "tokens_affected": [
+        "--success",
+        "--success-subtle",
+        "--warning",
+        "--warning-subtle",
+        "--danger",
+        "--danger-subtle",
+        "--radius-full"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-034",
+      "rule": "Strategy status pill (on/off) MUST be: On \u2014 bg --success-subtle, text --success, filled dot \u25cf in --success; Off \u2014 bg --neutral-pill, text --fg-dim, hollow dot \u25cb in --fg-mute. Padding 2px 8px, radius --radius-full, font Inter 11/510.",
+      "rationale": "On/off is binary but shares the health ternary's visual grammar; using --neutral-pill (not --danger) for Off avoids encoding an idle strategy as an error.",
+      "category": "component",
+      "tokens_affected": [
+        "--success",
+        "--success-subtle",
+        "--neutral-pill",
+        "--fg-dim",
+        "--fg-mute",
+        "--radius-full"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-035",
+      "rule": "Platform chip (Kalshi / Polymarket / Manifold / PredictIt) MUST be: bg --neutral-pill (rgba(142,160,189,0.12)), text --fg, padding 2px 8px, radius --radius-sm (4px), font Inter 11/510. Per-platform accent tint is applied as a subtle left border or dot only: Kalshi \u2192 cyan (--accent), Polymarket \u2192 violet (#a78bfa), Manifold \u2192 amber (--warning), PredictIt \u2192 emerald (--success). Never fill the chip background with the platform-accent color.",
+      "rationale": "Platform chips must remain visually quiet because multiple can appear in one row; filled-background platform chips would compete with the P&L and side semantic colors.",
+      "category": "component",
+      "tokens_affected": [
+        "--neutral-pill",
+        "--fg",
+        "--accent",
+        "--success",
+        "--warning",
+        "--radius-sm"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-036",
+      "rule": "Transitions MUST be 150ms ease-out for hover, 200ms ease-out for focus, 250ms ease-in-out for expand/collapse (including sidebar collapse). Modal backdrop fades 150ms; modal dialog scales 0.98 \u2192 1 in 200ms. Do not invent ad-hoc timings (e.g. 300ms, 180ms).",
+      "rationale": "A three-step timing system keeps the UI feeling responsive without jitter; inconsistent durations produce a laggy feel on data-dense screens.",
+      "category": "motion",
+      "tokens_affected": [],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-037",
+      "rule": "NEVER animate color transitions on financial data during refresh (no red/green flashing of P&L or price cells). The ONLY permitted update animation on streaming rows is an opacity pulse 0.4 \u2192 1 over 600ms on newly inserted rows.",
+      "rationale": "Color flashes on every tick is visually exhausting and obscures real direction changes; opacity pulse on insertion signals 'new' without introducing false movement signals.",
+      "category": "motion",
+      "tokens_affected": [
+        "--success",
+        "--danger"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-038",
+      "rule": "The app MUST be dark-only. Set color-scheme: dark on :root, apply @variant dark (&:where(:root, :root *)); in globals.css to force dark utilities, and DO NOT ship a light-mode toggle, prefers-color-scheme override, or theme switcher.",
+      "rationale": "Deployment contract is dark-only (tech-stack.json deployment.theme); adding a theme switcher doubles the design-system surface area and was explicitly rejected.",
+      "category": "color",
+      "tokens_affected": [
+        "color-scheme"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-039",
+      "rule": "When linking multiple Recharts charts on the same x-axis (price + volume on Market Detail, strategy comparison on Compare), give them the same syncId so hover crosshairs align. Event annotations (news spikes, resolution times) MUST use <ReferenceLine> / <ReferenceArea> on the existing chart \u2014 never a separate stacked chart.",
+      "rationale": "Synchronized hover is a core affordance for multi-series analysis; separate annotation charts force the user to mentally correlate across containers.",
+      "category": "component",
+      "tokens_affected": [],
+      "_source": "design"
+    },
+    {
+      "id": "DESIGN-R-040",
+      "rule": "The sky-cyan accent (#7dd3fc) and trading-semantic trio (#34d399 / #f87171 / #fbbf24) are the documented deltas from Linear's base system. The --bg-surface (#111826) and --bg-elevated (#182236) values override Linear's #191a1b / #28282c to match the approved proposal palette. Any further palette change MUST update this design system file AND every consumer token map (chartTheme.ts, globals.css @theme block) in the same commit.",
+      "rationale": "Palette drift between design-system.md, globals.css, and chartTheme.ts is the single largest source of visual inconsistency; atomic updates across all three are mandatory.",
+      "category": "color",
+      "tokens_affected": [
+        "--accent",
+        "--success",
+        "--danger",
+        "--warning",
+        "--bg-surface",
+        "--bg-elevated"
+      ],
+      "_source": "design"
+    },
+    {
+      "id": "API-R-001",
+      "rule": "Kalshi adapter MUST target base URL https://api.elections.kalshi.com/trade-api/v2 for production reads and https://demo-api.kalshi.co/trade-api/v2 for any smoke tests; base URL MUST come from config, never hardcoded in call sites.",
+      "rationale": "Feature-discoveries ADP-01 pins these exact base URLs; separation from demo is required so tests never accidentally hit production.",
+      "applies_to": [
+        "kalshi"
+      ],
+      "category": "endpoint",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-002",
+      "rule": "Kalshi adapter MUST operate in api-key-optional mode: when no KALSHI_API_KEY is present, issue unsigned reads against public endpoints only; when a key is present, RSA-PKCS#8-2048 sign every request with headers KALSHI-ACCESS-KEY, KALSHI-ACCESS-SIGNATURE, and KALSHI-ACCESS-TIMESTAMP.",
+      "rationale": "ADP-01 auth_model + pitfall: RSA signing is heavyweight and unnecessary for purely-read adapter; fall back to unsigned public reads.",
+      "applies_to": [
+        "kalshi"
+      ],
+      "category": "auth",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-003",
+      "rule": "Kalshi adapter MUST convert integer-cent prices (range 1-99) returned by /markets/{ticker}/orderbook into decimal market-price in [0.00, 1.00] by dividing by 100 before storage.",
+      "rationale": "ADP-01 pitfall: integer-cent wire format collides with disambiguated.txt decimal market-price; INV-002 requires 0 <= market.price <= 1.",
+      "applies_to": [
+        "kalshi"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-004",
+      "rule": "Kalshi adapter MUST treat YES and NO as complementary: store only yes-price and derive no-price = 1 - yes-price. Do NOT emit an independent no-side order book.",
+      "rationale": "ADP-01 market-side_encoding: each market is paired binary; there is no independent NO order book on Kalshi.",
+      "applies_to": [
+        "kalshi"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-005",
+      "rule": "Kalshi adapter MUST throttle reads with a token bucket at <= 20 req/sec (Basic tier) with a 10% safety margin (effective 18/sec). On any 429 response, honour the Retry-After header before retrying and surface adapter.status='rate-limited' on the data-ingestion screen.",
+      "rationale": "ADP-01 rate_limits Basic tier + throttle_behaviour + SR-003; FS-006 requires accurate status reporting.",
+      "applies_to": [
+        "kalshi"
+      ],
+      "category": "rate-limit",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-006",
+      "rule": "Kalshi adapter MUST compute market-volume-24h by summing trades from the trades feed over the trailing 24h; do NOT rely on a direct 24h volume field on the ticker response.",
+      "rationale": "ADP-01 known_quirks: no direct 24h field is present on all Kalshi tickers.",
+      "applies_to": [
+        "kalshi"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-007",
+      "rule": "Kalshi adapter MAY subscribe to public websocket channels (ticker, trade, orderbook_delta, market_lifecycle_v2) WITHOUT authentication; the websocket URL MUST be wss://api.elections.kalshi.com/trade-api/ws/v2.",
+      "rationale": "ADP-01 data_format and patterns_found: public channels need no auth.",
+      "applies_to": [
+        "kalshi"
+      ],
+      "category": "endpoint",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-008",
+      "rule": "Kalshi adapter MUST map the Kalshi status field to the unified market-resolution enum {yes-resolved, no-resolved, cancelled, open}. Unknown status values MUST raise AdapterError rather than being silently coerced to open.",
+      "rationale": "ADP-01 market-resolution_mapping; silent coercion masks resolution bugs that corrupt brier-score denominators.",
+      "applies_to": [
+        "kalshi"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-009",
+      "rule": "Polymarket adapter MUST use three distinct base URLs: gamma-api.polymarket.com for market discovery (list_markets), clob.polymarket.com for order book + prices-history, data-api.polymarket.com for data endpoints. Each domain has its own rate-limit bucket and MUST be throttled independently.",
+      "rationale": "ADP-02 api_base_urls; mixing domains into one throttler either under- or over-rates the adapter.",
+      "applies_to": [
+        "polymarket"
+      ],
+      "category": "endpoint",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-010",
+      "rule": "Polymarket adapter MUST run in auth=none-for-read mode. It MUST NOT implement L2 HMAC-SHA256 signing and MUST NOT import the write-path portion of py-clob-client. Any code that constructs a POST body for a trading endpoint is forbidden.",
+      "rationale": "ADP-02 auth_model + INV-007 (no write paths to real trading endpoints).",
+      "applies_to": [
+        "polymarket"
+      ],
+      "category": "write-path-restriction",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-011",
+      "rule": "Polymarket gamma discovery calls MUST be throttled at <= 60 requests/minute (conservative) until live metrics prove the 4000/10s upper figure. Configuration MUST expose the value so it can be widened without redeploy.",
+      "rationale": "ADP-02 rate_limits: sources disagree (60/min vs 4000/10s); start conservative per pitfall mitigation.",
+      "applies_to": [
+        "polymarket"
+      ],
+      "category": "rate-limit",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-012",
+      "rule": "Polymarket CLOB websocket subscriptions MUST multiplex ALL markets through a single shared connection per IP; adapter MUST NOT open more than 1 CLOB websocket connection.",
+      "rationale": "ADP-02 rate_limits.websocket cap = 5 connections/IP; single-connection multiplexing is the documented mitigation.",
+      "applies_to": [
+        "polymarket"
+      ],
+      "category": "rate-limit",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-013",
+      "rule": "Polymarket adapter MUST treat yes-token and no-token as two independent tokens with distinct token_ids and distinct order books. Adapter MUST resolve market_id -> tokens[] before requesting prices-history; price-history calls use token_id, not market_id.",
+      "rationale": "ADP-02 market-side_encoding + known_quirks: CLOB exposes two separate token IDs per market.",
+      "applies_to": [
+        "polymarket"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-014",
+      "rule": "Polymarket adapter MUST persist both yes-token-price and no-token-price separately in stored-price-history and MUST NOT derive one from the other. Divergence (yes + no != 1.00) is valid input to STR-02 arbitrage detection.",
+      "rationale": "ADP-02 pitfall: yes+no can diverge; forcing yes+no=1 destroys the arbitrage signal STR-02 depends on.",
+      "applies_to": [
+        "polymarket"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-015",
+      "rule": "Polymarket adapter MUST flatten the gamma Series -> Events -> Markets hierarchy into flat market entities keyed by (platform, platform_market_id) before emitting ingest-markets events.",
+      "rationale": "ADP-02 known_quirks: gamma.markets returns event hierarchy; unified schema is flat per PR-004 idempotency requirement.",
+      "applies_to": [
+        "polymarket"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-016",
+      "rule": "Polymarket adapter MUST filter discovered markets to those with enableOrderBook == true; markets without a live book are ui-priced only and cannot be traded in paper mode.",
+      "rationale": "ADP-02 known_quirks: enableOrderBook flag gates tradability; INV-009 slippage-model requires an order book.",
+      "applies_to": [
+        "polymarket"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-017",
+      "rule": "Manifold adapter MUST default to unauthenticated reads; authenticated mode accepts either Authorization: Key {api_key} or Authorization: Bearer {jwt} headers but MUST NOT require them.",
+      "rationale": "ADP-03 auth_model: api-key-optional; read endpoints are public.",
+      "applies_to": [
+        "manifold"
+      ],
+      "category": "auth",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-018",
+      "rule": "Manifold adapter MUST throttle at <= 500 req/min per IP with a safety margin (effective <= 450/min). On 429 apply exponential backoff.",
+      "rationale": "ADP-03 rate_limits.per_ip_per_minute = 500.",
+      "applies_to": [
+        "manifold"
+      ],
+      "category": "rate-limit",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-019",
+      "rule": "Manifold adapter MUST filter ingested markets to outcomeType == 'BINARY' for the v1 unified schema. Non-binary types (MULTIPLE_CHOICE, PSEUDO_NUMERIC, POLL, BOUNTIED_QUESTION, FREE_RESPONSE) MUST NOT be written to the markets table unless a future opt-in flag explicitly enables PSEUDO_NUMERIC mapping.",
+      "rationale": "ADP-03 pitfalls + OQ-10 recommended default: filter to binary only in v1.",
+      "applies_to": [
+        "manifold"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-020",
+      "rule": "Manifold adapter MUST reconstruct price-history by paging GET /v0/bets?contractId={id} and deriving each tick from probBefore/probAfter on each bet. First sync pages through the full bet history; subsequent syncs MUST be incremental using a createdTime cursor.",
+      "rationale": "ADP-03 price_history_endpoint = NOT AVAILABLE; reconstruction from bets is the documented pattern.",
+      "applies_to": [
+        "manifold"
+      ],
+      "category": "endpoint",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-021",
+      "rule": "Manifold adapter MUST read the BINARY market's probability field directly as yes-price in [0.0, 1.0]; no-price is derived as 1 - yes-price (unlike Polymarket).",
+      "rationale": "ADP-03 market-side_encoding: single probability field per binary market.",
+      "applies_to": [
+        "manifold"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-022",
+      "rule": "Manifold adapter MUST keep market-volume-24h in native mana currency and MUST NOT auto-convert to USD at ingest; USD mapping happens only at paper-fill time via the simulated-bankroll model.",
+      "rationale": "ADP-03 known_quirks + pitfall: mana vs usd confusion; INV-001 usd-denominated equity is separate from mana-denominated volume.",
+      "applies_to": [
+        "manifold"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-023",
+      "rule": "Manifold websocket connections MUST send a keepalive ping every 30-60s; adapter MUST detect dropped connections and auto-reconnect with exponential backoff (base 1s, max 60s).",
+      "rationale": "ADP-03 known_quirks: websocket requires keepalive or connection drops.",
+      "applies_to": [
+        "manifold"
+      ],
+      "category": "endpoint",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-024",
+      "rule": "PredictIt adapter MUST poll GET /all/ at <= 1 request/second and MUST NOT issue more frequent polls since upstream data itself refreshes only every 60 seconds.",
+      "rationale": "ADP-04 rate_limits + data_refresh: 1 req/sec documented + 60s upstream cache.",
+      "applies_to": [
+        "predictit"
+      ],
+      "category": "rate-limit",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-025",
+      "rule": "PredictIt adapter MUST be read-only. There is no trading API; any method that attempts to write or authenticate beyond public read is forbidden.",
+      "rationale": "ADP-04 auth_model: 'NO trading api at all'; INV-007.",
+      "applies_to": [
+        "predictit"
+      ],
+      "category": "write-path-restriction",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-026",
+      "rule": "PredictIt adapter MUST flatten multi-contract markets: each contract becomes its own normalised market in the unified schema, keyed by (platform='predictit', platform_market_id=f'{market_id}:{contract_id}').",
+      "rationale": "ADP-04 pitfall: multi-contract markets break the one-market/one-binary assumption; flatten per contract.",
+      "applies_to": [
+        "predictit"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-027",
+      "rule": "PredictIt adapter MUST verify per-field price units: bestBuyYesCost / bestBuyNoCost / bestSellYesCost / bestSellNoCost / lastTradePrice / lastClosePrice are quoted in cents in some fields; adapter MUST normalise each to decimal [0.0, 1.0] using a per-field unit table and reject prices outside [0.0, 1.0] after normalisation.",
+      "rationale": "ADP-04 known_quirks: 'prices are in cents not dollars in some fields - verify per-field'; FS-002 forbids out-of-range prices.",
+      "applies_to": [
+        "predictit"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-028",
+      "rule": "PredictIt backtest date-range UI MUST disable selection of dates earlier than min(stored-price-history.timestamp) for the PredictIt platform and render a tooltip reading 'No PredictIt data recorded before {date}'.",
+      "rationale": "ADP-04 historical_available = NO + OQ-01 recommended default.",
+      "applies_to": [
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-029",
+      "rule": "Any UI surface that renders PredictIt prices or market-volume MUST display a PredictIt attribution badge (e.g. platform-chip reading 'PredictIt').",
+      "rationale": "ADP-04 known_quirks: non-commercial data-license requires attribution on any UI surface.",
+      "applies_to": [
+        "predictit"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-030",
+      "rule": "Every adapter's list_markets method MUST normalise to the shared schema using composite key (platform, platform_market_id); ingest-markets MUST be idempotent on conflict (UPSERT, not INSERT).",
+      "rationale": "PR-004 idempotency requirement + ADP-01..04 normalisation patterns.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "endpoint",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-031",
+      "rule": "No adapter method may POST/PUT/PATCH/DELETE to a platform's trading endpoint. Every adapter method must be reviewable as HTTP GET only (or websocket read-subscribe only). CI MUST include a grep/AST check failing on httpx.post|httpx.put|httpx.patch|httpx.delete inside adapter packages.",
+      "rationale": "INV-007 boundary invariant B1; fail-fast static check is the only enforceable defence.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "write-path-restriction",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-032",
+      "rule": "Adapter health transitions MUST follow the {healthy, rate-limited, error, syncing} enum. An adapter MUST NOT report healthy when now - last_sync > 10 * poll_interval; the background scheduler MUST flip status to 'error' in that case.",
+      "rationale": "FS-006 forbidden state + adapter entity lifecycle in semantic-spec.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "error-handling",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-033",
+      "rule": "Every adapter MUST raise AdapterError (mapped by the FastAPI handler to HTTP 502 with {platform, detail}) on upstream failures; adapters MUST NOT swallow upstream errors and return empty lists.",
+      "rationale": "BE-R-019 (backend rule) binding: 502 upstream-failure pattern; silent empty-list returns hide FS-006 conditions.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "error-handling",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-034",
+      "rule": "Event-driven backtest engine MUST NOT call adapter.stream_live_prices or any live-price method during execute-backtest; backtest data source MUST be stored-price-history only.",
+      "rationale": "INV-006 + ENG-01 simulation_vs_reality_line.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-035",
+      "rule": "Event-driven backtest engine MUST emit market-data-events in strictly chronological order; strategy.decide(market-state) MUST be called with state at time t only and MUST NOT be handed any tick with ts > current event ts.",
+      "rationale": "ENG-01 pitfall: look-ahead bias prevention; strategy contract preservation.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-036",
+      "rule": "Slippage-model MUST fill orders with size <= top-of-book size at mid \u00b1 1 cent (buy above mid, sell below mid). For larger orders it MUST walk the order book level by level, consuming quantity at each price, and set fill-price to the volume-weighted average across consumed levels.",
+      "rationale": "ENG-01 slippage_model_implementation + order_book_crossing; INV-009 binds paper-fill.entry-price to slippage-model output.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-037",
+      "rule": "Cross-platform-arbitrage (STR-02) leg 2 MUST be executed at the next event tick after leg 1 (not simultaneously). The engine re-reads platform-B market-price at t+poll_interval or next market-data-event before applying slippage-model to leg 2.",
+      "rationale": "STR-02 execution_sequencing_risk: fills are never simultaneous; realistic paper simulation requires deferred leg 2.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-038",
+      "rule": "Cross-platform-arbitrage MUST detect edge as edge = 1 - (yes_price_platform_A + no_price_platform_B) and MUST NOT fire when edge <= min_edge_threshold (default 0.02, configurable via strategy-parameters.arb_minimum_edge).",
+      "rationale": "STR-02 detection_rule + default_min_edge_threshold.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "market-matching",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-039",
+      "rule": "Cross-platform event identity (v1) MUST be established via a manual mapping table (CSV or DB table) keyed across kalshi_ticker, polymarket_token_id, manifold_id, predictit_contract_id. Fuzzy title+close-date matching is FORBIDDEN in v1.",
+      "rationale": "OQ-05 recommended default (v1 manual mapping); fuzzy matching risks fake arbs with real paper P&L loss.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "market-matching",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-040",
+      "rule": "Kelly-sizing (STR-01) MUST cap computed bet_size at strategy-assigned-capital even when f* numerically exceeds 1.0 and MUST refuse to place orders when f* <= 0.",
+      "rationale": "STR-01 pitfalls: f* can exceed 1 near certainty; edge_requirement f* > 0.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-041",
+      "rule": "Kelly-sizing default kelly_fraction parameter MUST default to 0.25 (quarter-Kelly); full-Kelly is exposed via strategy-parameters but not default.",
+      "rationale": "STR-01 pitfall: full-Kelly induces ~33% probability of halving bankroll; quarter-Kelly is the documented default.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-042",
+      "rule": "Market-maker (STR-05) MUST pull quotes within N minutes before market-close-date (adverse-selection protection against stale-quote snipers) where N defaults to 5 and is configurable.",
+      "rationale": "STR-05 adverse_selection_protection explicit requirement.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-043",
+      "rule": "Market-maker simulated bid MUST NOT be quoted through the real top-of-book: our_bid <= real_best_bid + slippage_budget, our_ask >= real_best_ask - slippage_budget.",
+      "rationale": "STR-05 adverse_selection_protection: never quote through the real top-of-book.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-044",
+      "rule": "Market-maker passive quotes MUST fill in paper mode only when the real platform top-of-book CROSSES the quoted price (real best-ask <= our bid, OR real best-bid >= our ask); fill size = min(quote_size, opposing-side top-of-book size).",
+      "rationale": "OQ-08 recommended default + STR-05 pitfall: slippage-model only covers aggressive orders.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-045",
+      "rule": "Market-maker MUST stop quoting one side when |paper-position| >= max_inventory parameter and MUST widen spread when rolling_volatility > adverse-selection threshold.",
+      "rationale": "STR-05 adverse_selection_protection + inventory_management.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-046",
+      "rule": "Market-maker T-t (time-to-close) MUST default to 7 days when market-close-date is null (perpetual manifold markets); the Avellaneda-Stoikov skew formula MUST NOT divide by zero.",
+      "rationale": "STR-05 pitfall + fallback rule.",
+      "applies_to": [
+        "manifold"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-047",
+      "rule": "News-spike-fade (STR-04) MUST detect spikes on each market-data-event using a rolling 15-minute window: price_move / market_price_15min_ago > 0.10. Discrete-bucket detection is FORBIDDEN.",
+      "rationale": "STR-04 event_detector + pitfall: rolling window over all ticks.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-048",
+      "rule": "News-spike-fade exits MUST include: take-profit at 50% retrace, stop-loss on another 50% extension, time-stop at fade_timeout_minutes (default 60), and immediate close on market-resolution. All four MUST be evaluated on every market-data-event.",
+      "rationale": "STR-04 exit_rules.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-049",
+      "rule": "Closing-momentum (STR-03) MUST only evaluate entries when (market-close-date - now) is within (exit_buffer, window_hours]. If market-close-date - now <= 0, the strategy MUST skip the market.",
+      "rationale": "STR-03 entry_rule + pitfall: markets can close faster than window if sync missed.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-050",
+      "rule": "Brier-score MUST use paper-fill.entry_price as the forecast probability for each closed paper-position where strategy.strategy_id != 'market-maker'. Markets resolving 'cancelled' MUST be excluded from brier N.",
+      "rationale": "MET-01 recommended_default + OQ-02/OQ-03 + INV-010 (market-maker excluded).",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-051",
+      "rule": "Sharpe-ratio tile MUST render '\u2014' (null) while fewer than 2 daily returns are observed; annualisation factor defaults to 252 with config override.",
+      "rationale": "MET-02 pitfalls: stdev undefined for N=1; 252-day convention.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-052",
+      "rule": "Sortino-ratio tile MUST render '\u2014' (null) until at least one downside return is observed; target_return defaults to 0.",
+      "rationale": "MET-03 pitfalls: denominator zero when no negative returns.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-053",
+      "rule": "Max-drawdown MUST initialise running_peak = equity[0] = simulated-bankroll, express drawdown as positive percent, and be computed with np.maximum.accumulate over the equity-curve-series.",
+      "rationale": "MET-04 algorithm + pitfall.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-054",
+      "rule": "Win-rate MUST be computed only over paper-positions where market-resolution \u2208 {yes-resolved, no-resolved}; cancelled markets excluded from both numerator and denominator. A position with realised-pnl == 0 counts as a LOSS.",
+      "rationale": "MET-05 scope + tie_handling + OQ-03 cancelled handling.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-055",
+      "rule": "order-side = 'sell' on an existing paper-position MUST reduce that position. Opening a short position MUST be implemented as BUY on the opposite market-side (e.g. buy NO to short YES); the plugin-interface docstring MUST document this convention.",
+      "rationale": "OQ-09 recommended default.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-056",
+      "rule": "Adapter API keys (if supplied) MUST be loaded only from a local .env file via environment variables. Adapter code MUST NOT log keys, MUST NOT return keys in any HTTP response, and MUST NOT persist keys to the database.",
+      "rationale": "SR-002 security rule; B4 boundary invariant.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "auth",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-057",
+      "rule": "Adapter ingest MUST reject any tick with market-price outside [0.0, 1.0] and emit an AdapterError rather than writing to the database (prevents FS-002).",
+      "rationale": "INV-002 + FS-002.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "data-shape",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-058",
+      "rule": "Every adapter MUST expose last_sync (UTC datetime) and poll_interval (seconds) as queryable properties so the data-ingestion screen and the FS-006 staleness check can read them.",
+      "rationale": "FS-006 + adapter entity capabilities in semantic-spec.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "endpoint",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-059",
+      "rule": "Adapter rate-limit token bucket state (HS-003) MUST be kept in-process per adapter instance and MUST NOT be persisted to the database; sync-now button requests that would exceed the bucket MUST be queued, not executed immediately.",
+      "rationale": "HS-003 hidden state + SR-003 token-bucket throttling.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "rate-limit",
+      "_source": "api"
+    },
+    {
+      "id": "API-R-060",
+      "rule": "Platform-specific fee modelling (kalshi taker up to 3%, polymarket gas, predictit per-trade) is OUT OF SCOPE for v1 paper mode; fee-model stays at 0 by default. Any enabling of per-platform fees MUST be opt-in via strategy-parameters and MUST NOT change existing paper-fill records.",
+      "rationale": "OQ-06 recommended default: OUT OF SCOPE unless person asks.",
+      "applies_to": [
+        "kalshi",
+        "polymarket",
+        "manifold",
+        "predictit"
+      ],
+      "category": "execution-sequencing",
+      "_source": "api"
+    },
+    {
+      "id": "FW-R-001",
+      "rule": "FastAPI's auto-generated OpenAPI schema at http://127.0.0.1:8000/openapi.json is the single authoritative contract between backend and frontend. Generate TypeScript types from it (e.g., via `openapi-typescript`) into `lib/api-types.ts` rather than hand-writing types that mirror pydantic models.",
+      "rationale": "Pydantic v2 BaseModel + FastAPI `response_model` produces a deterministic OpenAPI schema. Hand-written TS types drift; generated types guarantee the Market.yes_price bounds ([0,1]) and Platform enum stay in lockstep with backend.",
+      "bridges": [
+        "fastapi",
+        "pydantic",
+        "typescript",
+        "nextjs"
+      ],
+      "category": "frontend-backend-contract",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-002",
+      "rule": "Regenerate the TypeScript API types (`openapi-typescript http://127.0.0.1:8000/openapi.json -o lib/api-types.ts`) whenever any pydantic schema in `backend/app/schemas/` changes. Wire this into an npm script `types:gen` and call it as part of `predev` or on backend restart.",
+      "rationale": "Without regeneration on dev-server restart, frontend sees stale field names (e.g., renaming `yes_price` -> `yes`). Making the step explicit and scripted prevents silent UI breakage.",
+      "bridges": [
+        "fastapi",
+        "typescript",
+        "nextjs"
+      ],
+      "category": "frontend-backend-contract",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-003",
+      "rule": "Zod schemas on the frontend must validate JSON returned from FastAPI at the network boundary (`MarketSchema.parse(await res.json())`) and must be kept structurally identical to the pydantic models. Any field divergence is a bug to fix on the pydantic side first, not in the zod schema.",
+      "rationale": "FastAPI is the source of truth; zod is a runtime guard against schema drift and upstream adapter corruption. Fixing divergence in zod instead of pydantic silently re-introduces the drift on the next backend restart.",
+      "bridges": [
+        "fastapi",
+        "pydantic",
+        "typescript",
+        "zod"
+      ],
+      "category": "frontend-backend-contract",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-004",
+      "rule": "Every Next.js `fetch()` call into the FastAPI backend that reads price/volume data must use `cache: 'no-store'` OR `next: { revalidate: 30 }` \u2014 never the default Next 15 behavior (uncached, but silently cached in some contexts). Pick `no-store` for dynamic market detail pages, `revalidate: 30` for market list pages (matches `live_poll_interval_seconds`).",
+      "rationale": "Next.js 15 made fetch uncached by default, but route handlers and server components still apply request memoization. Prices change every 30s; caching beyond the live_poll_interval serves stale prices and breaks bankroll math.",
+      "bridges": [
+        "nextjs",
+        "fastapi"
+      ],
+      "category": "data-fetching",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-005",
+      "rule": "Client Components that display live prices must use SWR (or equivalent) with `refreshInterval: 30_000`, `refreshWhenHidden: false`, `refreshWhenOffline: false`. Server Components that render the initial HTML for the same page must fetch with `next: { revalidate: 30 }`. The two paths must agree on the 30-second cadence.",
+      "rationale": "Mismatched cadences cause UI flicker on hydration (SSR shows price X, client immediately refetches and shows Y). Recharts.md \u00a74 explicitly recommends `refetchInterval: 30_000` to match `data_refresh_policy.live_poll_interval_seconds`.",
+      "bridges": [
+        "nextjs",
+        "recharts",
+        "swr"
+      ],
+      "category": "data-fetching",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-006",
+      "rule": "All Recharts components must live under a `\"use client\"` module. Next.js page.tsx files (Server Components) may import them, but never render them in a Server Component path \u2014 instead, wrap in a thin Client Component that receives pre-fetched data as props.",
+      "rationale": "recharts.md \u00a73 flags that Recharts uses browser SVG APIs and cannot render on the server. The pattern `<ServerPage><ClientChart data={...}/></ServerPage>` preserves SSR streaming while isolating the client boundary.",
+      "bridges": [
+        "nextjs",
+        "recharts"
+      ],
+      "category": "rendering-boundary",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-007",
+      "rule": "Every `ResponsiveContainer` in a Recharts chart must have a parent element with explicit height (either `h-[360px]`, `style={{ height: 360 }}`, or a flex/grid cell with defined height). When embedded in a Tailwind grid cell, set `grid-rows-[auto_1fr]` on the parent so the chart gets the flex slot.",
+      "rationale": "recharts.md \u00a73 calls out the most common Recharts bug: chart doesn't render because parent has 0 height. Tailwind's default block-level h-auto leaves this ambiguous. A verifiable rule: chart container must have a computed height > 0 in DOM.",
+      "bridges": [
+        "recharts",
+        "tailwind"
+      ],
+      "category": "rendering-boundary",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-008",
+      "rule": "All Recharts `<Line>`, `<Area>`, and `<Bar>` components used for real-time (polled) series must set `isAnimationActive={false}`. Animation on 30-second repolls produces a visible stutter.",
+      "rationale": "recharts.md \u00a73 pitfall list: 'isAnimationActive={false} for real-time data to avoid animation stutter on each update.' SWR's `mutate()` triggers React re-render on each poll; Recharts animates on every re-mount of data.",
+      "bridges": [
+        "recharts",
+        "swr"
+      ],
+      "category": "rendering-boundary",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-009",
+      "rule": "Tailwind v4 theme tokens declared in `app/globals.css` (inside `@theme { --color-yes, --color-no, --color-accent, ... }`) must also be mirrored in a TypeScript file `lib/chartTheme.ts` that Recharts reads for `stroke` and `fill` props. Never hard-code hex strings inside Recharts JSX.",
+      "rationale": "recharts.md \u00a74 explicitly recommends 'Share a chartTheme.ts object with colors matching Tailwind tokens to avoid hard-coding hex strings.' Tailwind v4 CSS custom properties cannot be consumed by SVG `stroke` attributes directly without a helper.",
+      "bridges": [
+        "tailwind",
+        "recharts"
+      ],
+      "category": "theming",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-010",
+      "rule": "FastAPI's `lifespan` asynccontextmanager is the single owner of the SQLAlchemy async engine. Never call `create_async_engine()` from a router, dependency, or background task \u2014 import the module-level engine from `backend/app/db.py` (or `main.py`).",
+      "rationale": "sqlalchemy.md \u00a71 and fastapi.md Example 1 show one engine per process, scoped to lifespan. Multiple engines exhaust SQLite's single-writer lock and Postgres connection pool.",
+      "bridges": [
+        "fastapi",
+        "sqlalchemy"
+      ],
+      "category": "database-lifecycle",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-011",
+      "rule": "Every route handler that touches the database must declare `session: AsyncSession = Depends(get_session)` and never create an `AsyncSession` directly. The `get_session` dependency must be an `async def` yielding from `async with SessionLocal() as session:` (not wrapped in `@asynccontextmanager`).",
+      "rationale": "fastapi.md \u00a73 gotchas: 'DI with yield: use Depends(get_session) with AsyncIterator only; don't wrap in @asynccontextmanager.' Direct session creation bypasses FastAPI's exception-safe teardown.",
+      "bridges": [
+        "fastapi",
+        "sqlalchemy"
+      ],
+      "category": "database-lifecycle",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-012",
+      "rule": "SQLAlchemy sessions must never be shared across asyncio tasks, BackgroundTasks, or the polling loop. A background task that writes to DB must open its own `async with SessionLocal() as session:` block.",
+      "rationale": "sqlalchemy.md \u00a73: 'Don't share AsyncSession across tasks. One session per request/task.' FastAPI's `Depends(get_session)` closes the session after the HTTP response; a BackgroundTask running afterward would use a closed session.",
+      "bridges": [
+        "fastapi",
+        "sqlalchemy"
+      ],
+      "category": "database-lifecycle",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-013",
+      "rule": "All SQLAlchemy relationship traversals in async code must be eagerly loaded via `selectinload(...)` or `joinedload(...)` in the `.options()` clause of the query. Never access `market.ticks` after the session closes; the code must query `select(Market).options(selectinload(Market.ticks))` upfront.",
+      "rationale": "sqlalchemy.md \u00a73 gotchas: 'No implicit lazy loading in async. Accessing market.ticks after session close raises MissingGreenlet.' This is the #1 silent async SQLAlchemy bug.",
+      "bridges": [
+        "sqlalchemy",
+        "fastapi"
+      ],
+      "category": "database-lifecycle",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-014",
+      "rule": "`async_sessionmaker(..., expire_on_commit=False)` is mandatory for this project. Never use the default `expire_on_commit=True` \u2014 it forces a re-fetch of every attribute after commit, which in async code means re-opening the session.",
+      "rationale": "sqlalchemy.md Example 1 + \u00a73: 'expire_on_commit=False on session factory lets you access attributes after commit without refetch \u2014 recommended for web contexts.' Especially critical when returning the ORM object as `response_model`.",
+      "bridges": [
+        "sqlalchemy",
+        "fastapi",
+        "pydantic"
+      ],
+      "category": "database-lifecycle",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-015",
+      "rule": "Every pydantic response model in `backend/app/schemas/` that is returned from a route with `response_model=...` must set `model_config = ConfigDict(from_attributes=True)`. Missing this flag means FastAPI cannot convert ORM instances and returns 500 errors at runtime.",
+      "rationale": "fastapi.md \u00a73: 'from_attributes=True replaces v1's orm_mode = True.' Paired with `expire_on_commit=False`, this is the two-flag pattern that lets route handlers return ORM objects directly.",
+      "bridges": [
+        "pydantic",
+        "sqlalchemy",
+        "fastapi"
+      ],
+      "category": "database-lifecycle",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-016",
+      "rule": "All Alembic migrations for this project must use `render_as_batch=True` in `env.py`'s `context.configure(...)` call, and any column alter / drop must wrap in `op.batch_alter_table(...)`. This is non-negotiable because the project ships with SQLite as the default database.",
+      "rationale": "alembic.md \u00a72 and \u00a74: 'SQLite cannot ALTER COLUMN \u2014 always wrap in op.batch_alter_table(...) / enable render_as_batch=True in env.py.' A migration that works on Postgres but not SQLite breaks the local dev loop.",
+      "bridges": [
+        "alembic",
+        "sqlalchemy"
+      ],
+      "category": "migration-workflow",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-017",
+      "rule": "Alembic `env.py` must use the async pattern: `async_engine_from_config(...)` + `await connection.run_sync(do_run_migrations)`. The sync pattern (`engine_from_config` + `connection.configure`) will raise `InvalidRequestError` with aiosqlite.",
+      "rationale": "alembic.md \u00a72 and \u00a74: 'Async env.py requires async_engine_from_config + connection.run_sync(do_run_migrations) \u2014 plain sync pattern won't work with aiosqlite.'",
+      "bridges": [
+        "alembic",
+        "sqlalchemy"
+      ],
+      "category": "migration-workflow",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-018",
+      "rule": "Alembic `target_metadata = Base.metadata` requires an import of `backend.app.models` (or whichever module actually defines the ORM classes) at the top of `env.py`. If models import lazily, autogenerate silently misses them.",
+      "rationale": "alembic.md \u00a74: 'target_metadata = Base.metadata must import the module defining all models, or autogenerate will miss tables.' Verifiable: `alembic revision --autogenerate -m test` must list every ORM class.",
+      "bridges": [
+        "alembic",
+        "sqlalchemy"
+      ],
+      "category": "migration-workflow",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-019",
+      "rule": "Data migrations (UPDATE statements, backfills) must be separate Alembic revisions from schema migrations (CREATE/ALTER TABLE). Never mix `op.add_column(...)` and `conn.execute(sa.text('UPDATE ...'))` in the same revision unless the update is required to satisfy a NOT NULL constraint in the same migration \u2014 in which case it must use `op.batch_alter_table` to set the column non-nullable only after the update.",
+      "rationale": "alembic.md Example 3 shows the legitimate mix case. For all others, separating schema from data means you can roll back one without the other and the migration history reads as an audit log.",
+      "bridges": [
+        "alembic"
+      ],
+      "category": "migration-workflow",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-020",
+      "rule": "CI and pre-test setup scripts must run `alembic upgrade head` before executing pytest against a non-in-memory database. The in-memory test fixture (`sqlite+aiosqlite:///:memory:`) uses `Base.metadata.create_all` directly and does NOT go through Alembic \u2014 this is a deliberate speed choice but means migration correctness must be tested separately.",
+      "rationale": "alembic.md \u00a74: 'CI: run alembic upgrade head before tests to ensure schema is current.' pytest.md Example 2 shows the in-memory fixture bypasses migrations. Both paths must exist.",
+      "bridges": [
+        "alembic",
+        "pytest",
+        "sqlalchemy"
+      ],
+      "category": "migration-workflow",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-021",
+      "rule": "Backend integration tests must use `httpx.AsyncClient(transport=ASGITransport(app=app))` against the full FastAPI app \u2014 not Starlette's `TestClient`. Use `@pytest.mark.asyncio` or project-wide `asyncio_mode = \"auto\"`.",
+      "rationale": "fastapi.md \u00a74 and pytest.md Example 3: 'Use httpx.AsyncClient with ASGITransport (starlette's TestClient is sync and has edge cases with lifespan).' ASGITransport exercises the same code path (including lifespan) as uvicorn production.",
+      "bridges": [
+        "fastapi",
+        "pytest",
+        "httpx"
+      ],
+      "category": "testing-composition",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-022",
+      "rule": "The Playwright config's `webServer` array must launch BOTH the Next.js dev server (port 3000) and the FastAPI uvicorn server (port 8000). Both must be declared with their own health URL (`http://localhost:3000` and `http://localhost:8000/docs`) and `reuseExistingServer: !process.env.CI`.",
+      "rationale": "vitest-playwright.md \u00a73: 'Start both servers (Next.js + FastAPI) via webServer array \u2014 otherwise E2E tests hit a dead backend.' This is the dual-webServer pattern specific to full-stack Next+Python projects.",
+      "bridges": [
+        "playwright",
+        "nextjs",
+        "fastapi"
+      ],
+      "category": "testing-composition",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-023",
+      "rule": "Playwright tests that verify backend error handling must use `page.route('**/api/**', route => route.fulfill({...}))` to intercept network calls, not hit a real backend with synthetic data. Tests that verify happy-path flows must hit the real FastAPI + SQLite webServer instance and seed state via `page.request.post('/api/...')` rather than `page.evaluate`.",
+      "rationale": "vitest-playwright.md \u00a73 and Example 3: 'Avoid page.evaluate for test setup \u2014 prefer API calls or page.request to seed state.' Mocking only error paths avoids brittle tests on happy paths while keeping error paths deterministic.",
+      "bridges": [
+        "playwright",
+        "fastapi"
+      ],
+      "category": "testing-composition",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-024",
+      "rule": "Vitest cannot render Next.js Server Components. Any `page.tsx` or module using `await headers()`, `await cookies()`, or `await params` must either (a) extract its logic into a pure TS function tested separately, or (b) be tested via Playwright only. Do not try to mock React's Server Component runtime.",
+      "rationale": "vitest-playwright.md \u00a73 Vitest gotchas: 'Server Components can't be rendered by Testing Library \u2014 they aren't real React components at runtime. Extract logic into pure functions or plain Client Components for unit testing.'",
+      "bridges": [
+        "vitest",
+        "nextjs"
+      ],
+      "category": "testing-composition",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-025",
+      "rule": "Pytest fixtures for async DB sessions must use `@pytest_asyncio.fixture` (not `@pytest.fixture`) even when `asyncio_mode = \"auto\"` is set in `pyproject.toml`. The auto-mode flag applies to test functions, not to fixtures.",
+      "rationale": "pytest.md \u00a75 gotchas: 'asyncio_mode = \"auto\" removes the need to mark every async test; but fixtures still need @pytest_asyncio.fixture (not @pytest.fixture).' A `@pytest.fixture` on an async function silently becomes a coroutine object instead of its awaited value.",
+      "bridges": [
+        "pytest",
+        "sqlalchemy"
+      ],
+      "category": "testing-composition",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-026",
+      "rule": "The backtest engine and the live paper-trading engine must share the same event-loop code path. The data-handler layer is polymorphic: `HistoricalDataHandler` replays tick rows from `price_ticks` table; `LiveDataHandler` pulls from the adapter polling loop. The strategy + portfolio + execution layers are identical across both modes.",
+      "rationale": "Architectural spec from semantic-spec.json and feature-discoveries.json: backtests must produce the exact same fills that live would, given identical price inputs. Divergent code paths introduce look-ahead bias and invalidate Sharpe/drawdown metrics.",
+      "bridges": [
+        "fastapi",
+        "pandas",
+        "sqlalchemy"
+      ],
+      "category": "backtest-engine-architecture",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-027",
+      "rule": "Market data adapters (Kalshi, Polymarket, Manifold, PredictIt) must implement a common async interface `async def fetch_markets() -> list[NormalizedMarket]` and `async def fetch_ticks(market_id: str) -> list[NormalizedTick]`. The polling loop (a FastAPI `BackgroundTasks` task or an asyncio task started in `lifespan`) calls them on a 30-second interval and writes to `price_ticks`. Never call adapters directly from a route handler \u2014 always read from DB.",
+      "rationale": "tech-stack.json and fastapi.md Example 5: separation prevents blocking HTTP requests on upstream adapter latency. Routes read local SQLite (microseconds); the poller fills SQLite (seconds-scale network).",
+      "bridges": [
+        "fastapi",
+        "sqlalchemy"
+      ],
+      "category": "adapter-polling",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-028",
+      "rule": "The polling loop for adapters must run inside the same FastAPI process as the API (started in `lifespan` via `asyncio.create_task(...)`), not as a separate worker or cron job. There is no queue (Celery/RQ/APScheduler) in the v1 stack \u2014 simplicity over durability.",
+      "rationale": "tech-stack.json deployment = local; fastapi.md \u00a73: 'BackgroundTasks runs in the same worker after response \u2014 not durable. Use Celery/RQ/APScheduler for real queues.' For local paper-trading v1, the shared-process model is the simpler, correct choice.",
+      "bridges": [
+        "fastapi"
+      ],
+      "category": "adapter-polling",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-029",
+      "rule": "Adapter responses must be normalized to the internal `NormalizedTick { ts: int_ms_utc, yes: float_0_1, no: float_0_1 }` shape at the adapter boundary. The discriminated-union pattern in typescript.md Example 6 has a Python mirror: each adapter module exports a `normalize(raw) -> NormalizedTick` function, and the polling loop calls only `normalize`.",
+      "rationale": "typescript.md Example 6: Kalshi returns `{yes_bid, yes_ask}`, Manifold returns `{prob}`. Polymarket returns `{outcomePrices: [yes, no]}`. Normalization at the boundary means the rest of the code (strategies, charts, DB) never branches on platform.",
+      "bridges": [
+        "typescript",
+        "pydantic",
+        "fastapi"
+      ],
+      "category": "adapter-polling",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-030",
+      "rule": "Strategy classes must implement the interface `class Strategy: def decide(self, market: Market, ticks: pd.Series, portfolio: Portfolio) -> Order | None; def on_fill(self, fill: Fill, portfolio: Portfolio) -> None`. Strategies live in `backend/app/strategies/*.py` and are auto-registered by filesystem scan at app startup via `lifespan`. Adding a new strategy file must NOT require editing a registry or restarting anything beyond `uvicorn --reload`.",
+      "rationale": "semantic-spec.json strategy plugin requirement: 'auto-register via filesystem scan; no server restart required on new plugin' under `uvicorn --reload`. pytest.md Example 1 shows the interface shape (kelly_fraction); the class form extends it with state for on_fill.",
+      "bridges": [
+        "fastapi",
+        "pandas"
+      ],
+      "category": "strategy-plugin",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-031",
+      "rule": "Strategy `decide()` must receive ticks as a `pd.Series` indexed by `DatetimeIndex` in UTC. Never pass raw tick dicts or NumPy arrays \u2014 the quant library (pandas-numpy-scipy.md) assumes DatetimeIndex for rolling windows, resample, and news-spike detection.",
+      "rationale": "pandas-numpy-scipy.md \u00a73: 'Timezones: always construct DatetimeIndex with utc=True. Mixing naive and aware breaks joins.' Every metric (Sharpe, Sortino, max_drawdown, Brier) in that file assumes pd.Series input.",
+      "bridges": [
+        "pandas",
+        "fastapi"
+      ],
+      "category": "strategy-plugin",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-032",
+      "rule": "Quant functions (Sharpe, Sortino, max drawdown, Brier, Kelly) must never be called from inside an `async def` endpoint. Wrap in `await asyncio.to_thread(sharpe, returns)` or mount the endpoint as sync `def ...` so FastAPI runs it in a threadpool.",
+      "rationale": "fastapi.md \u00a73 + pandas-numpy-scipy.md \u00a74: pandas/numpy operations are CPU-bound and release the GIL only for specific NumPy ops. A blocking pandas call inside `async def` freezes all other concurrent requests (including the 30s polling loop).",
+      "bridges": [
+        "fastapi",
+        "pandas",
+        "numpy"
+      ],
+      "category": "backtest-engine-architecture",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-033",
+      "rule": "SQLAlchemy `DateTime` columns must always be written as UTC, and every `datetime.utcnow` usage must be replaced with `datetime.now(tz=timezone.utc)`. The pandas layer reads these timestamps via `pd.to_datetime(df['ts'], utc=True)`.",
+      "rationale": "sqlalchemy.md Example 2 uses `datetime.utcnow` (a pitfall: returns naive); pandas-numpy-scipy.md \u00a73 mandates `utc=True`. Mixing tz-aware (pandas) with tz-naive (SQLAlchemy default) raises `TypeError` on comparison.",
+      "bridges": [
+        "sqlalchemy",
+        "pandas"
+      ],
+      "category": "data-consistency",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-034",
+      "rule": "The `price_ticks` table must have the composite index `(market_id, ts)` (named `ix_market_ts`). Every query that drives a chart or backtest does `WHERE market_id = ? ORDER BY ts` \u2014 without the composite index, SQLite falls back to a scan over all ticks across all markets.",
+      "rationale": "sqlalchemy.md Example 2 explicitly declares `__table_args__ = (Index(\"ix_market_ts\", \"market_id\", \"ts\"),)`. alembic.md Example 1 creates it. This is not optional for a 30-second polling workload over months.",
+      "bridges": [
+        "sqlalchemy",
+        "alembic"
+      ],
+      "category": "data-consistency",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-035",
+      "rule": "Bulk tick inserts must use `session.execute(insert(PriceTick).values([...]))` with a list of dicts, NOT ORM-instance `session.add_all([...])`. For SQLite + aiosqlite, the bulk-statement path is 10x faster and avoids per-row identity-map overhead.",
+      "rationale": "sqlalchemy.md Example 5 shows the bulk insert pattern; \u00a73 notes 'SQLite + async serializes writes \u2014 do not expect real write concurrency.' Every unnecessary round-trip compounds under the single-writer lock.",
+      "bridges": [
+        "sqlalchemy"
+      ],
+      "category": "data-consistency",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-036",
+      "rule": "Next.js route handlers that proxy the FastAPI backend (`app/api/backend/:path*`) must set `export const dynamic = 'force-dynamic'` and forward the original request's `Accept` header. Use `next.config.ts` `rewrites()` only for static, header-less proxies; prefer explicit route handlers when any header forwarding is needed.",
+      "rationale": "nextjs.md Example 3 + \u00a73: 'Route handlers need dynamic = \"force-dynamic\" when you read headers or use query params that change per request.' Example 6 shows the rewrite pattern, which is header-lossy.",
+      "bridges": [
+        "nextjs",
+        "fastapi"
+      ],
+      "category": "frontend-backend-contract",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-037",
+      "rule": "FastAPI `CORSMiddleware` must be added BEFORE `app.include_router(...)` calls in `main.py`, and `allow_origins` must include exactly `http://localhost:3000` in dev. Wildcard `[\"*\"]` is forbidden because the backend will eventually carry credentials for adapter API keys.",
+      "rationale": "fastapi.md Example 1 and \u00a73: 'CORS middleware order: must be added before routers that return errors, else responses miss the CORS headers.' An error response from a router that lacks CORS headers appears as a network error in Next.js fetch.",
+      "bridges": [
+        "fastapi",
+        "nextjs"
+      ],
+      "category": "frontend-backend-contract",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-038",
+      "rule": "Tailwind v4's `@theme` block is the single source of truth for colors AND spacing; do not install `tailwind.config.js`. Any v3-style config file must be deleted before running `pnpm dev`, or the `@tailwindcss/postcss` plugin will emit conflicting stylesheets.",
+      "rationale": "tailwind.md \u00a74: 'Don't install tailwindcss@3 and v4 plugins side-by-side \u2014 the PostCSS plugin is a separate package in v4.' and 'No more content: [] array \u2014 delete the old config file when upgrading from v3.'",
+      "bridges": [
+        "tailwind",
+        "nextjs"
+      ],
+      "category": "theming",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-039",
+      "rule": "Zod schemas used for frontend form validation (e.g., backtest parameters: `{ strategy_id, start, end, bankroll }`) must match the FastAPI pydantic `CreateBacktestIn` exactly: same field names, same snake_case convention, same bounds (`bankroll: z.number().gt(0)` \u2194 `Field(default=10_000, gt=0)`). Use one test that round-trips a valid object through both validators.",
+      "rationale": "typescript.md Example 2 + fastapi.md Example 2: zod and pydantic v2 have equivalent validator semantics (min/max/gt/ge), but field-casing mismatches silently drop values. A contract test prevents drift.",
+      "bridges": [
+        "zod",
+        "pydantic",
+        "fastapi",
+        "nextjs"
+      ],
+      "category": "frontend-backend-contract",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-040",
+      "rule": "Server Actions in Next.js (`\"use server\"`) that POST to FastAPI must call `revalidatePath(...)` for the page that displays the resulting state. For backtests: POST `/api/backtests` then `revalidatePath('/backtests')`. Never `router.push(...)` inside a Server Action \u2014 use the form's redirect response or `revalidatePath` + `redirect`.",
+      "rationale": "nextjs.md Example 5 shows the pattern. Without `revalidatePath`, the user POSTs a backtest but the list page shows the stale pre-submission state until next poll.",
+      "bridges": [
+        "nextjs",
+        "fastapi"
+      ],
+      "category": "data-fetching",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-041",
+      "rule": "The ORDER of hydration for a live market detail page is: (1) Server Component pre-fetches `/api/markets/{id}` with `cache: 'no-store'` and the last 100 ticks from `/api/markets/{id}/ticks?limit=100`; (2) passes pre-fetched data as props to a Client Component; (3) Client Component starts SWR with `refreshInterval: 30_000` using the pre-fetched data as `fallbackData`. This avoids the loading-spinner flash on first paint.",
+      "rationale": "nextjs.md Example 4 + recharts.md \u00a74: Server Component SSR gives instant first paint; SWR's `fallbackData` option avoids re-fetching on mount. Both the 30s cadence and the 100-tick window match the project defaults in tech-stack.json.",
+      "bridges": [
+        "nextjs",
+        "swr",
+        "recharts",
+        "fastapi"
+      ],
+      "category": "data-fetching",
+      "_source": "framework"
+    },
+    {
+      "id": "FW-R-042",
+      "rule": "Every new strategy plugin file dropped into `backend/app/strategies/` must carry a sibling test file in `tests/strategies/` that (a) constructs the strategy, (b) feeds it a deterministic `pd.Series` of ticks, (c) asserts a specific decision for at least one input. The strategy auto-registration scan must skip files whose tests do not exist (fail-closed).",
+      "rationale": "semantic-spec.json requires strategies to be verifiable; pytest.md Example 1 shows the pd.Series parametrize pattern. Fail-closed registration prevents half-built strategies from firing on live paper trading.",
+      "bridges": [
+        "fastapi",
+        "pandas",
+        "pytest"
+      ],
+      "category": "strategy-plugin",
+      "_source": "framework"
+    }
+  ]
+}

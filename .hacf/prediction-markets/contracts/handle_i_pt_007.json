@@ -1,0 +1,65 @@
+{
+  "contract_id": "C-I-PT-007",
+  "interaction_id": "I-PT-007",
+  "function": {
+    "name": "handle_i_pt_007",
+    "module_hint": "backend.handlers.paper_trades",
+    "inputs": [
+      {
+        "name": "filters",
+        "type": "FilterSet"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "file",
+        "type": "CsvBlob"
+      }
+    ]
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 30000,
+    "retry_policy": {
+      "max_retries": 1,
+      "backoff": "none"
+    },
+    "concurrency_policy": "single-at-a-time",
+    "idempotency_rule": "idempotent-read",
+    "ui_locking_rule": "disable-export-button-during-download",
+    "failure_transitions": [
+      {
+        "condition": "http-error",
+        "transition": "paper-trades",
+        "ui_effect": "toast-export-failed-retry"
+      }
+    ],
+    "side_effects": [
+      {
+        "type": "db-write",
+        "target": "paper_fills + paper_positions (atomic)",
+        "description": "PR-001 atomic transaction"
+      },
+      {
+        "type": "metric-recompute",
+        "target": "equity + brier + sharpe + winrate",
+        "description": "INV-001 equity invariant"
+      },
+      {
+        "type": "file-download",
+        "target": "browser",
+        "description": "csv or json attachment"
+      }
+    ]
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "BE-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "paper-trades",
+    "success_transition": "paper-trades"
+  }
+}

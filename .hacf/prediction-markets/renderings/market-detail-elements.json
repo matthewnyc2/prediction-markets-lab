@@ -1,0 +1,29 @@
+{
+  "screen": "market-detail",
+  "rendering_status": "confirmed",
+  "data_elements": [
+    { "name": "market-title",       "type": "heading", "includes": ["platform-chip","title"] },
+    { "name": "close-date",         "type": "text" },
+    { "name": "volume-24h",         "type": "metric", "format": "currency" },
+    { "name": "open-interest",      "type": "metric", "format": "currency" },
+    { "name": "price-history-chart","type": "chart",  "default-window-days": 90, "series": "yes-price" },
+    { "name": "recent-fills-table", "type": "table",  "columns": ["timestamp","side","source","price","quantity"] }
+  ],
+  "interactive_elements": [
+    { "name": "buy-yes-button",     "type": "button" },
+    { "name": "buy-no-button",      "type": "button" },
+    { "name": "size-input",         "type": "number-input", "units": "contracts" },
+    { "name": "submit-paper-trade", "type": "button" }
+  ],
+  "computed_outputs": [
+    { "name": "cost",     "formula": "selected-price × size" },
+    { "name": "max-loss", "formula": "cost (for long-only contracts)" }
+  ],
+  "navigation_paths": [
+    { "from": "market-detail", "to": "paper-trades", "trigger": "after submit-paper-trade, optional 'view in ledger' link" }
+  ],
+  "conditional_displays": [
+    { "element": "submit-paper-trade", "condition": "enabled only when side selected and size > 0" },
+    { "element": "recent-fills-table", "condition": "shows empty-state if no fills on this market" }
+  ]
+}

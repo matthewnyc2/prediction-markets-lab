@@ -1,0 +1,1 @@
+There is a prediction market paper trader that allows me to back test strategies as well

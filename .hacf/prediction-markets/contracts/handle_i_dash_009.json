@@ -1,0 +1,59 @@
+{
+  "contract_id": "C-I-DASH-009",
+  "interaction_id": "I-DASH-009",
+  "function": {
+    "name": "handle_i_dash_009",
+    "module_hint": "backend.handlers.dashboard",
+    "inputs": [],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 10000,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff": "exponential",
+      "base_ms": 250
+    },
+    "concurrency_policy": "queue-latest",
+    "idempotency_rule": "idempotency-key-required-for-writes",
+    "ui_locking_rule": "disable-submit-and-spin-until-response",
+    "failure_transitions": [
+      {
+        "condition": "http-4xx-validation-error",
+        "transition": "dashboard",
+        "ui_effect": "inline-error-beside-field"
+      },
+      {
+        "condition": "http-5xx-server-error",
+        "transition": "dashboard",
+        "ui_effect": "toast-retry-option"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "dashboard",
+        "ui_effect": "toast-check-connection"
+      }
+    ],
+    "side_effects": []
+  },
+  "preconditions": [
+    {
+      "ref": "INV-001",
+      "condition": "equity == simulated_bankroll + sum(closed_position.realised_pnl) + sum(open_position.unrealised_pnl) BEFORE call"
+    }
+  ],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "FE-R-027",
+      "BE-R-001",
+      "INV-001",
+      "PR-003",
+      "HS-004"
+    ],
+    "external_rule_refs": [],
+    "source_state": "dashboard",
+    "success_transition": "dashboard"
+  }
+}

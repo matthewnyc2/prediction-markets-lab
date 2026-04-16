@@ -1,0 +1,1 @@
+You need a paper trading and backtesting environment for prediction markets because you want to develop and validate quantitative strategies — Kelly sizing, arbitrage, momentum, fade — without financial exposure, and you need performance metrics (P&L, Brier score, Sharpe ratio, win rate) to know whether a strategy actually works before risking real capital.

@@ -1,0 +1,313 @@
+{
+  "domain": "backend",
+  "rules": [
+    {
+      "id": "BE-R-001",
+      "technology": "fastapi",
+      "rule": "Pin fastapi@0.115.x, pydantic@2.9.x or 2.10.x, uvicorn[standard]@0.32.x, starlette>=0.40,<1.0, and Python >=3.12,<3.13. Do not mix pydantic v1 into this stack.",
+      "rationale": "FastAPI 0.115 requires pydantic v2 only; the version compatibility table pins these ranges together to avoid breakage.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-002",
+      "technology": "fastapi",
+      "rule": "Write endpoints as `async def` whenever they touch the database, HTTP, or WebSockets so they can use async drivers without blocking the event loop.",
+      "rationale": "Async endpoints integrate with async DB drivers (aiosqlite/asyncpg) as shown in Example 3; sync handlers forfeit concurrency benefits.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-003",
+      "technology": "fastapi",
+      "rule": "Never call blocking/CPU-bound code (pandas, numpy, heavy loops) directly inside `async def`. Wrap with `await asyncio.to_thread(...)` or use a sync `def` endpoint (FastAPI runs those in a threadpool).",
+      "rationale": "Gotcha 3.1 explicitly warns that blocking calls inside async freeze the event loop.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-004",
+      "technology": "fastapi",
+      "rule": "Use pydantic v2 APIs only: `.model_dump()` (not `.dict()`), `.model_validate()` (not `.parse_obj()`), and `model_config = ConfigDict(...)` (not inner `Config` class).",
+      "rationale": "Gotcha 3.2 flags these as the pydantic v2 migration points; v1 calls will raise or silently mis-serialize.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-005",
+      "technology": "fastapi",
+      "rule": "For any response model populated from ORM objects, set `model_config = ConfigDict(from_attributes=True)`. Do not use v1's `orm_mode = True`.",
+      "rationale": "Shown in MarketOut (Example 2); gotcha 3.3 confirms `from_attributes=True` is the v2 replacement.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-006",
+      "technology": "fastapi",
+      "rule": "For PATCH-style partial updates, call `.model_dump(exclude_unset=True)` so unset fields are not written with defaults.",
+      "rationale": "Gotcha 3.4 notes default behavior changed in v2; PATCH semantics require explicit exclude_unset.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-007",
+      "technology": "fastapi",
+      "rule": "Always declare `response_model=` on routes that return ORM objects (e.g. `response_model=list[MarketOut]`). Missing it leaks internal DB fields to the client.",
+      "rationale": "Gotcha 3.7 explicitly warns forgotten response_model leaks DB fields; Examples 3 show the pattern.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-008",
+      "technology": "fastapi",
+      "rule": "Constrain numeric query/body fields with pydantic `Field(ge=..., le=..., gt=...)` instead of runtime checks. E.g. probabilities use `Field(ge=0, le=1)`, bankroll uses `Field(gt=0)`.",
+      "rationale": "Example 2 uses Field constraints on yes_price/no_price/volume_24h/bankroll for automatic validation and OpenAPI docs.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-009",
+      "technology": "fastapi",
+      "rule": "Use `typing.Literal` for fixed enumerations like Platform = Literal[\"kalshi\",\"polymarket\",\"manifold\",\"predictit\"] rather than free-form strings.",
+      "rationale": "Example 2 defines Platform as a Literal so FastAPI validates and documents the allowed values.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-010",
+      "technology": "fastapi",
+      "rule": "Expose the DB session as a dependency via `async def get_session() -> AsyncIterator[AsyncSession]` using `async with SessionLocal() as session: yield session`, then inject with `session: AsyncSession = Depends(get_session)`.",
+      "rationale": "Example 4 shows the canonical DI pattern; gotcha 3.5 warns not to wrap it in @asynccontextmanager.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-011",
+      "technology": "fastapi",
+      "rule": "Do NOT decorate DI yield-based dependencies with `@asynccontextmanager`. FastAPI's `Depends` expects a plain async generator returning an `AsyncIterator`.",
+      "rationale": "Gotcha 3.5 explicitly prohibits wrapping yield-based Depends in asynccontextmanager.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-012",
+      "technology": "fastapi",
+      "rule": "Manage engine lifecycle with FastAPI lifespan: define `@asynccontextmanager async def lifespan(app)` with startup before `yield` and `await engine.dispose()` after. Pass via `FastAPI(..., lifespan=lifespan)`.",
+      "rationale": "Example 1 shows lifespan replacing deprecated on_event startup/shutdown hooks and properly disposing the engine.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-013",
+      "technology": "fastapi",
+      "rule": "Add `CORSMiddleware` before mounting routers and list explicit origins (e.g. `http://localhost:3000`). Adding it after routers means error responses miss CORS headers.",
+      "rationale": "Gotcha 3.6 explicitly calls out middleware ordering; Example 1 shows CORS added before include_router.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-014",
+      "technology": "fastapi",
+      "rule": "Return `HTTPException(status_code=404, detail=\"...\")` on missing resources rather than returning None or 200 with empty body.",
+      "rationale": "Example 3 `get_market` raises 404 via HTTPException when session.get returns None.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-015",
+      "technology": "fastapi",
+      "rule": "For job-start endpoints (backtests etc.) return HTTP 202 Accepted with a `{job_id, status}` body; do not block the request on the work.",
+      "rationale": "Example 5 uses `@router.post(\"\", status_code=202)` and returns job_id/status for the async backtest kickoff.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-016",
+      "technology": "fastapi",
+      "rule": "Use `BackgroundTasks` only for fire-and-forget in-process work tied to a single response. For durable, retryable, or cross-worker queues use Celery / RQ / APScheduler.",
+      "rationale": "Gotcha 3.8 warns BackgroundTasks run in the same worker after response and are not durable.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-017",
+      "technology": "fastapi",
+      "rule": "Prefer WebSockets (`@router.websocket`) for high-frequency live data such as per-market tick streams; use regular REST + polling for low-frequency summaries.",
+      "rationale": "Example 6 defines `/stream/{market_id}` pushing ticks with `await asyncio.sleep(0.25)`, the intended live-tick pattern.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-018",
+      "technology": "fastapi",
+      "rule": "Always handle `WebSocketDisconnect` inside WebSocket endpoints (try/except around the send loop) so disconnects don't raise to the ASGI layer.",
+      "rationale": "Example 6 wraps the stream loop in try/except WebSocketDisconnect.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-019",
+      "technology": "fastapi",
+      "rule": "Register custom domain exceptions (e.g. `AdapterError`) via `@app.exception_handler(...)` returning a `JSONResponse` with a 502 upstream-failure status for adapter errors.",
+      "rationale": "Example 7 shows AdapterError mapped to status 502 with `{platform, detail}` payload.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-020",
+      "technology": "fastapi",
+      "rule": "Test async endpoints with `httpx.AsyncClient(transport=ASGITransport(app=app))`; avoid starlette's sync `TestClient` which has edge cases with lifespan.",
+      "rationale": "Section 4 explicitly recommends httpx AsyncClient + ASGITransport over TestClient.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-021",
+      "technology": "fastapi",
+      "rule": "Do not ship production with `uvicorn --reload`; reload is dev-only.",
+      "rationale": "Gotcha 3.9 warns against reload in production.",
+      "source_file": "fastapi.md"
+    },
+    {
+      "id": "BE-R-022",
+      "technology": "sqlalchemy",
+      "rule": "Use SQLAlchemy 2.x typed declarative style: subclass `DeclarativeBase` and declare columns as `Mapped[T] = mapped_column(...)`. Do not use the pre-2.0 `Column(...)` / legacy declarative_base pattern.",
+      "rationale": "Section 1 mandates typed Mapped[] style; Example 2 models all use `Mapped[...] = mapped_column(...)`.",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-023",
+      "technology": "sqlalchemy",
+      "rule": "Create the async engine with `create_async_engine(url, pool_pre_ping=True)` and a session factory via `async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)`.",
+      "rationale": "Example 1 shows this exact configuration; gotcha 3.2 explains expire_on_commit=False is recommended for web contexts.",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-024",
+      "technology": "sqlalchemy",
+      "rule": "Use `sqlite+aiosqlite:///...` for local dev. The upgrade path to Postgres is `postgresql+asyncpg://user:pass@host/db` with increased `pool_size=10, max_overflow=20`.",
+      "rationale": "Example 1 documents DATABASE_URL and gotcha 3.8 describes the Postgres upgrade path.",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-025",
+      "technology": "sqlalchemy",
+      "rule": "Never rely on implicit lazy loading in async code. Eager-load relationships with `.options(selectinload(Model.relation))` or `joinedload(...)` in the initial query.",
+      "rationale": "Section 1 and gotcha 3.1 state lazy access after session close raises `MissingGreenlet`; Example 4 shows selectinload usage.",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-026",
+      "technology": "sqlalchemy",
+      "rule": "Do not share an `AsyncSession` across asyncio tasks. Scope one session per request / per task via the Depends(get_session) pattern.",
+      "rationale": "Gotcha 3.5 forbids sharing AsyncSession across tasks.",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-027",
+      "technology": "sqlalchemy",
+      "rule": "For primary-key lookups use `await session.get(Model, pk)`; for unique single-row queries use `.scalar_one_or_none()` rather than `.first()`.",
+      "rationale": "Gotchas 3.6 and 3.7 prefer scalar_one_or_none and session.get for clarity and speed.",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-028",
+      "technology": "sqlalchemy",
+      "rule": "Use the 2.0 unified statement API: `select()/insert()/update()/delete()` passed to `await session.execute(stmt)`; extract rows with `.scalars().all()` or `.scalar_one_or_none()`.",
+      "rationale": "Section 1 and Example 3 use the unified API exclusively (e.g. `select(Market).limit(limit)` then `result.scalars().all()`).",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-029",
+      "technology": "sqlalchemy",
+      "rule": "For bulk insert of high-volume rows (e.g. price ticks), use `insert(Model).values([...])` with a single `await session.execute(stmt)` + one commit, not a loop of `session.add`.",
+      "rationale": "Example 5 demonstrates the bulk-insert performance path for tick ingestion.",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-030",
+      "technology": "sqlalchemy",
+      "rule": "For multi-statement transactions use `async with session.begin():` — it auto-commits on success and rolls back on exception. Do not add a manual commit inside the block.",
+      "rationale": "Example 6 shows transaction scope via session.begin() with comment 'No explicit commit needed'.",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-031",
+      "technology": "sqlalchemy",
+      "rule": "Assume SQLite + aiosqlite serializes writes; do not design for concurrent write throughput on SQLite. Plan multi-writer workloads for the Postgres upgrade path.",
+      "rationale": "Gotcha 3.3 notes aiosqlite serialises writes with no real write concurrency.",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-032",
+      "technology": "sqlalchemy",
+      "rule": "Declare cascade on owning relationships where deletes should propagate (e.g. `relationship(back_populates=..., cascade=\"all, delete-orphan\")`) and pair with `ForeignKey(..., ondelete=\"CASCADE\")` on the child.",
+      "rationale": "Example 2 Market.ticks uses cascade='all, delete-orphan' with PriceTick.market_id FK ondelete='CASCADE'.",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-033",
+      "technology": "sqlalchemy",
+      "rule": "Add composite indexes via `__table_args__ = (Index(\"ix_...\", col_a, col_b),)` for frequent range queries (e.g. market_id + ts for tick lookups).",
+      "rationale": "Example 2 PriceTick defines Index('ix_market_ts', 'market_id', 'ts') for the tick-by-market-time access pattern.",
+      "source_file": "sqlalchemy.md"
+    },
+    {
+      "id": "BE-R-034",
+      "technology": "alembic",
+      "rule": "Pin `alembic@1.13.x` paired with SQLAlchemy 2.x; older alembic versions do not support the Mapped[] typed metadata correctly.",
+      "rationale": "Section 1 and the compatibility table pin alembic ^1.13 as SQLAlchemy 2.x compatible.",
+      "source_file": "alembic.md"
+    },
+    {
+      "id": "BE-R-035",
+      "technology": "alembic",
+      "rule": "For async SQLAlchemy, `env.py` MUST use `async_engine_from_config(..., poolclass=pool.NullPool)` with `connection.run_sync(do_run_migrations)` inside `asyncio.run(run_migrations_online())`. The plain sync template will not work with aiosqlite/asyncpg.",
+      "rationale": "Section 2 env.py template and gotcha 4.5 explicitly require the async pattern.",
+      "source_file": "alembic.md"
+    },
+    {
+      "id": "BE-R-036",
+      "technology": "alembic",
+      "rule": "Configure `context.configure(..., render_as_batch=True)` in `do_run_migrations` whenever the target DB is SQLite; without it column drops/alters fail.",
+      "rationale": "Gotcha 4.1 and the env.py comment state render_as_batch is essential for SQLite table-rewrite operations.",
+      "source_file": "alembic.md"
+    },
+    {
+      "id": "BE-R-037",
+      "technology": "alembic",
+      "rule": "Wrap any SQLite ALTER/DROP column operation in `with op.batch_alter_table(\"t\") as batch:` — SQLite cannot ALTER COLUMN natively.",
+      "rationale": "Example 2 and gotcha 4.1 show batch_alter_table as the required pattern.",
+      "source_file": "alembic.md"
+    },
+    {
+      "id": "BE-R-038",
+      "technology": "alembic",
+      "rule": "Keep data migrations separate in logic: add column nullable, run `op.get_bind().execute(sa.text(...))` to backfill, then use batch_alter_table to set NOT NULL and add constraints.",
+      "rationale": "Example 3 demonstrates the add-backfill-tighten pattern for adding a non-null `slug`.",
+      "source_file": "alembic.md"
+    },
+    {
+      "id": "BE-R-039",
+      "technology": "alembic",
+      "rule": "Set `target_metadata = Base.metadata` in env.py AND import the module(s) declaring every model before autogenerate runs, or autogenerate will silently miss tables.",
+      "rationale": "Gotcha 4.4 warns the models module must be imported for autogenerate to see all tables.",
+      "source_file": "alembic.md"
+    },
+    {
+      "id": "BE-R-040",
+      "technology": "alembic",
+      "rule": "Always review autogenerated migrations before committing — autogenerate misses CheckConstraint, server-default mismatches, and enum changes.",
+      "rationale": "Gotcha 4.2 enumerates what autogenerate misses and mandates manual review.",
+      "source_file": "alembic.md"
+    },
+    {
+      "id": "BE-R-041",
+      "technology": "alembic",
+      "rule": "Never edit a migration that has been applied to a shared database; create a new forward migration instead.",
+      "rationale": "Gotcha 4.3 explicitly forbids mutating applied migrations.",
+      "source_file": "alembic.md"
+    },
+    {
+      "id": "BE-R-042",
+      "technology": "alembic",
+      "rule": "Run `alembic upgrade head` in CI before the test suite so tests execute against current schema.",
+      "rationale": "Gotcha 4.7 mandates CI runs upgrade head before tests.",
+      "source_file": "alembic.md"
+    },
+    {
+      "id": "BE-R-043",
+      "technology": "alembic",
+      "rule": "When migrating SQLite to Postgres, dump data, run fresh migrations on Postgres, then restore via SQL. Do not rely on Alembic to migrate data across dialects.",
+      "rationale": "Gotcha 4.6 states Alembic does not migrate data across dialects.",
+      "source_file": "alembic.md"
+    },
+    {
+      "id": "BE-R-044",
+      "technology": "alembic",
+      "rule": "Use `alembic upgrade head --sql > upgrade.sql` to preview DDL before applying to production databases.",
+      "rationale": "Example 4 CLI recipe shows offline SQL generation for pre-deployment review.",
+      "source_file": "alembic.md"
+    }
+  ]
+}

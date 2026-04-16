@@ -1,0 +1,59 @@
+{
+  "contract_id": "C-I-DASH-010",
+  "interaction_id": "I-DASH-010",
+  "function": {
+    "name": "handle_i_dash_010",
+    "module_hint": "backend.handlers.dashboard",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "revalidated_state",
+        "type": "ScreenState"
+      }
+    ]
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 8000,
+    "retry_policy": {
+      "max_retries": 2,
+      "backoff": "linear",
+      "base_ms": 500
+    },
+    "concurrency_policy": "skip-if-in-flight",
+    "idempotency_rule": "idempotent-read",
+    "ui_locking_rule": null,
+    "failure_transitions": [
+      {
+        "condition": "http-error",
+        "transition": "dashboard",
+        "ui_effect": "table-error-state-with-retry"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "dashboard",
+        "ui_effect": "table-error-state-with-retry"
+      }
+    ],
+    "side_effects": [
+      {
+        "type": "cache-invalidation",
+        "target": "SWR cache for screen data",
+        "description": "30s poll revalidate"
+      }
+    ]
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "FE-R-027",
+      "FE-R-024",
+      "HS-002",
+      "HS-004"
+    ],
+    "external_rule_refs": [],
+    "source_state": "dashboard",
+    "success_transition": "dashboard"
+  }
+}

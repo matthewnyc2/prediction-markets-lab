@@ -1,0 +1,77 @@
+{
+  "contract_id": "C-I-MKT-010",
+  "interaction_id": "I-MKT-010",
+  "function": {
+    "name": "handle_i_mkt_010",
+    "module_hint": "backend.handlers.markets",
+    "inputs": [
+      {
+        "name": "strategy_id",
+        "type": "StrategyId"
+      },
+      {
+        "name": "state",
+        "type": "Literal['on','off']"
+      }
+    ],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 10000,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff": "exponential",
+      "base_ms": 250
+    },
+    "concurrency_policy": "serial-per-strategy",
+    "idempotency_rule": "idempotent-state-set",
+    "ui_locking_rule": "disable-toggle-until-response",
+    "failure_transitions": [
+      {
+        "condition": "http-4xx-validation-error",
+        "transition": "markets",
+        "ui_effect": "inline-error-beside-field"
+      },
+      {
+        "condition": "http-5xx-server-error",
+        "transition": "markets",
+        "ui_effect": "toast-retry-option"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "markets",
+        "ui_effect": "toast-check-connection"
+      }
+    ],
+    "side_effects": []
+  },
+  "preconditions": [
+    {
+      "ref": "INV-003",
+      "condition": "assigned_capital > 0"
+    },
+    {
+      "ref": "INV-008",
+      "condition": "sum of on-strategy capital + this capital <= equity"
+    }
+  ],
+  "postconditions": [
+    {
+      "ref": "PR-002",
+      "condition": "strategy_state_log row appended with previous + new state"
+    },
+    {
+      "ref": "CSC-001 or CSC-007",
+      "condition": "dashboard active-strategies-panel reflects new state"
+    }
+  ],
+  "references": {
+    "validation_rule_refs": [
+      "HTML-R-016"
+    ],
+    "external_rule_refs": [],
+    "source_state": "markets",
+    "success_transition": "markets"
+  }
+}

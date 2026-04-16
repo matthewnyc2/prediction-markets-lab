@@ -1,0 +1,31 @@
+{
+  "contract_id": "C-I-DASH-007",
+  "interaction_id": "I-DASH-007",
+  "function": {
+    "name": "handle_i_dash_007",
+    "module_hint": "frontend.handlers.dashboard",
+    "inputs": [],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": null,
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": []
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "HTML-R-003",
+      "HTML-R-004"
+    ],
+    "external_rule_refs": [],
+    "source_state": "dashboard",
+    "success_transition": "portfolio"
+  }
+}

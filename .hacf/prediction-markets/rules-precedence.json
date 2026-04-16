@@ -1,0 +1,35 @@
+{
+  "project": "prediction-markets",
+  "precedence_order": [
+    {
+      "rank": 1,
+      "source": "project-policy",
+      "description": "north-star.txt, why.txt, boundary.txt \u2014 explicit person statements"
+    },
+    {
+      "rank": 2,
+      "source": "api",
+      "description": "rules-api.json \u2014 platform API contracts"
+    },
+    {
+      "rank": 3,
+      "source": "framework",
+      "description": "rules-framework.json \u2014 framework composition rules"
+    },
+    {
+      "rank": 4,
+      "source": "seed-library",
+      "description": "rules-database-seed.json \u2014 library/framework rules from tech-kb"
+    },
+    {
+      "rank": 5,
+      "source": "design",
+      "description": "rules-design.json \u2014 design system rules"
+    },
+    {
+      "rank": 6,
+      "source": "html",
+      "description": "rules-html.json \u2014 HTML wireframe observations"
+    }
+  ]
+}

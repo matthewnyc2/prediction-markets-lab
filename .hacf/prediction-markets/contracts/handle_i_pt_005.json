@@ -1,0 +1,61 @@
+{
+  "contract_id": "C-I-PT-005",
+  "interaction_id": "I-PT-005",
+  "function": {
+    "name": "handle_i_pt_005",
+    "module_hint": "backend.handlers.paper_trades",
+    "inputs": [
+      {
+        "name": "date_range",
+        "type": "DateRange"
+      }
+    ],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 8000,
+    "retry_policy": {
+      "max_retries": 2,
+      "backoff": "linear",
+      "base_ms": 300
+    },
+    "concurrency_policy": "cancel-previous",
+    "idempotency_rule": "idempotent-read",
+    "ui_locking_rule": "table-skeleton-during-fetch",
+    "failure_transitions": [
+      {
+        "condition": "http-error",
+        "transition": "paper-trades",
+        "ui_effect": "table-error-state-with-retry"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "paper-trades",
+        "ui_effect": "table-error-state-with-retry"
+      }
+    ],
+    "side_effects": [
+      {
+        "type": "db-write",
+        "target": "paper_fills + paper_positions (atomic)",
+        "description": "PR-001 atomic transaction"
+      },
+      {
+        "type": "metric-recompute",
+        "target": "equity + brier + sharpe + winrate",
+        "description": "INV-001 equity invariant"
+      }
+    ]
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "BE-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "paper-trades",
+    "success_transition": "paper-trades"
+  }
+}

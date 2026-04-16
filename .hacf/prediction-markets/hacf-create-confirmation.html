@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>prediction-markets — HACF Phase 1 Confirmation</title>
+<style>
+  :root {
+    --bg: #0b0f17; --bg-panel: #0f1011; --bg-surface: #111826; --bg-elevated: #182236;
+    --fg: #e6edf7; --fg-dim: #8ea0bd; --fg-mute: #566178;
+    --accent: #7dd3fc; --success: #34d399; --danger: #f87171; --warning: #fbbf24;
+    --border: rgba(255,255,255,0.08); --border-subtle: rgba(255,255,255,0.05); --border-strong: #1f2a40;
+    --sans: 'Inter Variable', Inter, -apple-system, 'Segoe UI', Roboto, system-ui, sans-serif;
+    --mono: 'Berkeley Mono', 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 14px; line-height: 1.55; font-feature-settings: 'cv01','ss03','tnum'; }
+  body { font-variant-numeric: tabular-nums; }
+  a { color: var(--accent); text-decoration: none; } a:hover { text-decoration: underline; }
+  code, .mono { font-family: var(--mono); }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  .hero { background: linear-gradient(180deg, #111a2c 0%, #0b0f17 100%); border: 1px solid var(--border); border-radius: 14px; padding: 32px 32px 28px; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-mute); }
+  h1 { font-size: 30px; font-weight: 650; letter-spacing: -0.01em; margin: 10px 0 14px; }
+  .north-star { color: var(--fg-dim); font-size: 15px; max-width: 860px; }
+  .north-star b { color: var(--fg); }
+  .meta-row { display: flex; gap: 28px; margin-top: 20px; flex-wrap: wrap; font-size: 12px; color: var(--fg-mute); }
+  .meta-row b { color: var(--fg); font-weight: 500; }
+
+  h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.2px; margin: 42px 0 14px; }
+  h2 .n { font-family: var(--mono); color: var(--accent); font-size: 14px; font-weight: 500; margin-right: 10px; }
+  h3 { font-size: 15px; font-weight: 600; margin: 20px 0 10px; }
+  p { color: var(--fg-dim); margin: 0 0 12px; }
+
+  .grid { display: grid; gap: 14px; }
+  .grid.c2 { grid-template-columns: 1fr 1fr; }
+  .grid.c3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.c4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) { .grid.c2,.grid.c3,.grid.c4 { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .grid.c2,.grid.c3,.grid.c4 { grid-template-columns: 1fr; } }
+
+  .card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+  .card h3 { margin-top: 0; }
+  .stat { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+  .stat .k { font-size: 11px; color: var(--fg-mute); text-transform: uppercase; letter-spacing: 0.08em; }
+  .stat .v { font-family: var(--mono); font-size: 22px; margin-top: 6px; }
+  .stat .d { font-size: 11px; color: var(--fg-mute); margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border-subtle); }
+  th { font-size: 11px; color: var(--fg-mute); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 510; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { font-family: var(--mono); text-align: right; }
+
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 510; padding: 2px 10px; border-radius: 999px; }
+  .pill::before { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .pill.ok { background: rgba(52,211,153,0.14); color: var(--success); }
+  .pill.in { background: rgba(125,211,252,0.12); color: var(--accent); }
+  .pill.warn { background: rgba(251,191,36,0.14); color: var(--warning); }
+  .pill.dim { background: rgba(142,160,189,0.12); color: var(--fg-dim); }
+
+  .artifact { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-surface); }
+  .artifact + .artifact { margin-top: 6px; }
+  .artifact .file { font-family: var(--mono); font-size: 12px; color: var(--fg); }
+  .artifact .desc { color: var(--fg-dim); font-size: 12px; margin-top: 2px; }
+
+  .approve-bar { margin-top: 48px; border: 1px solid rgba(52,211,153,0.3); background: rgba(52,211,153,0.06); border-radius: 12px; padding: 20px 22px; }
+  .approve-bar h3 { margin: 0 0 6px; color: var(--success); }
+  .approve-bar .small { font-size: 12px; color: var(--fg-mute); margin-top: 10px; }
+
+  iframe.wireframe { width: 100%; height: 820px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg); margin-top: 8px; }
+
+  .footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--fg-mute); font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section class="hero">
+  <div class="eyebrow">HACF · Phase 1 · Create · Step 16 · Confirmation</div>
+  <h1>prediction-markets · Phase 1 complete</h1>
+  <p class="north-star"><b>North star:</b> There is a prediction market paper trader that allows me to back test strategies as well.</p>
+  <div class="meta-row">
+    <div><b>Mode</b> greenfield</div>
+    <div><b>Stack</b> Next.js 15 · TypeScript · Tailwind 4 · Recharts · FastAPI · Python 3.12 · SQLAlchemy · SQLite</div>
+    <div><b>Platforms</b> Kalshi · Polymarket · Manifold · PredictIt</div>
+    <div><b>Strategies</b> Kelly · Arb · Momentum · News fade · Market maker</div>
+    <div><b>Theme</b> Dark only (Linear-adapted)</div>
+  </div>
+</section>
+
+<!-- Phase 1 stats -->
+<h2><span class="n">§1</span>Phase 1 artifacts</h2>
+<div class="grid c4">
+  <div class="stat"><div class="k">Screens confirmed</div><div class="v">9</div><div class="d">dashboard → data-ingestion</div></div>
+  <div class="stat"><div class="k">Terminal states</div><div class="v">3</div><div class="d">cover all north-star clauses</div></div>
+  <div class="stat"><div class="k">Rules extracted</div><div class="v">122</div><div class="d">4 domains, 4 parallel workers</div></div>
+  <div class="stat"><div class="k">Invariants</div><div class="v">10</div><div class="d">semantic-spec INV-001..010</div></div>
+  <div class="stat"><div class="k">Forbidden states</div><div class="v">7</div><div class="d">FS-001..007</div></div>
+  <div class="stat"><div class="k">Cross-screen conditions</div><div class="v">7</div><div class="d">CSC-001..007</div></div>
+  <div class="stat"><div class="k">Boundary invariants</div><div class="v">5</div><div class="d">no real trading, ever</div></div>
+  <div class="stat"><div class="k">Strategies specified</div><div class="v">5</div><div class="d">pluggable python interface</div></div>
+</div>
+
+<!-- Terminal states -->
+<h2><span class="n">§2</span>Terminal states — observable success conditions</h2>
+<div class="grid c3">
+  <div class="card">
+    <div class="pill in">TS-01</div>
+    <h3>Strategy trades paper live</h3>
+    <p>The person toggles a strategy on with capital assigned, and within one poll cycle a paper-fill with that strategy as source appears on the ledger.</p>
+  </div>
+  <div class="card">
+    <div class="pill in">TS-02</div>
+    <h3>Backtest produces scored results</h3>
+    <p>A strategy + platforms + date-range + bankroll produces a backtest-result with final-equity, Sharpe, Brier, win-rate, and an equity-curve. Zero outbound calls to live trading endpoints during the run.</p>
+  </div>
+  <div class="card">
+    <div class="pill in">TS-03</div>
+    <h3>Cross-platform / cross-time compare</h3>
+    <p>≥2 comparison-runs covering ≥2 platforms or ≥2 date-ranges render together on one overlay-P&amp;L chart plus a comparison-table with full metrics per run.</p>
+  </div>
+</div>
+
+<!-- Screen inventory -->
+<h2><span class="n">§3</span>Screen inventory</h2>
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>#</th><th>Screen</th><th>Purpose</th><th>Elements file</th></tr></thead>
+  <tbody>
+    <tr><td class="num">1</td><td><b>Dashboard</b></td><td>Portfolio overview, active strategies, recent trades</td><td class="mono">renderings/dashboard-elements.json</td></tr>
+    <tr><td class="num">2</td><td><b>Markets</b></td><td>Browse + search all markets across 4 platforms</td><td class="mono">renderings/markets-elements.json</td></tr>
+    <tr><td class="num">3</td><td><b>Market detail</b></td><td>Price history + manual paper-trade panel</td><td class="mono">renderings/market-detail-elements.json</td></tr>
+    <tr><td class="num">4</td><td><b>Strategies</b></td><td>Toggle strategies on/off, tune parameters</td><td class="mono">renderings/strategies-elements.json</td></tr>
+    <tr><td class="num">5</td><td><b>Paper Trades</b></td><td>Full ledger of simulated fills</td><td class="mono">renderings/paper-trades-elements.json</td></tr>
+    <tr><td class="num">6</td><td><b>Backtest</b></td><td>Replay a strategy on historical data</td><td class="mono">renderings/backtest-elements.json</td></tr>
+    <tr><td class="num">7</td><td><b>Compare</b></td><td>Multi-run overlay + metric table</td><td class="mono">renderings/compare-elements.json</td></tr>
+    <tr><td class="num">8</td><td><b>Portfolio</b></td><td>Historical analytics and attribution</td><td class="mono">renderings/portfolio-elements.json</td></tr>
+    <tr><td class="num">9</td><td><b>Data ingestion</b></td><td>Adapter health, sync controls</td><td class="mono">renderings/data-ingestion-elements.json</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- Wireframes embed -->
+<h2><span class="n">§4</span>Wireframes (Linear-adapted dark theme)</h2>
+<p>Single selected variant per screen (<a href="wireframes/selections.json"><code>selections.json</code></a>). Tokens from <a href="design-system.md"><code>design-system.md</code></a>.</p>
+<iframe class="wireframe" src="wireframes/wireframes.html" title="Wireframes — all 9 screens"></iframe>
+<p style="font-size:12px;margin-top:6px"><a href="wireframes/wireframes.html" target="_blank">Open wireframes in new tab →</a></p>
+
+<!-- Platform adapters -->
+<h2><span class="n">§5</span>Platform adapters (from feature research)</h2>
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>Platform</th><th>Auth</th><th>Rate limit</th><th>Historical data</th><th>Websocket</th><th>Known quirks</th></tr></thead>
+  <tbody>
+    <tr><td><b>Kalshi</b></td><td>api-key-optional (RSA PKCS#8)</td><td>20–400 req/s by tier</td><td class="pill ok">Retrospective OK</td><td>Yes</td><td>paired binary; prices as integer cents</td></tr>
+    <tr><td><b>Polymarket</b></td><td>none-for-read</td><td>~60/min conservative</td><td class="pill ok">Retrospective OK</td><td>Yes (5 conn/IP)</td><td>two ERC-1155 token books per market (yes + no independent)</td></tr>
+    <tr><td><b>Manifold</b></td><td>api-key-optional</td><td>500 req/min/IP</td><td class="pill warn">Reconstruct from bets</td><td>Yes (30-60s ping)</td><td>multiple market types; filter to BINARY</td></tr>
+    <tr><td><b>PredictIt</b></td><td>none-for-read</td><td>1 req/s</td><td class="pill warn">No — record live only</td><td>No</td><td>multi-contract markets; attribution required</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- Semantic spec summary -->
+<h2><span class="n">§6</span>Semantic spec highlights</h2>
+<div class="grid c2">
+  <div class="card">
+    <h3>Key invariants</h3>
+    <ul style="color:var(--fg-dim);margin:0;padding-left:20px">
+      <li><code>INV-001</code> equity = bankroll + realised-pnl + unrealised-pnl at all times</li>
+      <li><code>INV-002</code> market-price ∈ [0, 1] always</li>
+      <li><code>INV-006</code> backtest reads only stored-price-history, never live endpoints</li>
+      <li><code>INV-007</code> no code path writes to a real-money trading endpoint</li>
+      <li><code>INV-008</code> Σ assigned-capital of ON strategies ≤ equity</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>Forbidden states</h3>
+    <ul style="color:var(--fg-dim);margin:0;padding-left:20px">
+      <li><code>FS-001</code> strategy ON with assigned-capital = 0</li>
+      <li><code>FS-003</code> completed backtest with null results</li>
+      <li><code>FS-005</code> comparison-run referencing a deleted backtest-id</li>
+      <li><code>FS-006</code> adapter HEALTHY but last-sync &gt; 10× poll interval</li>
+      <li><code>FS-007</code> new paper-fill with source = a strategy whose state is OFF</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Rules database -->
+<h2><span class="n">§7</span>Rules database seed — 122 rules across 4 domains</h2>
+<div class="grid c4">
+  <div class="card">
+    <h3>Frontend</h3>
+    <div class="pill in">28 rules</div>
+    <p style="margin-top:8px;font-size:12px">Next.js App Router, "use client" minimization, Tailwind 4 CSS-first, Recharts v2.13, zod at boundaries.</p>
+    <a href="rules-seeds/frontend-rules.json"><code>frontend-rules.json</code></a>
+  </div>
+  <div class="card">
+    <h3>Backend</h3>
+    <div class="pill in">44 rules</div>
+    <p style="margin-top:8px;font-size:12px">FastAPI async, pydantic v2, SQLAlchemy 2.x Mapped[], alembic batch mode for SQLite.</p>
+    <a href="rules-seeds/backend-rules.json"><code>backend-rules.json</code></a>
+  </div>
+  <div class="card">
+    <h3>Quant &amp; metrics</h3>
+    <div class="pill in">25 rules</div>
+    <p style="margin-top:8px;font-size:12px">Canonical Sharpe/Sortino/Brier/Kelly formulas, vectorisation, numerical stability.</p>
+    <a href="rules-seeds/quant-rules.json"><code>quant-rules.json</code></a>
+  </div>
+  <div class="card">
+    <h3>Testing</h3>
+    <div class="pill in">25 rules</div>
+    <p style="margin-top:8px;font-size:12px">pytest-asyncio, respx mocking, freezegun, Vitest RTL, Playwright dual webServer.</p>
+    <a href="rules-seeds/testing-rules.json"><code>testing-rules.json</code></a>
+  </div>
+</div>
+
+<!-- Boundary -->
+<h2><span class="n">§8</span>Boundary declaration</h2>
+<div class="grid c2">
+  <div class="card">
+    <h3 style="color:var(--success)">✓ Above the line — we build</h3>
+    <ul style="color:var(--fg-dim);margin:0;padding-left:20px;font-size:13px">
+      <li>Nine-screen Next.js UI</li>
+      <li>FastAPI backend (markets, trades, strategies, backtests, portfolio)</li>
+      <li>Paper-trading engine + backtest replay (shared code path)</li>
+      <li>Metrics (Brier, Sharpe, Sortino, drawdown, win-rate)</li>
+      <li>Five built-in strategies + pluggable plugin interface</li>
+      <li>Four platform adapters (read-only)</li>
+      <li>SQLite (Postgres upgrade path)</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="color:var(--danger)">✗ Below the line — out of scope</h3>
+    <ul style="color:var(--fg-dim);margin:0;padding-left:20px;font-size:13px">
+      <li>Real-money trading endpoints (never)</li>
+      <li>Auth / user accounts / multi-user</li>
+      <li>Cloud deployment, mobile clients</li>
+      <li>News API / ML probability models</li>
+      <li>Tax, compliance, audit for regulators</li>
+      <li>Light mode, theme switching</li>
+      <li>Non-binary market types (v1)</li>
+      <li>Platform fees modelling (v1)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Open questions resolved -->
+<h2><span class="n">§9</span>Open questions — all resolved with recommended defaults</h2>
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>ID</th><th>Topic</th><th>Resolution (adopted default)</th></tr></thead>
+  <tbody>
+    <tr><td class="mono">OQ-01</td><td>PredictIt historical data gap</td><td>Date-picker disables dates before first-recorded tick per platform</td></tr>
+    <tr><td class="mono">OQ-02</td><td>Brier forecast price</td><td>Entry price from paper-fill</td></tr>
+    <tr><td class="mono">OQ-03</td><td>Cancelled markets</td><td>Refund cost (PnL=0), exclude from Brier N and win-rate</td></tr>
+    <tr><td class="mono">OQ-04</td><td>Kelly true-probability source</td><td>p_source = cross-platform-mean by default</td></tr>
+    <tr><td class="mono">OQ-05</td><td>Cross-platform event identity</td><td>v1 manual mapping table</td></tr>
+    <tr><td class="mono">OQ-06</td><td>Platform fees</td><td>Fee model = 0 in strict paper mode (opt-in)</td></tr>
+    <tr><td class="mono">OQ-07</td><td>Strategy time-stops</td><td>fade_timeout 60min, close_buffer 15min (surfaced in Strategies UI)</td></tr>
+    <tr><td class="mono">OQ-08</td><td>Market-maker passive fills</td><td>Fill when real top-of-book crosses our quote</td></tr>
+    <tr><td class="mono">OQ-09</td><td>Shorting semantics</td><td>sell = close existing; open short = BUY opposite side</td></tr>
+    <tr><td class="mono">OQ-10</td><td>Non-binary markets</td><td>v1 binary only; PredictIt multi-contract flattened per contract</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- Artifacts index -->
+<h2><span class="n">§10</span>Artifacts written</h2>
+<div class="grid c2">
+  <div>
+    <div class="artifact"><div><div class="file">idea.txt</div><div class="desc">Verbatim idea, frozen</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">north-star.txt</div><div class="desc">Observable end condition</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">why.txt</div><div class="desc">Why this exists</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">actionability-check.txt</div><div class="desc">Beginning, transformations, end states</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">answers.txt</div><div class="desc">Step 6 existence Q&amp;A</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">stated-intent.txt</div><div class="desc">Combined narrative specification</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">screen-inventory.json</div><div class="desc">9 canonical screens</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">renderings/*.json</div><div class="desc">9 per-screen element files</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">disambiguated.txt</div><div class="desc">25 entities, 10 equivalences, 9 actions</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">terminal-states.json</div><div class="desc">3 states</div></div><span class="pill ok">✓</span></div>
+  </div>
+  <div>
+    <div class="artifact"><div><div class="file">tech-stack.json</div><div class="desc">Frontend + backend stack confirmed</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">tech-kb/*.md (11 files)</div><div class="desc">Pinned-version docs per technology</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">feature-discoveries.json</div><div class="desc">Adapters, engine, metrics, strategies</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">rules-database-seed.json</div><div class="desc">122 rules across 4 domains</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">verifiedLibraries.json</div><div class="desc">Pinned dependency versions</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">exclusion-registry.json</div><div class="desc">19 explicit exclusions + 7 OQ resolutions</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">boundary.txt</div><div class="desc">Above / below the line + 5 boundary invariants</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">semantic-spec.json</div><div class="desc">11 entities, 10 INV, 7 FS, 7 PR, 4 SR, 5 HS, 7 CSC</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">design-system.md</div><div class="desc">Linear-adapted dark theme tokens</div></div><span class="pill ok">✓</span></div>
+    <div class="artifact"><div><div class="file">wireframes/wireframes.html</div><div class="desc">9-screen wireframe set + selections.json</div></div><span class="pill ok">✓</span></div>
+  </div>
+</div>
+
+<!-- Approval -->
+<div class="approve-bar">
+  <h3>✓ Phase 1 auto-approved by person</h3>
+  <p style="margin:0;color:var(--fg)">Person confirmed "approve everything" at Step 6 and "no longer stop for my input" at Step 12. All autonomous gates (12d, 13, 14, 15, 16) have been resolved using recommended defaults from research. Ready to advance to <b>Phase 2 · Review</b>.</p>
+  <div class="small">Next: <code>hacf-review</code> derives pseudocode, contracts, and test specifications from these Phase 1 artifacts. No further person input required until Phase 3 (Build) kicks off.</div>
+</div>
+
+<div class="footer">
+  <div>HACF Phase 1 confirmation · generated 2026-04-16</div>
+  <div>project: prediction-markets · schema: APR10 · mode: greenfield</div>
+</div>
+
+</div>
+</body>
+</html>

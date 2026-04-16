@@ -1,0 +1,71 @@
+{
+  "project": "prediction-markets",
+  "source": "tech-kb/README.md + tech-kb/*.md code examples",
+  "generated_at": "2026-04-16",
+  "note": "All versions extracted from tech-kb. Use these as the authoritative pins for Phase 3 Build.",
+  "frontend": {
+    "runtime": [
+      { "name": "node",          "version": "20.x LTS",  "purpose": "JavaScript runtime for Next.js dev server" },
+      { "name": "pnpm",          "version": "9.x",       "purpose": "package manager (deterministic installs)" }
+    ],
+    "dependencies": [
+      { "name": "next",          "version": "15.x",      "purpose": "web framework (App Router)" },
+      { "name": "react",         "version": "19.x",      "purpose": "UI library" },
+      { "name": "react-dom",     "version": "19.x",      "purpose": "DOM renderer" },
+      { "name": "typescript",    "version": "5.6.x",     "purpose": "type system" },
+      { "name": "zod",           "version": "3.23.x",    "purpose": "runtime schema validation at network boundary" },
+      { "name": "tailwindcss",   "version": "4.0.x",     "purpose": "CSS-first styling; dark-only via @variant" },
+      { "name": "recharts",      "version": "2.13.x",    "purpose": "charts (equity curve, price history, attribution, compare overlay); pinned at 2.13 for React 19 stability" },
+      { "name": "swr",           "version": "2.2.x",     "purpose": "client-side data fetching with 30s polling; per tech-kb recharts.md recipe" }
+    ],
+    "devDependencies": [
+      { "name": "@types/react",  "version": "19.x",      "purpose": "types for React 19" },
+      { "name": "@types/node",   "version": "20.x",      "purpose": "types for Node APIs" },
+      { "name": "vitest",        "version": "2.1.x",     "purpose": "unit + component tests" },
+      { "name": "@vitest/ui",    "version": "2.1.x",     "purpose": "test runner UI" },
+      { "name": "@testing-library/react",       "version": "16.x", "purpose": "component testing utilities" },
+      { "name": "@testing-library/jest-dom",    "version": "6.x",  "purpose": "dom matchers" },
+      { "name": "@playwright/test",             "version": "1.48.x", "purpose": "e2e against dual webServer (Next + FastAPI)" },
+      { "name": "happy-dom",     "version": "15.x",      "purpose": "DOM environment for vitest" }
+    ]
+  },
+  "backend": {
+    "runtime": [
+      { "name": "python",        "version": "3.12",      "purpose": "backend runtime; tech-stack.json confirmed" },
+      { "name": "uv",            "version": "latest",    "purpose": "dependency + env manager" }
+    ],
+    "dependencies": [
+      { "name": "fastapi",       "version": "0.115.x",   "purpose": "async web framework" },
+      { "name": "pydantic",      "version": "2.9+",      "purpose": "data validation (FastAPI native)" },
+      { "name": "uvicorn[standard]", "version": "0.30.x","purpose": "ASGI server" },
+      { "name": "sqlalchemy",    "version": "2.0.36+",   "purpose": "ORM (async engine, Mapped[] declarative)" },
+      { "name": "alembic",       "version": "1.13.x",    "purpose": "schema migrations (SQLite batch mode)" },
+      { "name": "aiosqlite",     "version": "0.20.x",    "purpose": "async sqlite driver for SQLAlchemy" },
+      { "name": "asyncpg",       "version": "0.29.x",    "purpose": "async postgres driver; needed when upgrading from sqlite" },
+      { "name": "pandas",        "version": "2.2.x",     "purpose": "time-series data, rolling stats" },
+      { "name": "numpy",         "version": "1.26.x",    "purpose": "vectorised math (np.maximum.accumulate drawdown etc.); pinned at 1.26 pending transitive deps on numpy 2" },
+      { "name": "scipy",         "version": "1.14.x",    "purpose": "statistics (scipy.stats for sortino and brier skill score refs)" },
+      { "name": "httpx",         "version": "0.27.x",    "purpose": "adapter HTTP client for platform APIs; supports async + ASGI transport" },
+      { "name": "websockets",    "version": "13.x",      "purpose": "kalshi + polymarket + manifold websocket clients" },
+      { "name": "python-dotenv", "version": "1.0.x",     "purpose": ".env loader for local adapter API keys" }
+    ],
+    "devDependencies": [
+      { "name": "pytest",        "version": "8.3.x",     "purpose": "test runner" },
+      { "name": "pytest-asyncio","version": "0.24.x",    "purpose": "async fixtures and test functions" },
+      { "name": "pytest-cov",    "version": "5.x",       "purpose": "coverage reports" },
+      { "name": "respx",         "version": "0.21.x",    "purpose": "httpx request mocking for adapter tests" },
+      { "name": "freezegun",     "version": "1.5.x",     "purpose": "deterministic time in tests" },
+      { "name": "hypothesis",    "version": "6.x",       "purpose": "property-based testing for metric formulas" },
+      { "name": "ruff",          "version": "0.6.x",     "purpose": "linter + formatter" },
+      { "name": "mypy",          "version": "1.11.x",    "purpose": "static type checker (strict)" }
+    ]
+  },
+  "data_directory_layout": {
+    "backend": "backend/ (FastAPI app, adapters/, engine/, strategies/, models.py, main.py)",
+    "frontend": "frontend/ (Next.js app, app/, components/, lib/, public/)",
+    "tests": "backend/tests/ and frontend/tests/ co-located with code",
+    "migrations": "backend/alembic/",
+    "shared_schema": "shared/openapi.json (generated from fastapi)",
+    "local_db": "data/prediction_markets.db (sqlite)"
+  }
+}

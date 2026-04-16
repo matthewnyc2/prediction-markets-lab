@@ -1,0 +1,21 @@
+{
+  "screen": "compare",
+  "rendering_status": "confirmed",
+  "data_elements": [
+    { "name": "overlay-pnl-chart",   "type": "chart", "series-per-run": true, "color-coded": true },
+    { "name": "comparison-table",    "type": "table", "columns": ["run-label","strategy","platforms","period","pnl","sharpe","brier","win-rate"] }
+  ],
+  "interactive_elements": [
+    { "name": "add-run-button",          "type": "button",      "action": "open picker to include backtest or live session" },
+    { "name": "remove-run-button",       "type": "button-row",  "one-per-row": true },
+    { "name": "run-label-edit",          "type": "text-input",  "one-per-row": true }
+  ],
+  "navigation_paths": [
+    { "from": "compare", "to": "backtest", "trigger": "click 'add from backtest'" },
+    { "from": "compare", "to": "portfolio","trigger": "click 'add from live session'" }
+  ],
+  "conditional_displays": [
+    { "element": "overlay-pnl-chart", "condition": "rendered when ≥1 run selected; shows placeholder otherwise" },
+    { "element": "brier-column",      "condition": "shows 'n/a' for strategies that do not emit probability forecasts (e.g. market-maker)" }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "screen": "paper-trades",
+  "rendering_status": "confirmed",
+  "data_elements": [
+    { "name": "ledger-table", "type": "table", "columns": ["timestamp","platform-chip","market","side","quantity","entry-price","exit-price","pnl","source"] },
+    { "name": "summary-counts", "type": "text", "fields": ["total","open","closed"] }
+  ],
+  "interactive_elements": [
+    { "name": "filter-status",    "type": "toggle",  "values": ["all","open","closed"] },
+    { "name": "filter-strategy",  "type": "toggle",  "values": ["all","kelly-sizing","cross-platform-arbitrage","closing-momentum","news-spike-fade","market-maker","manual"] },
+    { "name": "filter-platform",  "type": "toggle",  "values": ["all","kalshi","polymarket","manifold","predictit"] },
+    { "name": "filter-date-range","type": "date-range-picker" },
+    { "name": "export-csv",       "type": "button" },
+    { "name": "export-json",      "type": "button" }
+  ],
+  "navigation_paths": [
+    { "from": "paper-trades", "to": "market-detail", "trigger": "click market cell" }
+  ],
+  "conditional_displays": [
+    { "element": "exit-price", "condition": "shows '—' when row status is open" },
+    { "element": "pnl",        "condition": "shows 'open' when row status is open" }
+  ]
+}

@@ -1,0 +1,225 @@
+{
+  "project": "prediction-markets",
+  "nodes": [
+    {
+      "id": "backtest",
+      "type": "screen"
+    },
+    {
+      "id": "compare",
+      "type": "screen"
+    },
+    {
+      "id": "dashboard",
+      "type": "screen"
+    },
+    {
+      "id": "data-ingestion",
+      "type": "screen"
+    },
+    {
+      "id": "external-api",
+      "type": "external"
+    },
+    {
+      "id": "market-detail",
+      "type": "screen"
+    },
+    {
+      "id": "markets",
+      "type": "screen"
+    },
+    {
+      "id": "paper-trades",
+      "type": "screen"
+    },
+    {
+      "id": "portfolio",
+      "type": "screen"
+    },
+    {
+      "id": "strategies",
+      "type": "screen"
+    }
+  ],
+  "edges": [
+    {
+      "from": "compare",
+      "to": "sidebar-target-screen",
+      "interaction_id": "I-CMP-009",
+      "trigger": "click sidebar nav item",
+      "label": "handle_i_cmp_009",
+      "category": "navigation"
+    },
+    {
+      "from": "portfolio",
+      "to": "paper-trades",
+      "interaction_id": "I-PF-005",
+      "trigger": "click attribution bar for a strategy",
+      "label": "handle_i_pf_005",
+      "category": "navigation"
+    },
+    {
+      "from": "portfolio",
+      "to": "sidebar-target-screen",
+      "interaction_id": "I-PF-008",
+      "trigger": "click sidebar nav item",
+      "label": "handle_i_pf_008",
+      "category": "navigation"
+    },
+    {
+      "from": "data-ingestion",
+      "to": "sidebar-target-screen",
+      "interaction_id": "I-DI-008",
+      "trigger": "click sidebar nav item",
+      "label": "handle_i_di_008",
+      "category": "navigation"
+    },
+    {
+      "from": "dashboard",
+      "to": "markets",
+      "interaction_id": "I-DASH-002",
+      "trigger": "click on sidebar nav item 'Markets'",
+      "label": "handle_i_dash_002",
+      "category": "navigation"
+    },
+    {
+      "from": "dashboard",
+      "to": "strategies",
+      "interaction_id": "I-DASH-003",
+      "trigger": "click on sidebar nav item 'Strategies'",
+      "label": "handle_i_dash_003",
+      "category": "navigation"
+    },
+    {
+      "from": "dashboard",
+      "to": "paper-trades",
+      "interaction_id": "I-DASH-004",
+      "trigger": "click on sidebar nav item 'Paper Trades'",
+      "label": "handle_i_dash_004",
+      "category": "navigation"
+    },
+    {
+      "from": "dashboard",
+      "to": "backtest",
+      "interaction_id": "I-DASH-005",
+      "trigger": "click on sidebar nav item 'Backtest'",
+      "label": "handle_i_dash_005",
+      "category": "navigation"
+    },
+    {
+      "from": "dashboard",
+      "to": "compare",
+      "interaction_id": "I-DASH-006",
+      "trigger": "click on sidebar nav item 'Compare'",
+      "label": "handle_i_dash_006",
+      "category": "navigation"
+    },
+    {
+      "from": "dashboard",
+      "to": "portfolio",
+      "interaction_id": "I-DASH-007",
+      "trigger": "click on sidebar nav item 'Portfolio'",
+      "label": "handle_i_dash_007",
+      "category": "navigation"
+    },
+    {
+      "from": "dashboard",
+      "to": "data-ingestion",
+      "interaction_id": "I-DASH-008",
+      "trigger": "click on sidebar nav item 'Data ingestion'",
+      "label": "handle_i_dash_008",
+      "category": "navigation"
+    },
+    {
+      "from": "dashboard",
+      "to": "strategies",
+      "interaction_id": "I-DASH-012",
+      "trigger": "click on a row in active-strategies-panel",
+      "label": "handle_i_dash_012",
+      "category": "navigation"
+    },
+    {
+      "from": "dashboard",
+      "to": "market-detail",
+      "interaction_id": "I-DASH-013",
+      "trigger": "click on a row in recent-trades-panel",
+      "label": "handle_i_dash_013",
+      "category": "navigation"
+    },
+    {
+      "from": "dashboard",
+      "to": "paper-trades",
+      "interaction_id": "I-DASH-014",
+      "trigger": "click on 'View all' link in recent-trades-panel header",
+      "label": "handle_i_dash_014",
+      "category": "navigation"
+    },
+    {
+      "from": "markets",
+      "to": "dashboard",
+      "interaction_id": "I-MKT-001",
+      "trigger": "click on sidebar nav item 'Dashboard'",
+      "label": "handle_i_mkt_001",
+      "category": "navigation"
+    },
+    {
+      "from": "markets",
+      "to": "market-detail",
+      "interaction_id": "I-MKT-016",
+      "trigger": "click on a markets-table row (tr.link)",
+      "label": "handle_i_mkt_016",
+      "category": "navigation"
+    },
+    {
+      "from": "market-detail",
+      "to": "sidebar-target-screen",
+      "interaction_id": "I-MD-008",
+      "trigger": "click sidebar nav item",
+      "label": "handle_i_md_008",
+      "category": "navigation"
+    },
+    {
+      "from": "strategies",
+      "to": "paper-trades",
+      "interaction_id": "I-STR-006",
+      "trigger": "click running-pnl on a strategy card",
+      "label": "handle_i_str_006",
+      "category": "navigation"
+    },
+    {
+      "from": "strategies",
+      "to": "sidebar-target-screen",
+      "interaction_id": "I-STR-007",
+      "trigger": "click sidebar nav item",
+      "label": "handle_i_str_007",
+      "category": "navigation"
+    },
+    {
+      "from": "paper-trades",
+      "to": "market-detail",
+      "interaction_id": "I-PT-006",
+      "trigger": "click market cell in row",
+      "label": "handle_i_pt_006",
+      "category": "navigation"
+    },
+    {
+      "from": "paper-trades",
+      "to": "sidebar-target-screen",
+      "interaction_id": "I-PT-011",
+      "trigger": "click sidebar nav item",
+      "label": "handle_i_pt_011",
+      "category": "navigation"
+    },
+    {
+      "from": "backtest",
+      "to": "sidebar-target-screen",
+      "interaction_id": "I-BT-011",
+      "trigger": "click sidebar nav item",
+      "label": "handle_i_bt_011",
+      "category": "navigation"
+    }
+  ],
+  "edge_count": 22,
+  "node_count": 10
+}

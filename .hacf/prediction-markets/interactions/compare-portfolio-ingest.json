@@ -1,0 +1,253 @@
+{
+  "agent": "B4",
+  "screens_covered": ["compare", "portfolio", "data-ingestion"],
+  "produced_at": "2026-04-16",
+  "interactions": [
+    {
+      "interaction_id": "I-CMP-001",
+      "source_state": "compare",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "compare",
+      "endpoint": "GET /api/comparison-runs",
+      "rules_referenced": ["BE-R-*","HTML-R-*"],
+      "notes": "Loads saved comparison-runs and their source backtest-results / live-sessions"
+    },
+    {
+      "interaction_id": "I-CMP-002",
+      "source_state": "compare",
+      "trigger": "click add-run button",
+      "category": "state_change",
+      "target_screen": "compare",
+      "elements_involved": ["add-run-button"],
+      "rules_referenced": ["HTML-R-*"],
+      "notes": "Opens a picker dialog; no api call yet"
+    },
+    {
+      "interaction_id": "I-CMP-003",
+      "source_state": "compare",
+      "trigger": "pick 'add from backtest'",
+      "category": "api_call",
+      "target_screen": "compare",
+      "endpoint": "GET /api/backtests?completed=true",
+      "rules_referenced": ["BE-R-*"],
+      "notes": "Lists completed backtests in picker"
+    },
+    {
+      "interaction_id": "I-CMP-004",
+      "source_state": "compare",
+      "trigger": "pick 'add from live session'",
+      "category": "api_call",
+      "target_screen": "compare",
+      "endpoint": "GET /api/live-sessions",
+      "rules_referenced": ["BE-R-*"],
+      "notes": "Lists live-paper-trading-sessions in picker"
+    },
+    {
+      "interaction_id": "I-CMP-005",
+      "source_state": "compare",
+      "trigger": "confirm run selection in picker",
+      "category": "api_call",
+      "target_screen": "compare",
+      "endpoint": "POST /api/comparison-runs",
+      "request_body": {"source_type":"backtest|live","source_id":"..."},
+      "rules_referenced": ["CSC-004","TS-03","FS-005"],
+      "notes": "Creates comparison-run; appends row to table; adds series to overlay-pnl-chart. Rejects if source_id does not exist (FS-005)."
+    },
+    {
+      "interaction_id": "I-CMP-006",
+      "source_state": "compare",
+      "trigger": "click remove-run button",
+      "category": "api_call",
+      "target_screen": "compare",
+      "endpoint": "DELETE /api/comparison-runs/{id}",
+      "rules_referenced": ["BE-R-*"],
+      "notes": "Removes row and chart series without touching source backtest/session"
+    },
+    {
+      "interaction_id": "I-CMP-007",
+      "source_state": "compare",
+      "trigger": "edit run label (text input)",
+      "category": "input_change",
+      "target_screen": "compare",
+      "endpoint": "PATCH /api/comparison-runs/{id} {label:...}",
+      "rules_referenced": ["BE-R-*"],
+      "notes": "Debounced 500ms; updates table + chart legend"
+    },
+    {
+      "interaction_id": "I-CMP-008",
+      "source_state": "compare",
+      "trigger": "TS-03 satisfied condition",
+      "category": "state_change",
+      "target_screen": "compare",
+      "elements_involved": ["overlay-pnl-chart","comparison-table"],
+      "rules_referenced": ["TS-03"],
+      "notes": "When table has ≥2 runs covering ≥2 platforms OR ≥2 date-ranges, TS-03 is observable. No UI flag needed; it's an acceptance signal."
+    },
+    {
+      "interaction_id": "I-CMP-009",
+      "source_state": "compare",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "rules_referenced": ["HTML-R-*"]
+    },
+
+    {
+      "interaction_id": "I-PF-001",
+      "source_state": "portfolio",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "portfolio",
+      "endpoint": "GET /api/portfolio + GET /api/equity-curve?window=all + GET /api/attribution",
+      "rules_referenced": ["BE-R-*","HS-004"]
+    },
+    {
+      "interaction_id": "I-PF-002",
+      "source_state": "portfolio",
+      "trigger": "click timeframe toggle (7d / 30d / 90d / ytd / all)",
+      "category": "filter_change",
+      "target_screen": "portfolio",
+      "endpoint": "GET /api/equity-curve?window={value}",
+      "rules_referenced": ["QU-R-*"]
+    },
+    {
+      "interaction_id": "I-PF-003",
+      "source_state": "portfolio",
+      "trigger": "click Export CSV",
+      "category": "export",
+      "target_screen": "portfolio",
+      "endpoint": "GET /api/portfolio/export?format=csv",
+      "rules_referenced": ["BE-R-*"]
+    },
+    {
+      "interaction_id": "I-PF-004",
+      "source_state": "portfolio",
+      "trigger": "click Export JSON",
+      "category": "export",
+      "target_screen": "portfolio",
+      "endpoint": "GET /api/portfolio/export?format=json",
+      "rules_referenced": ["BE-R-*"]
+    },
+    {
+      "interaction_id": "I-PF-005",
+      "source_state": "portfolio",
+      "trigger": "click attribution bar for a strategy",
+      "category": "drilldown",
+      "target_screen": "paper-trades",
+      "elements_involved": ["pnl-attribution-bars"],
+      "rules_referenced": ["CSC-003","HS-005"],
+      "notes": "Preset filter source=strategy-id when navigating to paper-trades"
+    },
+    {
+      "interaction_id": "I-PF-006",
+      "source_state": "portfolio",
+      "trigger": "30s poll refresh",
+      "category": "refresh",
+      "target_screen": "portfolio",
+      "endpoint": "GET /api/portfolio (tiles only)",
+      "rules_referenced": ["FW-R-*"],
+      "notes": "Tiles update; equity-curve invalidation triggered on new closed fills (HS-004)"
+    },
+    {
+      "interaction_id": "I-PF-007",
+      "source_state": "portfolio",
+      "trigger": "insufficient data edge case (sortino <20 trades)",
+      "category": "state_change",
+      "target_screen": "portfolio",
+      "elements_involved": ["sortino-tile"],
+      "rules_referenced": ["QU-R-*"],
+      "notes": "Tile shows 'insufficient data' in dim text"
+    },
+    {
+      "interaction_id": "I-PF-008",
+      "source_state": "portfolio",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "rules_referenced": ["HTML-R-*"]
+    },
+
+    {
+      "interaction_id": "I-DI-001",
+      "source_state": "data-ingestion",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "data-ingestion",
+      "endpoint": "GET /api/adapters/status",
+      "rules_referenced": ["BE-R-*","API-R-*"],
+      "notes": "Loads 4 adapter rows with current status, last-sync, counts"
+    },
+    {
+      "interaction_id": "I-DI-002",
+      "source_state": "data-ingestion",
+      "trigger": "click Sync now on Kalshi row",
+      "category": "api_call",
+      "target_screen": "data-ingestion",
+      "endpoint": "POST /api/adapters/kalshi/sync",
+      "async_mode_hint": "async-await-long-running",
+      "rules_referenced": ["API-R-*","SR-003","CSC-005"],
+      "notes": "Status pill flips to 'syncing' until complete; respects Kalshi rate limits; errors roll up to dashboard platform-health"
+    },
+    {
+      "interaction_id": "I-DI-003",
+      "source_state": "data-ingestion",
+      "trigger": "click Sync now on Polymarket row",
+      "category": "api_call",
+      "target_screen": "data-ingestion",
+      "endpoint": "POST /api/adapters/polymarket/sync",
+      "async_mode_hint": "async-await-long-running",
+      "rules_referenced": ["API-R-*","SR-003"]
+    },
+    {
+      "interaction_id": "I-DI-004",
+      "source_state": "data-ingestion",
+      "trigger": "click Sync now on Manifold row",
+      "category": "api_call",
+      "target_screen": "data-ingestion",
+      "endpoint": "POST /api/adapters/manifold/sync",
+      "async_mode_hint": "async-await-long-running",
+      "rules_referenced": ["API-R-*","SR-003"],
+      "notes": "Reconstructs price-history from /v0/bets on first sync; incremental thereafter"
+    },
+    {
+      "interaction_id": "I-DI-005",
+      "source_state": "data-ingestion",
+      "trigger": "click Retry on PredictIt row (when rate-limited)",
+      "category": "api_call",
+      "target_screen": "data-ingestion",
+      "endpoint": "POST /api/adapters/predictit/sync",
+      "async_mode_hint": "async-await-long-running",
+      "rules_referenced": ["API-R-*","SR-003"],
+      "notes": "PredictIt enforces 1 req/s; retry uses exponential backoff; no historical api means live-only recording"
+    },
+    {
+      "interaction_id": "I-DI-006",
+      "source_state": "data-ingestion",
+      "trigger": "status transitions healthy → rate-limited or error",
+      "category": "state_change",
+      "target_screen": "data-ingestion",
+      "elements_involved": ["adapters-table.status-pill"],
+      "rules_referenced": ["CSC-005","FS-006"],
+      "notes": "Pill color changes; action button switches to 'Retry'; dashboard platform-health reflects degraded state"
+    },
+    {
+      "interaction_id": "I-DI-007",
+      "source_state": "data-ingestion",
+      "trigger": "30s poll refresh",
+      "category": "refresh",
+      "target_screen": "data-ingestion",
+      "endpoint": "GET /api/adapters/status",
+      "rules_referenced": ["FS-006","FW-R-*"],
+      "notes": "Revalidates status + last-sync; triggers FS-006 warning if healthy but stale"
+    },
+    {
+      "interaction_id": "I-DI-008",
+      "source_state": "data-ingestion",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "rules_referenced": ["HTML-R-*"]
+    }
+  ]
+}

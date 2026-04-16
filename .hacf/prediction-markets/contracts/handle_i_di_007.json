@@ -1,0 +1,57 @@
+{
+  "contract_id": "C-I-DI-007",
+  "interaction_id": "I-DI-007",
+  "function": {
+    "name": "handle_i_di_007",
+    "module_hint": "backend.handlers.data_ingestion",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "revalidated_state",
+        "type": "ScreenState"
+      }
+    ]
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 8000,
+    "retry_policy": {
+      "max_retries": 2,
+      "backoff": "linear",
+      "base_ms": 500
+    },
+    "concurrency_policy": "skip-if-in-flight",
+    "idempotency_rule": "idempotent-read",
+    "ui_locking_rule": null,
+    "failure_transitions": [
+      {
+        "condition": "http-error",
+        "transition": "data-ingestion",
+        "ui_effect": "table-error-state-with-retry"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "data-ingestion",
+        "ui_effect": "table-error-state-with-retry"
+      }
+    ],
+    "side_effects": [
+      {
+        "type": "cache-invalidation",
+        "target": "SWR cache for screen data",
+        "description": "30s poll revalidate"
+      }
+    ]
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "FS-006",
+      "FW-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "data-ingestion",
+    "success_transition": "data-ingestion"
+  }
+}

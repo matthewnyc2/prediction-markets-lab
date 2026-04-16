@@ -1,0 +1,56 @@
+{
+  "contract_id": "C-I-MKT-008",
+  "interaction_id": "I-MKT-008",
+  "function": {
+    "name": "handle_i_mkt_008",
+    "module_hint": "backend.handlers.markets",
+    "inputs": [
+      {
+        "name": "filter_key",
+        "type": "str"
+      },
+      {
+        "name": "filter_value",
+        "type": "str"
+      }
+    ],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 8000,
+    "retry_policy": {
+      "max_retries": 2,
+      "backoff": "linear",
+      "base_ms": 300
+    },
+    "concurrency_policy": "cancel-previous",
+    "idempotency_rule": "idempotent-read",
+    "ui_locking_rule": "table-skeleton-during-fetch",
+    "failure_transitions": [
+      {
+        "condition": "http-error",
+        "transition": "markets",
+        "ui_effect": "table-error-state-with-retry"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "markets",
+        "ui_effect": "table-error-state-with-retry"
+      }
+    ],
+    "side_effects": []
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "HTML-R-015",
+      "HTML-R-016",
+      "BE-R-009"
+    ],
+    "external_rule_refs": [],
+    "source_state": "markets",
+    "success_transition": "markets"
+  }
+}

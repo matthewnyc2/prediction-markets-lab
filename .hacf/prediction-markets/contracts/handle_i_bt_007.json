@@ -1,0 +1,77 @@
+{
+  "contract_id": "C-I-BT-007",
+  "interaction_id": "I-BT-007",
+  "function": {
+    "name": "handle_i_bt_007",
+    "module_hint": "frontend.handlers.backtest",
+    "inputs": [
+      {
+        "name": "strategy_id",
+        "type": "StrategyId"
+      },
+      {
+        "name": "platforms",
+        "type": "list[Platform]"
+      },
+      {
+        "name": "date_range",
+        "type": "DateRange"
+      },
+      {
+        "name": "bankroll",
+        "type": "int"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "backtest_result",
+        "type": "BacktestResult"
+      }
+    ]
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": null,
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": [
+      {
+        "type": "db-write",
+        "target": "backtests + backtest_results",
+        "description": "replay output persisted"
+      },
+      {
+        "type": "db-read",
+        "target": "price_ticks (historical)",
+        "description": "event-driven replay"
+      }
+    ]
+  },
+  "preconditions": [
+    {
+      "ref": "config",
+      "condition": "strategy_id valid, platforms non-empty, date_range valid, bankroll >= 1"
+    }
+  ],
+  "postconditions": [
+    {
+      "ref": "TS-02",
+      "condition": "backtest_result has non-null final_equity, sharpe, brier, win_rate, equity_curve"
+    },
+    {
+      "ref": "INV-006",
+      "condition": "zero outbound calls to live adapter endpoints during run"
+    }
+  ],
+  "references": {
+    "validation_rule_refs": [
+      "TS-02"
+    ],
+    "external_rule_refs": [],
+    "source_state": "backtest",
+    "success_transition": "backtest"
+  }
+}

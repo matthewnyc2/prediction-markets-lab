@@ -1,0 +1,58 @@
+{
+  "contract_id": "C-I-MD-001",
+  "interaction_id": "I-MD-001",
+  "function": {
+    "name": "handle_i_md_001",
+    "module_hint": "backend.handlers.market_detail",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "screen_state",
+        "type": "ScreenState"
+      }
+    ]
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 10000,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff": "exponential",
+      "base_ms": 250
+    },
+    "concurrency_policy": "queue-latest",
+    "idempotency_rule": "idempotency-key-required-for-writes",
+    "ui_locking_rule": "disable-submit-and-spin-until-response",
+    "failure_transitions": [
+      {
+        "condition": "http-4xx-validation-error",
+        "transition": "market-detail",
+        "ui_effect": "inline-error-beside-field"
+      },
+      {
+        "condition": "http-5xx-server-error",
+        "transition": "market-detail",
+        "ui_effect": "toast-retry-option"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "market-detail",
+        "ui_effect": "toast-check-connection"
+      }
+    ],
+    "side_effects": []
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "FE-R-004",
+      "BE-R-002"
+    ],
+    "external_rule_refs": [
+      "API-R-*"
+    ],
+    "source_state": "market-detail",
+    "success_transition": "market-detail"
+  }
+}

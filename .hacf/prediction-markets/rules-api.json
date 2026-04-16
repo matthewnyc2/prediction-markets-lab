@@ -1,0 +1,428 @@
+{
+  "source": "feature-discoveries.json (platform research)",
+  "generated_at": "2026-04-16",
+  "agent": "A3-rules-builder-api",
+  "notes": "Rules derived from platform API research in feature-discoveries.json; complements backend/frontend/quant/testing rules in rules-database-seed.json. No duplication: this file covers adapter-specific endpoint contracts, data-shape conversions, rate-limit specifics, auth models, execution sequencing, market-matching, write-path restrictions (INV-007), and strategy/metric formula bindings derived from platform research.",
+  "rules": [
+    {
+      "id": "API-R-001",
+      "rule": "Kalshi adapter MUST target base URL https://api.elections.kalshi.com/trade-api/v2 for production reads and https://demo-api.kalshi.co/trade-api/v2 for any smoke tests; base URL MUST come from config, never hardcoded in call sites.",
+      "rationale": "Feature-discoveries ADP-01 pins these exact base URLs; separation from demo is required so tests never accidentally hit production.",
+      "applies_to": ["kalshi"],
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-002",
+      "rule": "Kalshi adapter MUST operate in api-key-optional mode: when no KALSHI_API_KEY is present, issue unsigned reads against public endpoints only; when a key is present, RSA-PKCS#8-2048 sign every request with headers KALSHI-ACCESS-KEY, KALSHI-ACCESS-SIGNATURE, and KALSHI-ACCESS-TIMESTAMP.",
+      "rationale": "ADP-01 auth_model + pitfall: RSA signing is heavyweight and unnecessary for purely-read adapter; fall back to unsigned public reads.",
+      "applies_to": ["kalshi"],
+      "category": "auth"
+    },
+    {
+      "id": "API-R-003",
+      "rule": "Kalshi adapter MUST convert integer-cent prices (range 1-99) returned by /markets/{ticker}/orderbook into decimal market-price in [0.00, 1.00] by dividing by 100 before storage.",
+      "rationale": "ADP-01 pitfall: integer-cent wire format collides with disambiguated.txt decimal market-price; INV-002 requires 0 <= market.price <= 1.",
+      "applies_to": ["kalshi"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-004",
+      "rule": "Kalshi adapter MUST treat YES and NO as complementary: store only yes-price and derive no-price = 1 - yes-price. Do NOT emit an independent no-side order book.",
+      "rationale": "ADP-01 market-side_encoding: each market is paired binary; there is no independent NO order book on Kalshi.",
+      "applies_to": ["kalshi"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-005",
+      "rule": "Kalshi adapter MUST throttle reads with a token bucket at <= 20 req/sec (Basic tier) with a 10% safety margin (effective 18/sec). On any 429 response, honour the Retry-After header before retrying and surface adapter.status='rate-limited' on the data-ingestion screen.",
+      "rationale": "ADP-01 rate_limits Basic tier + throttle_behaviour + SR-003; FS-006 requires accurate status reporting.",
+      "applies_to": ["kalshi"],
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-006",
+      "rule": "Kalshi adapter MUST compute market-volume-24h by summing trades from the trades feed over the trailing 24h; do NOT rely on a direct 24h volume field on the ticker response.",
+      "rationale": "ADP-01 known_quirks: no direct 24h field is present on all Kalshi tickers.",
+      "applies_to": ["kalshi"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-007",
+      "rule": "Kalshi adapter MAY subscribe to public websocket channels (ticker, trade, orderbook_delta, market_lifecycle_v2) WITHOUT authentication; the websocket URL MUST be wss://api.elections.kalshi.com/trade-api/ws/v2.",
+      "rationale": "ADP-01 data_format and patterns_found: public channels need no auth.",
+      "applies_to": ["kalshi"],
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-008",
+      "rule": "Kalshi adapter MUST map the Kalshi status field to the unified market-resolution enum {yes-resolved, no-resolved, cancelled, open}. Unknown status values MUST raise AdapterError rather than being silently coerced to open.",
+      "rationale": "ADP-01 market-resolution_mapping; silent coercion masks resolution bugs that corrupt brier-score denominators.",
+      "applies_to": ["kalshi"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-009",
+      "rule": "Polymarket adapter MUST use three distinct base URLs: gamma-api.polymarket.com for market discovery (list_markets), clob.polymarket.com for order book + prices-history, data-api.polymarket.com for data endpoints. Each domain has its own rate-limit bucket and MUST be throttled independently.",
+      "rationale": "ADP-02 api_base_urls; mixing domains into one throttler either under- or over-rates the adapter.",
+      "applies_to": ["polymarket"],
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-010",
+      "rule": "Polymarket adapter MUST run in auth=none-for-read mode. It MUST NOT implement L2 HMAC-SHA256 signing and MUST NOT import the write-path portion of py-clob-client. Any code that constructs a POST body for a trading endpoint is forbidden.",
+      "rationale": "ADP-02 auth_model + INV-007 (no write paths to real trading endpoints).",
+      "applies_to": ["polymarket"],
+      "category": "write-path-restriction"
+    },
+    {
+      "id": "API-R-011",
+      "rule": "Polymarket gamma discovery calls MUST be throttled at <= 60 requests/minute (conservative) until live metrics prove the 4000/10s upper figure. Configuration MUST expose the value so it can be widened without redeploy.",
+      "rationale": "ADP-02 rate_limits: sources disagree (60/min vs 4000/10s); start conservative per pitfall mitigation.",
+      "applies_to": ["polymarket"],
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-012",
+      "rule": "Polymarket CLOB websocket subscriptions MUST multiplex ALL markets through a single shared connection per IP; adapter MUST NOT open more than 1 CLOB websocket connection.",
+      "rationale": "ADP-02 rate_limits.websocket cap = 5 connections/IP; single-connection multiplexing is the documented mitigation.",
+      "applies_to": ["polymarket"],
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-013",
+      "rule": "Polymarket adapter MUST treat yes-token and no-token as two independent tokens with distinct token_ids and distinct order books. Adapter MUST resolve market_id -> tokens[] before requesting prices-history; price-history calls use token_id, not market_id.",
+      "rationale": "ADP-02 market-side_encoding + known_quirks: CLOB exposes two separate token IDs per market.",
+      "applies_to": ["polymarket"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-014",
+      "rule": "Polymarket adapter MUST persist both yes-token-price and no-token-price separately in stored-price-history and MUST NOT derive one from the other. Divergence (yes + no != 1.00) is valid input to STR-02 arbitrage detection.",
+      "rationale": "ADP-02 pitfall: yes+no can diverge; forcing yes+no=1 destroys the arbitrage signal STR-02 depends on.",
+      "applies_to": ["polymarket"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-015",
+      "rule": "Polymarket adapter MUST flatten the gamma Series -> Events -> Markets hierarchy into flat market entities keyed by (platform, platform_market_id) before emitting ingest-markets events.",
+      "rationale": "ADP-02 known_quirks: gamma.markets returns event hierarchy; unified schema is flat per PR-004 idempotency requirement.",
+      "applies_to": ["polymarket"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-016",
+      "rule": "Polymarket adapter MUST filter discovered markets to those with enableOrderBook == true; markets without a live book are ui-priced only and cannot be traded in paper mode.",
+      "rationale": "ADP-02 known_quirks: enableOrderBook flag gates tradability; INV-009 slippage-model requires an order book.",
+      "applies_to": ["polymarket"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-017",
+      "rule": "Manifold adapter MUST default to unauthenticated reads; authenticated mode accepts either Authorization: Key {api_key} or Authorization: Bearer {jwt} headers but MUST NOT require them.",
+      "rationale": "ADP-03 auth_model: api-key-optional; read endpoints are public.",
+      "applies_to": ["manifold"],
+      "category": "auth"
+    },
+    {
+      "id": "API-R-018",
+      "rule": "Manifold adapter MUST throttle at <= 500 req/min per IP with a safety margin (effective <= 450/min). On 429 apply exponential backoff.",
+      "rationale": "ADP-03 rate_limits.per_ip_per_minute = 500.",
+      "applies_to": ["manifold"],
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-019",
+      "rule": "Manifold adapter MUST filter ingested markets to outcomeType == 'BINARY' for the v1 unified schema. Non-binary types (MULTIPLE_CHOICE, PSEUDO_NUMERIC, POLL, BOUNTIED_QUESTION, FREE_RESPONSE) MUST NOT be written to the markets table unless a future opt-in flag explicitly enables PSEUDO_NUMERIC mapping.",
+      "rationale": "ADP-03 pitfalls + OQ-10 recommended default: filter to binary only in v1.",
+      "applies_to": ["manifold"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-020",
+      "rule": "Manifold adapter MUST reconstruct price-history by paging GET /v0/bets?contractId={id} and deriving each tick from probBefore/probAfter on each bet. First sync pages through the full bet history; subsequent syncs MUST be incremental using a createdTime cursor.",
+      "rationale": "ADP-03 price_history_endpoint = NOT AVAILABLE; reconstruction from bets is the documented pattern.",
+      "applies_to": ["manifold"],
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-021",
+      "rule": "Manifold adapter MUST read the BINARY market's probability field directly as yes-price in [0.0, 1.0]; no-price is derived as 1 - yes-price (unlike Polymarket).",
+      "rationale": "ADP-03 market-side_encoding: single probability field per binary market.",
+      "applies_to": ["manifold"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-022",
+      "rule": "Manifold adapter MUST keep market-volume-24h in native mana currency and MUST NOT auto-convert to USD at ingest; USD mapping happens only at paper-fill time via the simulated-bankroll model.",
+      "rationale": "ADP-03 known_quirks + pitfall: mana vs usd confusion; INV-001 usd-denominated equity is separate from mana-denominated volume.",
+      "applies_to": ["manifold"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-023",
+      "rule": "Manifold websocket connections MUST send a keepalive ping every 30-60s; adapter MUST detect dropped connections and auto-reconnect with exponential backoff (base 1s, max 60s).",
+      "rationale": "ADP-03 known_quirks: websocket requires keepalive or connection drops.",
+      "applies_to": ["manifold"],
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-024",
+      "rule": "PredictIt adapter MUST poll GET /all/ at <= 1 request/second and MUST NOT issue more frequent polls since upstream data itself refreshes only every 60 seconds.",
+      "rationale": "ADP-04 rate_limits + data_refresh: 1 req/sec documented + 60s upstream cache.",
+      "applies_to": ["predictit"],
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-025",
+      "rule": "PredictIt adapter MUST be read-only. There is no trading API; any method that attempts to write or authenticate beyond public read is forbidden.",
+      "rationale": "ADP-04 auth_model: 'NO trading api at all'; INV-007.",
+      "applies_to": ["predictit"],
+      "category": "write-path-restriction"
+    },
+    {
+      "id": "API-R-026",
+      "rule": "PredictIt adapter MUST flatten multi-contract markets: each contract becomes its own normalised market in the unified schema, keyed by (platform='predictit', platform_market_id=f'{market_id}:{contract_id}').",
+      "rationale": "ADP-04 pitfall: multi-contract markets break the one-market/one-binary assumption; flatten per contract.",
+      "applies_to": ["predictit"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-027",
+      "rule": "PredictIt adapter MUST verify per-field price units: bestBuyYesCost / bestBuyNoCost / bestSellYesCost / bestSellNoCost / lastTradePrice / lastClosePrice are quoted in cents in some fields; adapter MUST normalise each to decimal [0.0, 1.0] using a per-field unit table and reject prices outside [0.0, 1.0] after normalisation.",
+      "rationale": "ADP-04 known_quirks: 'prices are in cents not dollars in some fields - verify per-field'; FS-002 forbids out-of-range prices.",
+      "applies_to": ["predictit"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-028",
+      "rule": "PredictIt backtest date-range UI MUST disable selection of dates earlier than min(stored-price-history.timestamp) for the PredictIt platform and render a tooltip reading 'No PredictIt data recorded before {date}'.",
+      "rationale": "ADP-04 historical_available = NO + OQ-01 recommended default.",
+      "applies_to": ["predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-029",
+      "rule": "Any UI surface that renders PredictIt prices or market-volume MUST display a PredictIt attribution badge (e.g. platform-chip reading 'PredictIt').",
+      "rationale": "ADP-04 known_quirks: non-commercial data-license requires attribution on any UI surface.",
+      "applies_to": ["predictit"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-030",
+      "rule": "Every adapter's list_markets method MUST normalise to the shared schema using composite key (platform, platform_market_id); ingest-markets MUST be idempotent on conflict (UPSERT, not INSERT).",
+      "rationale": "PR-004 idempotency requirement + ADP-01..04 normalisation patterns.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-031",
+      "rule": "No adapter method may POST/PUT/PATCH/DELETE to a platform's trading endpoint. Every adapter method must be reviewable as HTTP GET only (or websocket read-subscribe only). CI MUST include a grep/AST check failing on httpx.post|httpx.put|httpx.patch|httpx.delete inside adapter packages.",
+      "rationale": "INV-007 boundary invariant B1; fail-fast static check is the only enforceable defence.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "write-path-restriction"
+    },
+    {
+      "id": "API-R-032",
+      "rule": "Adapter health transitions MUST follow the {healthy, rate-limited, error, syncing} enum. An adapter MUST NOT report healthy when now - last_sync > 10 * poll_interval; the background scheduler MUST flip status to 'error' in that case.",
+      "rationale": "FS-006 forbidden state + adapter entity lifecycle in semantic-spec.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "error-handling"
+    },
+    {
+      "id": "API-R-033",
+      "rule": "Every adapter MUST raise AdapterError (mapped by the FastAPI handler to HTTP 502 with {platform, detail}) on upstream failures; adapters MUST NOT swallow upstream errors and return empty lists.",
+      "rationale": "BE-R-019 (backend rule) binding: 502 upstream-failure pattern; silent empty-list returns hide FS-006 conditions.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "error-handling"
+    },
+    {
+      "id": "API-R-034",
+      "rule": "Event-driven backtest engine MUST NOT call adapter.stream_live_prices or any live-price method during execute-backtest; backtest data source MUST be stored-price-history only.",
+      "rationale": "INV-006 + ENG-01 simulation_vs_reality_line.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-035",
+      "rule": "Event-driven backtest engine MUST emit market-data-events in strictly chronological order; strategy.decide(market-state) MUST be called with state at time t only and MUST NOT be handed any tick with ts > current event ts.",
+      "rationale": "ENG-01 pitfall: look-ahead bias prevention; strategy contract preservation.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-036",
+      "rule": "Slippage-model MUST fill orders with size <= top-of-book size at mid ± 1 cent (buy above mid, sell below mid). For larger orders it MUST walk the order book level by level, consuming quantity at each price, and set fill-price to the volume-weighted average across consumed levels.",
+      "rationale": "ENG-01 slippage_model_implementation + order_book_crossing; INV-009 binds paper-fill.entry-price to slippage-model output.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-037",
+      "rule": "Cross-platform-arbitrage (STR-02) leg 2 MUST be executed at the next event tick after leg 1 (not simultaneously). The engine re-reads platform-B market-price at t+poll_interval or next market-data-event before applying slippage-model to leg 2.",
+      "rationale": "STR-02 execution_sequencing_risk: fills are never simultaneous; realistic paper simulation requires deferred leg 2.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-038",
+      "rule": "Cross-platform-arbitrage MUST detect edge as edge = 1 - (yes_price_platform_A + no_price_platform_B) and MUST NOT fire when edge <= min_edge_threshold (default 0.02, configurable via strategy-parameters.arb_minimum_edge).",
+      "rationale": "STR-02 detection_rule + default_min_edge_threshold.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "market-matching"
+    },
+    {
+      "id": "API-R-039",
+      "rule": "Cross-platform event identity (v1) MUST be established via a manual mapping table (CSV or DB table) keyed across kalshi_ticker, polymarket_token_id, manifold_id, predictit_contract_id. Fuzzy title+close-date matching is FORBIDDEN in v1.",
+      "rationale": "OQ-05 recommended default (v1 manual mapping); fuzzy matching risks fake arbs with real paper P&L loss.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "market-matching"
+    },
+    {
+      "id": "API-R-040",
+      "rule": "Kelly-sizing (STR-01) MUST cap computed bet_size at strategy-assigned-capital even when f* numerically exceeds 1.0 and MUST refuse to place orders when f* <= 0.",
+      "rationale": "STR-01 pitfalls: f* can exceed 1 near certainty; edge_requirement f* > 0.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-041",
+      "rule": "Kelly-sizing default kelly_fraction parameter MUST default to 0.25 (quarter-Kelly); full-Kelly is exposed via strategy-parameters but not default.",
+      "rationale": "STR-01 pitfall: full-Kelly induces ~33% probability of halving bankroll; quarter-Kelly is the documented default.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-042",
+      "rule": "Market-maker (STR-05) MUST pull quotes within N minutes before market-close-date (adverse-selection protection against stale-quote snipers) where N defaults to 5 and is configurable.",
+      "rationale": "STR-05 adverse_selection_protection explicit requirement.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-043",
+      "rule": "Market-maker simulated bid MUST NOT be quoted through the real top-of-book: our_bid <= real_best_bid + slippage_budget, our_ask >= real_best_ask - slippage_budget.",
+      "rationale": "STR-05 adverse_selection_protection: never quote through the real top-of-book.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-044",
+      "rule": "Market-maker passive quotes MUST fill in paper mode only when the real platform top-of-book CROSSES the quoted price (real best-ask <= our bid, OR real best-bid >= our ask); fill size = min(quote_size, opposing-side top-of-book size).",
+      "rationale": "OQ-08 recommended default + STR-05 pitfall: slippage-model only covers aggressive orders.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-045",
+      "rule": "Market-maker MUST stop quoting one side when |paper-position| >= max_inventory parameter and MUST widen spread when rolling_volatility > adverse-selection threshold.",
+      "rationale": "STR-05 adverse_selection_protection + inventory_management.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-046",
+      "rule": "Market-maker T-t (time-to-close) MUST default to 7 days when market-close-date is null (perpetual manifold markets); the Avellaneda-Stoikov skew formula MUST NOT divide by zero.",
+      "rationale": "STR-05 pitfall + fallback rule.",
+      "applies_to": ["manifold"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-047",
+      "rule": "News-spike-fade (STR-04) MUST detect spikes on each market-data-event using a rolling 15-minute window: price_move / market_price_15min_ago > 0.10. Discrete-bucket detection is FORBIDDEN.",
+      "rationale": "STR-04 event_detector + pitfall: rolling window over all ticks.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-048",
+      "rule": "News-spike-fade exits MUST include: take-profit at 50% retrace, stop-loss on another 50% extension, time-stop at fade_timeout_minutes (default 60), and immediate close on market-resolution. All four MUST be evaluated on every market-data-event.",
+      "rationale": "STR-04 exit_rules.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-049",
+      "rule": "Closing-momentum (STR-03) MUST only evaluate entries when (market-close-date - now) is within (exit_buffer, window_hours]. If market-close-date - now <= 0, the strategy MUST skip the market.",
+      "rationale": "STR-03 entry_rule + pitfall: markets can close faster than window if sync missed.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-050",
+      "rule": "Brier-score MUST use paper-fill.entry_price as the forecast probability for each closed paper-position where strategy.strategy_id != 'market-maker'. Markets resolving 'cancelled' MUST be excluded from brier N.",
+      "rationale": "MET-01 recommended_default + OQ-02/OQ-03 + INV-010 (market-maker excluded).",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-051",
+      "rule": "Sharpe-ratio tile MUST render '—' (null) while fewer than 2 daily returns are observed; annualisation factor defaults to 252 with config override.",
+      "rationale": "MET-02 pitfalls: stdev undefined for N=1; 252-day convention.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-052",
+      "rule": "Sortino-ratio tile MUST render '—' (null) until at least one downside return is observed; target_return defaults to 0.",
+      "rationale": "MET-03 pitfalls: denominator zero when no negative returns.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-053",
+      "rule": "Max-drawdown MUST initialise running_peak = equity[0] = simulated-bankroll, express drawdown as positive percent, and be computed with np.maximum.accumulate over the equity-curve-series.",
+      "rationale": "MET-04 algorithm + pitfall.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-054",
+      "rule": "Win-rate MUST be computed only over paper-positions where market-resolution ∈ {yes-resolved, no-resolved}; cancelled markets excluded from both numerator and denominator. A position with realised-pnl == 0 counts as a LOSS.",
+      "rationale": "MET-05 scope + tie_handling + OQ-03 cancelled handling.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-055",
+      "rule": "order-side = 'sell' on an existing paper-position MUST reduce that position. Opening a short position MUST be implemented as BUY on the opposite market-side (e.g. buy NO to short YES); the plugin-interface docstring MUST document this convention.",
+      "rationale": "OQ-09 recommended default.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-056",
+      "rule": "Adapter API keys (if supplied) MUST be loaded only from a local .env file via environment variables. Adapter code MUST NOT log keys, MUST NOT return keys in any HTTP response, and MUST NOT persist keys to the database.",
+      "rationale": "SR-002 security rule; B4 boundary invariant.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "auth"
+    },
+    {
+      "id": "API-R-057",
+      "rule": "Adapter ingest MUST reject any tick with market-price outside [0.0, 1.0] and emit an AdapterError rather than writing to the database (prevents FS-002).",
+      "rationale": "INV-002 + FS-002.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-058",
+      "rule": "Every adapter MUST expose last_sync (UTC datetime) and poll_interval (seconds) as queryable properties so the data-ingestion screen and the FS-006 staleness check can read them.",
+      "rationale": "FS-006 + adapter entity capabilities in semantic-spec.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-059",
+      "rule": "Adapter rate-limit token bucket state (HS-003) MUST be kept in-process per adapter instance and MUST NOT be persisted to the database; sync-now button requests that would exceed the bucket MUST be queued, not executed immediately.",
+      "rationale": "HS-003 hidden state + SR-003 token-bucket throttling.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-060",
+      "rule": "Platform-specific fee modelling (kalshi taker up to 3%, polymarket gas, predictit per-trade) is OUT OF SCOPE for v1 paper mode; fee-model stays at 0 by default. Any enabling of per-platform fees MUST be opt-in via strategy-parameters and MUST NOT change existing paper-fill records.",
+      "rationale": "OQ-06 recommended default: OUT OF SCOPE unless person asks.",
+      "applies_to": ["kalshi", "polymarket", "manifold", "predictit"],
+      "category": "execution-sequencing"
+    }
+  ]
+}

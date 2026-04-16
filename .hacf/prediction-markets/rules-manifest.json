@@ -1,0 +1,1533 @@
+{
+  "project": "prediction-markets",
+  "total": 297,
+  "by_source": {
+    "seed": 122,
+    "html": 33,
+    "design": 40,
+    "api": 60,
+    "framework": 42
+  },
+  "by_category": {
+    "uncategorised": 122,
+    "layout": 5,
+    "responsive": 2,
+    "navigation": 5,
+    "state-display": 4,
+    "typography": 11,
+    "element-presence": 9,
+    "chart-presence": 3,
+    "color": 9,
+    "spacing": 3,
+    "radius": 1,
+    "shadow": 3,
+    "component": 16,
+    "motion": 2,
+    "endpoint": 7,
+    "auth": 3,
+    "data-shape": 15,
+    "rate-limit": 6,
+    "write-path-restriction": 3,
+    "execution-sequencing": 22,
+    "error-handling": 2,
+    "market-matching": 2,
+    "frontend-backend-contract": 6,
+    "data-fetching": 4,
+    "rendering-boundary": 3,
+    "theming": 2,
+    "database-lifecycle": 6,
+    "migration-workflow": 5,
+    "testing-composition": 5,
+    "backtest-engine-architecture": 2,
+    "adapter-polling": 3,
+    "strategy-plugin": 3,
+    "data-consistency": 3
+  },
+  "rules": [
+    {
+      "id": "BE-R-001",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-002",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-003",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-004",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-005",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-006",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-007",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-008",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-009",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-010",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-011",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-012",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-013",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-014",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-015",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-016",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-017",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-018",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-019",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-020",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-021",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-022",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-023",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-024",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-025",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-026",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-027",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-028",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-029",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-030",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-031",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-032",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-033",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-034",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-035",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-036",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-037",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-038",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-039",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-040",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-041",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-042",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-043",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "BE-R-044",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-001",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-002",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-003",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-004",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-005",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-006",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-007",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-008",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-009",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-010",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-011",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-012",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-013",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-014",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-015",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-016",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-017",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-018",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-019",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-020",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-021",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-022",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-023",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-024",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-025",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-026",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-027",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "FE-R-028",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-001",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-002",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-003",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-004",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-005",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-006",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-007",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-008",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-009",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-010",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-011",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-012",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-013",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-014",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-015",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-016",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-017",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-018",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-019",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-020",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-021",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-022",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-023",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-024",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "QU-R-025",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-001",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-002",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-003",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-004",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-005",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-006",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-007",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-008",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-009",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-010",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-011",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-012",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-013",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-014",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-015",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-016",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-017",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-018",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-019",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-020",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-021",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-022",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-023",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-024",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "TE-R-025",
+      "source": "seed",
+      "category": "uncategorised"
+    },
+    {
+      "id": "HTML-R-001",
+      "source": "html",
+      "category": "layout"
+    },
+    {
+      "id": "HTML-R-002",
+      "source": "html",
+      "category": "responsive"
+    },
+    {
+      "id": "HTML-R-003",
+      "source": "html",
+      "category": "navigation"
+    },
+    {
+      "id": "HTML-R-004",
+      "source": "html",
+      "category": "navigation"
+    },
+    {
+      "id": "HTML-R-005",
+      "source": "html",
+      "category": "navigation"
+    },
+    {
+      "id": "HTML-R-006",
+      "source": "html",
+      "category": "layout"
+    },
+    {
+      "id": "HTML-R-007",
+      "source": "html",
+      "category": "responsive"
+    },
+    {
+      "id": "HTML-R-008",
+      "source": "html",
+      "category": "state-display"
+    },
+    {
+      "id": "HTML-R-009",
+      "source": "html",
+      "category": "state-display"
+    },
+    {
+      "id": "HTML-R-010",
+      "source": "html",
+      "category": "state-display"
+    },
+    {
+      "id": "HTML-R-011",
+      "source": "html",
+      "category": "typography"
+    },
+    {
+      "id": "HTML-R-012",
+      "source": "html",
+      "category": "typography"
+    },
+    {
+      "id": "HTML-R-013",
+      "source": "html",
+      "category": "navigation"
+    },
+    {
+      "id": "HTML-R-014",
+      "source": "html",
+      "category": "layout"
+    },
+    {
+      "id": "HTML-R-015",
+      "source": "html",
+      "category": "layout"
+    },
+    {
+      "id": "HTML-R-016",
+      "source": "html",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-017",
+      "source": "html",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-018",
+      "source": "html",
+      "category": "chart-presence"
+    },
+    {
+      "id": "HTML-R-019",
+      "source": "html",
+      "category": "chart-presence"
+    },
+    {
+      "id": "HTML-R-020",
+      "source": "html",
+      "category": "chart-presence"
+    },
+    {
+      "id": "HTML-R-021",
+      "source": "html",
+      "category": "layout"
+    },
+    {
+      "id": "HTML-R-022",
+      "source": "html",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-023",
+      "source": "html",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-024",
+      "source": "html",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-025",
+      "source": "html",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-026",
+      "source": "html",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-027",
+      "source": "html",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-028",
+      "source": "html",
+      "category": "element-presence"
+    },
+    {
+      "id": "HTML-R-029",
+      "source": "html",
+      "category": "typography"
+    },
+    {
+      "id": "HTML-R-030",
+      "source": "html",
+      "category": "navigation"
+    },
+    {
+      "id": "HTML-R-031",
+      "source": "html",
+      "category": "state-display"
+    },
+    {
+      "id": "HTML-R-032",
+      "source": "html",
+      "category": "typography"
+    },
+    {
+      "id": "HTML-R-033",
+      "source": "html",
+      "category": "typography"
+    },
+    {
+      "id": "DESIGN-R-001",
+      "source": "design",
+      "category": "color"
+    },
+    {
+      "id": "DESIGN-R-002",
+      "source": "design",
+      "category": "color"
+    },
+    {
+      "id": "DESIGN-R-003",
+      "source": "design",
+      "category": "color"
+    },
+    {
+      "id": "DESIGN-R-004",
+      "source": "design",
+      "category": "color"
+    },
+    {
+      "id": "DESIGN-R-005",
+      "source": "design",
+      "category": "color"
+    },
+    {
+      "id": "DESIGN-R-006",
+      "source": "design",
+      "category": "color"
+    },
+    {
+      "id": "DESIGN-R-007",
+      "source": "design",
+      "category": "color"
+    },
+    {
+      "id": "DESIGN-R-008",
+      "source": "design",
+      "category": "typography"
+    },
+    {
+      "id": "DESIGN-R-009",
+      "source": "design",
+      "category": "typography"
+    },
+    {
+      "id": "DESIGN-R-010",
+      "source": "design",
+      "category": "typography"
+    },
+    {
+      "id": "DESIGN-R-011",
+      "source": "design",
+      "category": "typography"
+    },
+    {
+      "id": "DESIGN-R-012",
+      "source": "design",
+      "category": "typography"
+    },
+    {
+      "id": "DESIGN-R-013",
+      "source": "design",
+      "category": "typography"
+    },
+    {
+      "id": "DESIGN-R-014",
+      "source": "design",
+      "category": "spacing"
+    },
+    {
+      "id": "DESIGN-R-015",
+      "source": "design",
+      "category": "spacing"
+    },
+    {
+      "id": "DESIGN-R-016",
+      "source": "design",
+      "category": "spacing"
+    },
+    {
+      "id": "DESIGN-R-017",
+      "source": "design",
+      "category": "radius"
+    },
+    {
+      "id": "DESIGN-R-018",
+      "source": "design",
+      "category": "shadow"
+    },
+    {
+      "id": "DESIGN-R-019",
+      "source": "design",
+      "category": "shadow"
+    },
+    {
+      "id": "DESIGN-R-020",
+      "source": "design",
+      "category": "shadow"
+    },
+    {
+      "id": "DESIGN-R-021",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-022",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-023",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-024",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-025",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-026",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-027",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-028",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-029",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-030",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-031",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-032",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-033",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-034",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-035",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-036",
+      "source": "design",
+      "category": "motion"
+    },
+    {
+      "id": "DESIGN-R-037",
+      "source": "design",
+      "category": "motion"
+    },
+    {
+      "id": "DESIGN-R-038",
+      "source": "design",
+      "category": "color"
+    },
+    {
+      "id": "DESIGN-R-039",
+      "source": "design",
+      "category": "component"
+    },
+    {
+      "id": "DESIGN-R-040",
+      "source": "design",
+      "category": "color"
+    },
+    {
+      "id": "API-R-001",
+      "source": "api",
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-002",
+      "source": "api",
+      "category": "auth"
+    },
+    {
+      "id": "API-R-003",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-004",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-005",
+      "source": "api",
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-006",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-007",
+      "source": "api",
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-008",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-009",
+      "source": "api",
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-010",
+      "source": "api",
+      "category": "write-path-restriction"
+    },
+    {
+      "id": "API-R-011",
+      "source": "api",
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-012",
+      "source": "api",
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-013",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-014",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-015",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-016",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-017",
+      "source": "api",
+      "category": "auth"
+    },
+    {
+      "id": "API-R-018",
+      "source": "api",
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-019",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-020",
+      "source": "api",
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-021",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-022",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-023",
+      "source": "api",
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-024",
+      "source": "api",
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-025",
+      "source": "api",
+      "category": "write-path-restriction"
+    },
+    {
+      "id": "API-R-026",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-027",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-028",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-029",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-030",
+      "source": "api",
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-031",
+      "source": "api",
+      "category": "write-path-restriction"
+    },
+    {
+      "id": "API-R-032",
+      "source": "api",
+      "category": "error-handling"
+    },
+    {
+      "id": "API-R-033",
+      "source": "api",
+      "category": "error-handling"
+    },
+    {
+      "id": "API-R-034",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-035",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-036",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-037",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-038",
+      "source": "api",
+      "category": "market-matching"
+    },
+    {
+      "id": "API-R-039",
+      "source": "api",
+      "category": "market-matching"
+    },
+    {
+      "id": "API-R-040",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-041",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-042",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-043",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-044",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-045",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-046",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-047",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-048",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-049",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-050",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-051",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-052",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-053",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-054",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-055",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "API-R-056",
+      "source": "api",
+      "category": "auth"
+    },
+    {
+      "id": "API-R-057",
+      "source": "api",
+      "category": "data-shape"
+    },
+    {
+      "id": "API-R-058",
+      "source": "api",
+      "category": "endpoint"
+    },
+    {
+      "id": "API-R-059",
+      "source": "api",
+      "category": "rate-limit"
+    },
+    {
+      "id": "API-R-060",
+      "source": "api",
+      "category": "execution-sequencing"
+    },
+    {
+      "id": "FW-R-001",
+      "source": "framework",
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-002",
+      "source": "framework",
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-003",
+      "source": "framework",
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-004",
+      "source": "framework",
+      "category": "data-fetching"
+    },
+    {
+      "id": "FW-R-005",
+      "source": "framework",
+      "category": "data-fetching"
+    },
+    {
+      "id": "FW-R-006",
+      "source": "framework",
+      "category": "rendering-boundary"
+    },
+    {
+      "id": "FW-R-007",
+      "source": "framework",
+      "category": "rendering-boundary"
+    },
+    {
+      "id": "FW-R-008",
+      "source": "framework",
+      "category": "rendering-boundary"
+    },
+    {
+      "id": "FW-R-009",
+      "source": "framework",
+      "category": "theming"
+    },
+    {
+      "id": "FW-R-010",
+      "source": "framework",
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-011",
+      "source": "framework",
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-012",
+      "source": "framework",
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-013",
+      "source": "framework",
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-014",
+      "source": "framework",
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-015",
+      "source": "framework",
+      "category": "database-lifecycle"
+    },
+    {
+      "id": "FW-R-016",
+      "source": "framework",
+      "category": "migration-workflow"
+    },
+    {
+      "id": "FW-R-017",
+      "source": "framework",
+      "category": "migration-workflow"
+    },
+    {
+      "id": "FW-R-018",
+      "source": "framework",
+      "category": "migration-workflow"
+    },
+    {
+      "id": "FW-R-019",
+      "source": "framework",
+      "category": "migration-workflow"
+    },
+    {
+      "id": "FW-R-020",
+      "source": "framework",
+      "category": "migration-workflow"
+    },
+    {
+      "id": "FW-R-021",
+      "source": "framework",
+      "category": "testing-composition"
+    },
+    {
+      "id": "FW-R-022",
+      "source": "framework",
+      "category": "testing-composition"
+    },
+    {
+      "id": "FW-R-023",
+      "source": "framework",
+      "category": "testing-composition"
+    },
+    {
+      "id": "FW-R-024",
+      "source": "framework",
+      "category": "testing-composition"
+    },
+    {
+      "id": "FW-R-025",
+      "source": "framework",
+      "category": "testing-composition"
+    },
+    {
+      "id": "FW-R-026",
+      "source": "framework",
+      "category": "backtest-engine-architecture"
+    },
+    {
+      "id": "FW-R-027",
+      "source": "framework",
+      "category": "adapter-polling"
+    },
+    {
+      "id": "FW-R-028",
+      "source": "framework",
+      "category": "adapter-polling"
+    },
+    {
+      "id": "FW-R-029",
+      "source": "framework",
+      "category": "adapter-polling"
+    },
+    {
+      "id": "FW-R-030",
+      "source": "framework",
+      "category": "strategy-plugin"
+    },
+    {
+      "id": "FW-R-031",
+      "source": "framework",
+      "category": "strategy-plugin"
+    },
+    {
+      "id": "FW-R-032",
+      "source": "framework",
+      "category": "backtest-engine-architecture"
+    },
+    {
+      "id": "FW-R-033",
+      "source": "framework",
+      "category": "data-consistency"
+    },
+    {
+      "id": "FW-R-034",
+      "source": "framework",
+      "category": "data-consistency"
+    },
+    {
+      "id": "FW-R-035",
+      "source": "framework",
+      "category": "data-consistency"
+    },
+    {
+      "id": "FW-R-036",
+      "source": "framework",
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-037",
+      "source": "framework",
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-038",
+      "source": "framework",
+      "category": "theming"
+    },
+    {
+      "id": "FW-R-039",
+      "source": "framework",
+      "category": "frontend-backend-contract"
+    },
+    {
+      "id": "FW-R-040",
+      "source": "framework",
+      "category": "data-fetching"
+    },
+    {
+      "id": "FW-R-041",
+      "source": "framework",
+      "category": "data-fetching"
+    },
+    {
+      "id": "FW-R-042",
+      "source": "framework",
+      "category": "strategy-plugin"
+    }
+  ]
+}

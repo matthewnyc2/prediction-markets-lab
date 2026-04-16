@@ -1,0 +1,30 @@
+{
+  "contract_id": "C-I-PT-006",
+  "interaction_id": "I-PT-006",
+  "function": {
+    "name": "handle_i_pt_006",
+    "module_hint": "frontend.handlers.paper_trades",
+    "inputs": [],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": null,
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": []
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "HTML-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "paper-trades",
+    "success_transition": "market-detail"
+  }
+}

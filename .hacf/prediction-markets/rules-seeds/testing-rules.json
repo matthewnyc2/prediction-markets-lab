@@ -1,0 +1,155 @@
+{
+  "domain": "testing",
+  "rules": [
+    {
+      "id": "TE-R-001",
+      "rule": "Pin testing tooling to the declared versions (pytest 8.3.x, pytest-asyncio 0.24.x, pytest-cov 5.0.x, httpx 0.27.x, Python 3.12; vitest 2.1.x, @testing-library/react 16.x, @playwright/test 1.48.x, Node 20 LTS) and do not upgrade ad hoc.",
+      "rationale": "Tech KB declares explicit version pins so async, React 19, and Playwright browser binaries stay mutually compatible; drift causes subtle fixture or JSX breakage.",
+      "source_file": "pytest.md, vitest-playwright.md"
+    },
+    {
+      "id": "TE-R-002",
+      "rule": "Set asyncio_mode = \"auto\" in pyproject.toml [tool.pytest.ini_options] and use @pytest_asyncio.fixture (not @pytest.fixture) for any async fixture.",
+      "rationale": "asyncio_mode=auto removes the need to mark every async test, but fixtures still require the asyncio-aware decorator; mixing them silently skips setup.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-003",
+      "rule": "Always configure pytest with addopts including -ra --strict-markers --strict-config and --cov=backend --cov-report=term-missing, and register every custom marker in pyproject.toml.",
+      "rationale": "--strict-markers prevents typo markers from silently being ignored; --strict-config surfaces misconfiguration; coverage output on every run keeps gaps visible.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-004",
+      "rule": "Use @pytest.mark.parametrize to cover boundary cases explicitly (e.g., Kelly fraction at p=0.5, p<0.5 clamped to 0, p>0.5 positive) and assign readable ids via pytest.param(..., id=\"...\").",
+      "rationale": "Parametrize with named ids surfaces exactly which boundary failed; the KB's kelly_fraction and sharpe examples show boundary + alternating cases are mandatory.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-005",
+      "rule": "Compare floats with pytest.approx(..., rel=..., abs=...), never with ==.",
+      "rationale": "Direct float equality is listed as a gotcha that \"will burn you\"; approx pins tolerance explicitly.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-006",
+      "rule": "Keep DB and HTTP fixtures function-scoped by default; only promote to session scope (like the in-memory async engine) when state must persist across the whole run, and always teardown with yield.",
+      "rationale": "Function-scope is the pytest default and prevents cross-test state leakage; session scope is reserved for expensive objects like the SQLAlchemy async engine.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-007",
+      "rule": "Integration tests against FastAPI must use httpx.AsyncClient with ASGITransport(app=app) and base_url=\"http://test\" inside an async context manager, not a live network server.",
+      "rationale": "ASGITransport runs the app in-process for deterministic, fast integration tests without binding a port; the KB uses this pattern for /api/markets.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-008",
+      "rule": "Mock outbound adapter HTTP calls (Kalshi, Polymarket, etc.) with respx_mock inside async tests rather than hitting real APIs.",
+      "rationale": "respx mocks httpx at the transport layer so adapter unit/integration tests stay deterministic and offline-safe; the KB shows the polymarket fetch_market example.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-009",
+      "rule": "Provide factory fixtures (e.g., make_market) that accept **overrides over sensible defaults; do not hand-construct model objects in each test.",
+      "rationale": "Factories centralize defaults (id, platform, prices, closes_at) so tests stay focused on the variable under test and resist schema churn.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-010",
+      "rule": "Freeze time with @freeze_time (freezegun / pytest-freezegun) for any code that reads the current time, and seed randomness to prevent flaky runs.",
+      "rationale": "The KB's news_spike_cutoff test demonstrates deterministic time; freezing time and seeding RNG are the documented flakiness-prevention mechanisms.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-011",
+      "rule": "Use monkeypatch.setenv for env var mutation inside tests; never mutate os.environ directly.",
+      "rationale": "monkeypatch auto-reverts at test teardown; direct os.environ edits leak state across tests.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-012",
+      "rule": "Tag slow or external-dependency tests with @pytest.mark.integration or @pytest.mark.slow so the default fast run is `pytest -m \"not integration and not slow\"`.",
+      "rationale": "Marker-driven selection keeps CI fast tiers clean; the KB registers unit/integration/slow markers for exactly this purpose.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-013",
+      "rule": "Enforce a minimum coverage gate of --cov-fail-under=80 in CI, and ensure critical paths (paper-fill insertion, strategy decide loop, metric computation, backtest replay) each have dedicated tests.",
+      "rationale": "The KB documents `pytest --cov=backend --cov-fail-under=80` as the canonical gate; these domains are the load-bearing logic of the system.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-014",
+      "rule": "Place shared fixtures in conftest.py at the appropriate directory level; remember the closest conftest.py wins and can shadow higher-scope fixtures.",
+      "rationale": "The KB calls out conftest shadowing as a gotcha; placing fixtures thoughtfully avoids accidental overrides.",
+      "source_file": "pytest.md"
+    },
+    {
+      "id": "TE-R-015",
+      "rule": "Configure Vitest with environment=\"jsdom\", globals=true, setupFiles=[\"./vitest.setup.ts\"], include=[\"**/*.{test,spec}.{ts,tsx}\"], exclude=[\"**/node_modules/**\", \"**/e2e/**\"], and coverage thresholds lines: 70.",
+      "rationale": "Excluding e2e keeps Playwright specs out of the Vitest runner; the KB's config is the documented baseline.",
+      "source_file": "vitest-playwright.md"
+    },
+    {
+      "id": "TE-R-016",
+      "rule": "In vitest.setup.ts import \"@testing-library/jest-dom/vitest\" (not the non-vitest entry) and register afterEach(cleanup) from @testing-library/react.",
+      "rationale": "Wrong jest-dom entry silently omits matchers; missing cleanup leaks DOM between component tests.",
+      "source_file": "vitest-playwright.md"
+    },
+    {
+      "id": "TE-R-017",
+      "rule": "Write React component tests with @testing-library/react using role-based queries (getByRole, getByLabel) and userEvent for interactions; assert visible text/state, not implementation details.",
+      "rationale": "The MarketCard and PlatformSelect examples query by role and visible text, which mirrors real user behavior and survives refactors.",
+      "source_file": "vitest-playwright.md"
+    },
+    {
+      "id": "TE-R-018",
+      "rule": "Do not attempt to render React Server Components through Testing Library; extract logic into pure functions or Client Components for unit testing.",
+      "rationale": "RSCs are not real React components at runtime and cannot be rendered by RTL; the KB lists this as a gotcha.",
+      "source_file": "vitest-playwright.md"
+    },
+    {
+      "id": "TE-R-019",
+      "rule": "Mock fetch in component/unit tests with vi.stubGlobal(\"fetch\", ...); when using vi.mock(...), remember it is hoisted and use vi.hoisted() if the factory must reference outer variables.",
+      "rationale": "vi.mock hoisting is a documented footgun; stubGlobal is the KB's recommended pattern for fetch.",
+      "source_file": "vitest-playwright.md"
+    },
+    {
+      "id": "TE-R-020",
+      "rule": "For time-dependent component logic (debounce, polling) use vi.useFakeTimers() + vi.advanceTimersByTime(...) and always restore with vi.useRealTimers() at the end.",
+      "rationale": "Fake timers are the deterministic way to test debounced UI; forgetting to restore leaks timers across tests.",
+      "source_file": "vitest-playwright.md"
+    },
+    {
+      "id": "TE-R-021",
+      "rule": "Run Playwright E2E with a dual webServer array starting both Next.js (`pnpm dev` on 3000) and FastAPI (`uv run uvicorn backend.app.main:app --port 8000`), each with reuseExistingServer: !process.env.CI and timeout 120_000.",
+      "rationale": "E2E tests will hit a dead backend if only Next is started; the dual webServer pattern is the KB's prescribed setup.",
+      "source_file": "vitest-playwright.md"
+    },
+    {
+      "id": "TE-R-022",
+      "rule": "Playwright config must set baseURL=\"http://localhost:3000\", retries: process.env.CI ? 2 : 0, trace: \"on-first-retry\", screenshot: \"only-on-failure\", and declare projects for chromium and firefox.",
+      "rationale": "These settings give CI retry-on-flake with trace artifacts for debugging while keeping local runs fast and deterministic.",
+      "source_file": "vitest-playwright.md"
+    },
+    {
+      "id": "TE-R-023",
+      "rule": "Never call page.waitForTimeout or arbitrary sleeps in Playwright; rely on built-in auto-waiting via waitForSelector and expect(...).toBeVisible/toHaveURL/toContainText.",
+      "rationale": "The KB explicitly flags waitForTimeout as flaky; auto-waiting assertions are deterministic.",
+      "source_file": "vitest-playwright.md"
+    },
+    {
+      "id": "TE-R-024",
+      "rule": "Seed backend state in E2E via page.request or direct API calls, not page.evaluate, and mock backend failures with page.route(\"**/api/...\", route => route.fulfill({ status, body })) to exercise error UI paths.",
+      "rationale": "page.evaluate for setup is brittle; route.fulfill is the KB-recommended way to simulate 502s and verify error surfaces.",
+      "source_file": "vitest-playwright.md"
+    },
+    {
+      "id": "TE-R-025",
+      "rule": "Name tests descriptively in given-when-then style (e.g., \"filter by kalshi\", \"handles backend 502\", \"test_list_markets_empty\") so failure output reads as a sentence.",
+      "rationale": "The KB's examples consistently use descriptive, behavior-oriented names; this keeps CI logs interpretable without opening the code.",
+      "source_file": "pytest.md, vitest-playwright.md"
+    }
+  ]
+}

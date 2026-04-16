@@ -1,0 +1,24 @@
+{
+  "screen": "portfolio",
+  "rendering_status": "confirmed",
+  "data_elements": [
+    { "name": "all-time-pnl-tile",    "type": "metric", "format": "currency-signed" },
+    { "name": "max-drawdown-tile",    "type": "metric", "format": "percent-signed" },
+    { "name": "sortino-tile",         "type": "metric", "format": "decimal-2" },
+    { "name": "avg-trade-tile",       "type": "metric", "format": "currency-signed" },
+    { "name": "equity-curve",         "type": "chart"  },
+    { "name": "pnl-attribution-bars", "type": "chart",  "bars-per-strategy": true }
+  ],
+  "interactive_elements": [
+    { "name": "timeframe-toggle", "type": "toggle", "values": ["7d","30d","90d","ytd","all"] },
+    { "name": "export-csv",       "type": "button" },
+    { "name": "export-json",      "type": "button" }
+  ],
+  "navigation_paths": [
+    { "from": "portfolio", "to": "paper-trades", "trigger": "click attribution bar", "filter": "source = strategy-id" }
+  ],
+  "conditional_displays": [
+    { "element": "max-drawdown-tile", "condition": "shows '—' if no completed trades" },
+    { "element": "sortino-tile",      "condition": "requires ≥20 closed trades; otherwise shows 'insufficient data'" }
+  ]
+}

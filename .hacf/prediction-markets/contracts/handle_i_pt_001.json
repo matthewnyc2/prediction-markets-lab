@@ -1,0 +1,67 @@
+{
+  "contract_id": "C-I-PT-001",
+  "interaction_id": "I-PT-001",
+  "function": {
+    "name": "handle_i_pt_001",
+    "module_hint": "backend.handlers.paper_trades",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "screen_state",
+        "type": "ScreenState"
+      }
+    ]
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 10000,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff": "exponential",
+      "base_ms": 250
+    },
+    "concurrency_policy": "queue-latest",
+    "idempotency_rule": "idempotency-key-required-for-writes",
+    "ui_locking_rule": "disable-submit-and-spin-until-response",
+    "failure_transitions": [
+      {
+        "condition": "http-4xx-validation-error",
+        "transition": "paper-trades",
+        "ui_effect": "inline-error-beside-field"
+      },
+      {
+        "condition": "http-5xx-server-error",
+        "transition": "paper-trades",
+        "ui_effect": "toast-retry-option"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "paper-trades",
+        "ui_effect": "toast-check-connection"
+      }
+    ],
+    "side_effects": [
+      {
+        "type": "db-write",
+        "target": "paper_fills + paper_positions (atomic)",
+        "description": "PR-001 atomic transaction"
+      },
+      {
+        "type": "metric-recompute",
+        "target": "equity + brier + sharpe + winrate",
+        "description": "INV-001 equity invariant"
+      }
+    ]
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "BE-R-*",
+      "HTML-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "paper-trades",
+    "success_transition": "paper-trades"
+  }
+}

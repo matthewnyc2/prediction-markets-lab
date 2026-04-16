@@ -1,0 +1,289 @@
+{
+  "source": "design-system.md",
+  "project": "prediction-markets",
+  "generated_at": "2026-04-16",
+  "base_design_system": "library/design-systems/linear.app/ (Linear, adapted for trading UI)",
+  "rules": [
+    {
+      "id": "DESIGN-R-001",
+      "rule": "Define all color tokens in the @theme block of app/globals.css. Never hardcode hex values (e.g. #7dd3fc, #34d399, #f87171) in className strings, inline styles, or chart props — always reference var(--accent), var(--success), var(--danger), etc.",
+      "rationale": "Centralized tokens keep Tailwind utilities, Recharts components, and custom CSS visually in sync; hardcoded hex silently drifts from the theme when tokens change.",
+      "category": "color",
+      "tokens_affected": ["--accent", "--success", "--danger", "--warning", "--bg", "--bg-panel", "--bg-surface", "--bg-elevated", "--fg", "--fg-secondary", "--fg-dim", "--fg-mute"]
+    },
+    {
+      "id": "DESIGN-R-002",
+      "rule": "Use --accent (#7dd3fc sky-cyan) ONLY for interactive chrome: primary CTAs, links, active nav items, focus rings, sort indicators, and the default chart series stroke. Never use --accent for body text, decorative accents, or non-interactive labels.",
+      "rationale": "Single chromatic accent on achromatic surfaces is Linear's core pattern. Using accent on non-interactive elements destroys its affordance signal and drowns out real CTAs.",
+      "category": "color",
+      "tokens_affected": ["--accent", "--accent-hover", "--accent-subtle", "--accent-border"]
+    },
+    {
+      "id": "DESIGN-R-003",
+      "rule": "Gain/positive P&L/BUY YES MUST use --success (#34d399) for foreground text and --success-subtle (rgba(52,211,153,0.14)) for badge backgrounds. Loss/negative P&L/BUY NO MUST use --danger (#f87171) / --danger-subtle. Never substitute generic green/red hex values.",
+      "rationale": "Unambiguous P&L signaling is non-negotiable in a trading UI. Token-enforced semantic mapping prevents an inconsistent red/green palette across tables, tiles, pills, and charts.",
+      "category": "color",
+      "tokens_affected": ["--success", "--success-subtle", "--danger", "--danger-subtle"]
+    },
+    {
+      "id": "DESIGN-R-004",
+      "rule": "Warning/caution states (rate-limited adapters, fade signals, news-spike alerts) MUST use --warning (#fbbf24) / --warning-subtle — not --accent and not --danger.",
+      "rationale": "Amber encodes a distinct degraded-but-not-broken state; confusing warning with error (danger) or with info (accent) leads operators to misread adapter health at a glance.",
+      "category": "color",
+      "tokens_affected": ["--warning", "--warning-subtle"]
+    },
+    {
+      "id": "DESIGN-R-005",
+      "rule": "Page background MUST be --bg (#0b0f17). Sidebar and docked panels MUST be --bg-panel (#0f1011). Card surfaces MUST be --bg-surface (#111826). Tiles, tooltips, and hover-elevated cards MUST be --bg-elevated (#182236). These tiers are ordinal — never elevate a tile onto the sidebar surface or drop a card below the page background.",
+      "rationale": "Linear communicates elevation through luminance stepping on dark surfaces. Violating the tier order breaks the visual depth model and makes nested surfaces unreadable.",
+      "category": "color",
+      "tokens_affected": ["--bg", "--bg-panel", "--bg-surface", "--bg-elevated"]
+    },
+    {
+      "id": "DESIGN-R-006",
+      "rule": "Borders MUST use semi-transparent white tokens: --border (rgba(255,255,255,0.08)) for default cards/inputs/rows, --border-subtle (rgba(255,255,255,0.05)) for list/row dividers, --border-strong (#1f2a40) for sidebar/panel separators, --border-accent (#2b3a58) for focused inputs. Do not invent custom border colors.",
+      "rationale": "Semi-transparent borders adapt to underlying surface luminance; opaque custom borders visibly break when the surface beneath changes.",
+      "category": "color",
+      "tokens_affected": ["--border", "--border-subtle", "--border-strong", "--border-accent"]
+    },
+    {
+      "id": "DESIGN-R-007",
+      "rule": "Text color MUST be selected from the five-step foreground ramp: --fg for primary, --fg-secondary for long-form body, --fg-dim for metadata/labels, --fg-mute for placeholders/overlines, --fg-disabled for disabled states. Never use raw white (#fff) or arbitrary gray hex values for text.",
+      "rationale": "The ramp is tuned for cool-cast readability on the dark surface tiers; skipping levels produces inconsistent contrast and breaks the hierarchy between primary content and chrome.",
+      "category": "color",
+      "tokens_affected": ["--fg", "--fg-secondary", "--fg-dim", "--fg-mute", "--fg-disabled"]
+    },
+    {
+      "id": "DESIGN-R-008",
+      "rule": "Body, UI chrome, nav, buttons, and headings MUST use the Inter stack: Inter Variable, Inter, -apple-system, Segoe UI, Roboto, system-ui, sans-serif. Do not apply Inter to numeric data cells.",
+      "rationale": "Inter is the designated proportional face; mixing other sans fonts breaks vertical rhythm, and applying Inter to numbers loses tabular alignment.",
+      "category": "typography",
+      "tokens_affected": ["--font-sans"]
+    },
+    {
+      "id": "DESIGN-R-009",
+      "rule": "All prices, percentages, P&L values, Brier scores, Sharpe ratios, quantities, timestamps, tickers, and code snippets MUST be set in the Mono stack: Berkeley Mono, JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace. JetBrains Mono is the required free fallback when Berkeley Mono is unlicensed.",
+      "rationale": "Mono stack with stable glyph widths is required for columnar alignment; fallback ordering guarantees a licensed face is always available without shipping the paid primary.",
+      "category": "typography",
+      "tokens_affected": ["--font-mono"]
+    },
+    {
+      "id": "DESIGN-R-010",
+      "rule": "Every numeric cell or value MUST have font-variant-numeric: tabular-nums applied (via font-mono utility, tnum OpenType feature, or direct CSS). The global stylesheet must include \"cv01\", \"ss03\", \"tnum\" in font-feature-settings so digit widths lock by default.",
+      "rationale": "Proportional digits cause visible horizontal jitter every tick update; tabular-nums is mandatory for readable, non-juddering price columns and P&L streams.",
+      "category": "typography",
+      "tokens_affected": ["--font-mono", "font-feature-settings"]
+    },
+    {
+      "id": "DESIGN-R-011",
+      "rule": "Use weight 510 as the workhorse medium for UI labels, nav items, button text, pills, captions, and overlines. Reserve 400 for body prose, 500 for mono values, 600 for H1-H3 headings, 650 for display.",
+      "rationale": "Weight 510 is Linear's variable-font trick for optical medium that sits between regular and semibold — it disambiguates labels from body without the heaviness of 600 on small UI.",
+      "category": "typography",
+      "tokens_affected": ["font-weight: 510"]
+    },
+    {
+      "id": "DESIGN-R-012",
+      "rule": "Overline / micro-label text (tile labels, section overlines) MUST be Inter 11px / weight 510 / uppercase / letter-spacing 0.08em / color var(--fg-mute). Never apply uppercase to body, button, or nav text.",
+      "rationale": "The overline is the only place uppercase is permitted; using caps elsewhere breaks Linear's quiet hierarchy and reduces legibility on data-dense screens.",
+      "category": "typography",
+      "tokens_affected": ["--fg-mute"]
+    },
+    {
+      "id": "DESIGN-R-013",
+      "rule": "Typographic scale is fixed: Display 30/650, H1 24/600, H2 20/600, H3 16/600, Body 14/400, Body Medium 14/510, Small 13/400, Caption 12/510, Micro 11/510, Tile Value mono 20/500, Table Cell mono 13/400, Price Big mono 24/500, Code mono 12/400. Do not introduce off-scale sizes or weights.",
+      "rationale": "A locked scale is what keeps a data-dense dashboard calm; arbitrary sizes (e.g. 15px, 17px) visibly misalign grids and table headers.",
+      "category": "typography",
+      "tokens_affected": []
+    },
+    {
+      "id": "DESIGN-R-014",
+      "rule": "Spacing MUST use the 4px-based token scale: --space-1 4px, --space-2 8px, --space-3 12px, --space-4 16px, --space-5 20px, --space-6 24px, --space-8 32px, --space-10 40px, --space-12 48px, --space-16 64px. The dominant rhythm is 4 → 8 → 16 → 24 → 32. Never use arbitrary pixel values (e.g. 5px, 7px, 18px) for padding or margin.",
+      "rationale": "Every surface aligns to a 4px grid; off-grid spacing produces sub-pixel drift that accumulates across a multi-panel dashboard.",
+      "category": "spacing",
+      "tokens_affected": ["--space-1", "--space-2", "--space-3", "--space-4", "--space-5", "--space-6", "--space-8", "--space-10", "--space-12", "--space-16"]
+    },
+    {
+      "id": "DESIGN-R-015",
+      "rule": "Table body rows (td) MUST cap vertical padding at 12px (padding 10px 8px is the reference default). Never exceed 12px Y-padding on dense data tables (Markets, Paper Trades, Portfolio, Compare).",
+      "rationale": "Dense trading tables must show 20+ rows without scrolling; exceeding 12px Y-padding pushes below-the-fold content off-screen on standard laptop viewports.",
+      "category": "spacing",
+      "tokens_affected": ["--space-3"]
+    },
+    {
+      "id": "DESIGN-R-016",
+      "rule": "Default card padding is --space-5 (20px); compact tile padding is 12px 16px; table header/body padding is 10px 8px; button padding is 8px 14px; icon button padding is 6px; input padding is 8px 10px; pill/badge padding is 2px 8px (or 2px 10px for adapter status).",
+      "rationale": "Component-specific padding constants are what give Linear its tight but breathable feel; ad-hoc padding produces visually inconsistent component widths and heights across screens.",
+      "category": "spacing",
+      "tokens_affected": ["--space-2", "--space-3", "--space-4", "--space-5"]
+    },
+    {
+      "id": "DESIGN-R-017",
+      "rule": "Border radius MUST be selected from the token scale: --radius-xs 2px (inline badges, dots), --radius-sm 4px (small chips, platform chips, side pills), --radius-md 6px (buttons, inputs, toolbar items, tooltips), --radius-lg 8px (cards default, tiles, dropdowns, chart containers), --radius-xl 12px (featured cards, hero panels), --radius-2xl 14px (page-level screen frames), --radius-full 9999px (pills, status chips, adapter status), --radius-circle 50% (icon buttons, avatars, dots).",
+      "rationale": "A fixed radius scale per component role is what makes nested surfaces read correctly; random radii make cards-inside-cards look misaligned.",
+      "category": "radius",
+      "tokens_affected": ["--radius-xs", "--radius-sm", "--radius-md", "--radius-lg", "--radius-xl", "--radius-2xl", "--radius-full", "--radius-circle"]
+    },
+    {
+      "id": "DESIGN-R-018",
+      "rule": "Elevation on dark surfaces MUST be communicated by background luminance stepping (bg-panel → bg-surface → bg-elevated), NOT by drop shadows. Reserve --shadow-md and --shadow-lg strictly for floating/overlay surfaces: dropdowns, popovers, modals, command palette, tooltips.",
+      "rationale": "Drop shadows on flat cards create a noisy, glowing look on dark UI; luminance stepping is the native dark-mode technique and reads as depth without visual clutter.",
+      "category": "shadow",
+      "tokens_affected": ["--shadow-none", "--shadow-sm", "--shadow-md", "--shadow-lg", "--shadow-inset"]
+    },
+    {
+      "id": "DESIGN-R-019",
+      "rule": "Cards MUST default to --shadow-none. Apply --shadow-sm (border-as-shadow ring) only on hover for clickable cards. Dropdowns and hover-elevated cards use --shadow-md. Modals, command palette, and popovers use --shadow-lg. Chart wells use --shadow-inset.",
+      "rationale": "Shadow-per-role is load-bearing for the depth model; mis-applied shadows either flatten hierarchy (modal with --shadow-sm) or noise up static layouts (card with --shadow-lg).",
+      "category": "shadow",
+      "tokens_affected": ["--shadow-none", "--shadow-sm", "--shadow-md", "--shadow-lg", "--shadow-inset"]
+    },
+    {
+      "id": "DESIGN-R-020",
+      "rule": "Keyboard focus rings on all interactive elements (buttons, inputs, links, nav items, icon buttons) MUST be --shadow-focus (0 0 0 2px rgba(125,211,252,0.35)). Do not use default browser outlines and do not substitute a solid border for the ring.",
+      "rationale": "Accessible focus signaling is a hard requirement; a single consistent cyan ring also aligns with keyboard-first Linear navigation patterns.",
+      "category": "shadow",
+      "tokens_affected": ["--shadow-focus"]
+    },
+    {
+      "id": "DESIGN-R-021",
+      "rule": "Button variants are exactly four: Primary (bg --accent, text #0b0f17, radius --radius-md, Inter 14/510, padding 8px 14px), Ghost/Secondary (bg --bg-overlay, text --fg, border 1px --border, same sizing), Destructive (bg --danger-subtle, text --danger, border 1px rgba(248,113,113,0.24), same sizing), Icon (transparent bg, padding 6px, radius --radius-md, color --fg-dim hover --fg). Do not create additional button variants.",
+      "rationale": "A bounded variant set keeps the CTA hierarchy legible; bespoke buttons (outline-accent, filled-success-button, etc.) erode the primary-vs-ghost distinction.",
+      "category": "component",
+      "tokens_affected": ["--accent", "--accent-hover", "--bg-overlay", "--bg-overlay-hover", "--danger", "--danger-subtle", "--fg", "--fg-dim", "--border", "--radius-md"]
+    },
+    {
+      "id": "DESIGN-R-022",
+      "rule": "Primary button text color MUST be #0b0f17 (explicit dark, matching --bg) on the cyan --accent background — NOT --fg and NOT white. This is the only place a hardcoded hex is permitted because the cyan requires a specific dark foreground for WCAG contrast.",
+      "rationale": "#7dd3fc cyan on white text fails contrast; cyan on near-black (#0b0f17) passes AA and is the only legible primary CTA combination.",
+      "category": "component",
+      "tokens_affected": ["--accent"]
+    },
+    {
+      "id": "DESIGN-R-023",
+      "rule": "Card component MUST be: bg --bg-surface, border 1px --border, radius --radius-xl (12px), padding --space-5 (20px), shadow --shadow-none default / --shadow-sm on hover-if-clickable, header uses H3 (Inter 16/600) with optional overline micro-label in --fg-mute.",
+      "rationale": "Card is the default container; pinning its exact spec keeps every dashboard screen (Markets, Strategies, Backtest, etc.) visually homogeneous.",
+      "category": "component",
+      "tokens_affected": ["--bg-surface", "--border", "--radius-xl", "--space-5", "--fg-mute"]
+    },
+    {
+      "id": "DESIGN-R-024",
+      "rule": "Tile component (metric tile for equity, Brier, Sharpe, win rate) is distinct from Card: bg --bg-elevated (NOT --bg-surface), radius --radius-lg (8px, NOT --radius-xl), padding 12px 16px. Structure is three stacked rows: overline Label (Inter 11/510 uppercase --fg-mute) → Value (Mono 20/500 --fg tabular-nums) → optional Delta (Mono 11, --success if positive / --danger if negative). Grid is repeat(4, 1fr) desktop, repeat(2, 1fr) ≤700px.",
+      "rationale": "Tiles and Cards serve different roles — tiles show one metric, cards contain mixed content. Collapsing them visually (e.g. using --bg-surface on a tile) makes the dashboard read as a wall of identical boxes.",
+      "category": "component",
+      "tokens_affected": ["--bg-elevated", "--radius-lg", "--fg", "--fg-mute", "--success", "--danger"]
+    },
+    {
+      "id": "DESIGN-R-025",
+      "rule": "Table MUST use border-collapse: collapse, width 100%, header th in Inter 11/510 uppercase 0.08em tracking color --fg-mute with border-bottom 1px --border, body td padding 10px 8px with border-bottom 1px --border-subtle, last row no border-bottom, row hover bg rgba(255,255,255,0.02). No zebra striping — rely on the whisper-thin --border-subtle per row.",
+      "rationale": "Zebra striping fights with the dark luminance-stepping model and breaks when rows highlight; whisper dividers scale to any row count without visual noise.",
+      "category": "component",
+      "tokens_affected": ["--border", "--border-subtle", "--fg-mute"]
+    },
+    {
+      "id": "DESIGN-R-026",
+      "rule": "Numeric table columns MUST be right-aligned and use font-mono + tabular-nums. Use semantic classes: .pos → color --success, .neg → color --danger, .dim → color --fg-mute. Sort indicator on the active sorted header is a small caret in --accent.",
+      "rationale": "Right-aligned, tabular-nums, tokenized semantic classes are what make a long P&L column readable at a glance; left-aligned or proportional digits make scanning impossible.",
+      "category": "component",
+      "tokens_affected": ["--success", "--danger", "--fg-mute", "--accent"]
+    },
+    {
+      "id": "DESIGN-R-027",
+      "rule": "Sidebar MUST be width 180px (collapsible to 56px icon-only), bg --bg-panel, border-right 1px --border-strong, padding 14px 12px. Nav li uses Inter 12-13px weight 510, color --fg-dim, padding 7px 8px, radius --radius-md. Hover sets bg --bg-overlay-hover / color --fg. Active sets bg --bg-elevated / color --fg with an optional 2px left --accent bar flush with the item. Nav list is exactly 8 items: Dashboard, Markets, Strategies, Paper Trades, Backtest, Compare, Portfolio, Data Ingestion.",
+      "rationale": "Sidebar content is the top-level navigation contract; adding or removing items without updating screen-inventory.json breaks the routing contract.",
+      "category": "component",
+      "tokens_affected": ["--bg-panel", "--bg-overlay-hover", "--bg-elevated", "--border-strong", "--fg", "--fg-dim", "--accent", "--radius-md"]
+    },
+    {
+      "id": "DESIGN-R-028",
+      "rule": "Sidebar badges (count, status) MUST be text 10px color --accent, bg --accent-subtle, radius 10px, padding 1px 6px. Do not use --success-subtle or --danger-subtle for sidebar nav badges — those are reserved for pill components.",
+      "rationale": "Nav badges are informational counts, not status signals; using trading-semantic colors on nav creates false P&L associations.",
+      "category": "component",
+      "tokens_affected": ["--accent", "--accent-subtle"]
+    },
+    {
+      "id": "DESIGN-R-029",
+      "rule": "Chart container MUST be: bg --bg-elevated, border 1px --border, radius --radius-lg (8px), padding 10px. Inner grid lines use --border-subtle. Axis labels are mono 11px --fg-mute tabular-nums. Default series stroke is --accent with a linear-gradient fill from rgba(125,211,252,0.18) to transparent. Positive regions fill --success, negative regions fill --danger. Multi-series (Compare) palette is fixed: cyan → emerald → amber → #a78bfa violet → #f472b6 pink (max 5 runs).",
+      "rationale": "Chart theme must mirror UI tokens exactly (via chartTheme.ts) so a positive equity curve reads the same green as a positive P&L cell; divergence between Recharts and CSS tokens breaks the visual grammar.",
+      "category": "component",
+      "tokens_affected": ["--bg-elevated", "--border", "--border-subtle", "--accent", "--success", "--danger", "--fg-mute", "--radius-lg"]
+    },
+    {
+      "id": "DESIGN-R-030",
+      "rule": "Chart tooltip MUST be: bg --bg-elevated, border 1px --border, radius --radius-md, padding 8px 10px, mono 12px, shadow --shadow-md. Tooltip styling must be applied via Recharts contentStyle (inline), never via className.",
+      "rationale": "Recharts tooltip className styling is unreliable (documented gotcha); inline contentStyle is the only supported customization path and keeps the tooltip token-aligned.",
+      "category": "component",
+      "tokens_affected": ["--bg-elevated", "--border", "--radius-md", "--shadow-md"]
+    },
+    {
+      "id": "DESIGN-R-031",
+      "rule": "Input component MUST be: bg --bg-overlay, text --fg Inter 14/400, placeholder --fg-mute, border 1px --border, radius --radius-md, padding 8px 10px. Focus MUST set border to --accent-border AND apply --shadow-focus. Disabled state uses color --fg-disabled and bg rgba(255,255,255,0.01). Numeric inputs (size, price, bankroll) MUST use mono + tabular-nums and be right-aligned.",
+      "rationale": "Input focus state needs both a color and a ring because the semi-transparent border alone is invisible at a glance; numeric inputs must align with their display counterparts in tables/tiles.",
+      "category": "component",
+      "tokens_affected": ["--bg-overlay", "--fg", "--fg-mute", "--fg-disabled", "--border", "--accent-border", "--radius-md", "--shadow-focus"]
+    },
+    {
+      "id": "DESIGN-R-032",
+      "rule": "Side pill (BUY YES / BUY NO / SELL YES / SELL NO) MUST render: YES variant with bg --success-subtle, text --success; NO variant with bg --danger-subtle, text --danger. Padding 2px 8px, radius --radius-sm, font mono 11px weight 500 uppercase. Never invert YES/NO colors or use --accent for side pills.",
+      "rationale": "YES=success / NO=danger mapping is the trading UI's most load-bearing semantic. Inverting them would actively mislead traders placing paper orders.",
+      "category": "component",
+      "tokens_affected": ["--success", "--success-subtle", "--danger", "--danger-subtle", "--radius-sm"]
+    },
+    {
+      "id": "DESIGN-R-033",
+      "rule": "Adapter status pill MUST render exactly three variants with a leading dot ●: HEALTHY (bg --success-subtle, text --success), RATE LIMITED (bg --warning-subtle, text --warning), ERROR (bg --danger-subtle, text --danger). Padding 2px 10px, radius --radius-full, font Inter 11/510 uppercase letter-spacing 0.04em. Do not add additional status states without updating this rule.",
+      "rationale": "Adapter health is a ternary state surfaced on the Data Ingestion screen; the three-variant contract must match the backend's adapter-health enum exactly.",
+      "category": "component",
+      "tokens_affected": ["--success", "--success-subtle", "--warning", "--warning-subtle", "--danger", "--danger-subtle", "--radius-full"]
+    },
+    {
+      "id": "DESIGN-R-034",
+      "rule": "Strategy status pill (on/off) MUST be: On — bg --success-subtle, text --success, filled dot ● in --success; Off — bg --neutral-pill, text --fg-dim, hollow dot ○ in --fg-mute. Padding 2px 8px, radius --radius-full, font Inter 11/510.",
+      "rationale": "On/off is binary but shares the health ternary's visual grammar; using --neutral-pill (not --danger) for Off avoids encoding an idle strategy as an error.",
+      "category": "component",
+      "tokens_affected": ["--success", "--success-subtle", "--neutral-pill", "--fg-dim", "--fg-mute", "--radius-full"]
+    },
+    {
+      "id": "DESIGN-R-035",
+      "rule": "Platform chip (Kalshi / Polymarket / Manifold / PredictIt) MUST be: bg --neutral-pill (rgba(142,160,189,0.12)), text --fg, padding 2px 8px, radius --radius-sm (4px), font Inter 11/510. Per-platform accent tint is applied as a subtle left border or dot only: Kalshi → cyan (--accent), Polymarket → violet (#a78bfa), Manifold → amber (--warning), PredictIt → emerald (--success). Never fill the chip background with the platform-accent color.",
+      "rationale": "Platform chips must remain visually quiet because multiple can appear in one row; filled-background platform chips would compete with the P&L and side semantic colors.",
+      "category": "component",
+      "tokens_affected": ["--neutral-pill", "--fg", "--accent", "--success", "--warning", "--radius-sm"]
+    },
+    {
+      "id": "DESIGN-R-036",
+      "rule": "Transitions MUST be 150ms ease-out for hover, 200ms ease-out for focus, 250ms ease-in-out for expand/collapse (including sidebar collapse). Modal backdrop fades 150ms; modal dialog scales 0.98 → 1 in 200ms. Do not invent ad-hoc timings (e.g. 300ms, 180ms).",
+      "rationale": "A three-step timing system keeps the UI feeling responsive without jitter; inconsistent durations produce a laggy feel on data-dense screens.",
+      "category": "motion",
+      "tokens_affected": []
+    },
+    {
+      "id": "DESIGN-R-037",
+      "rule": "NEVER animate color transitions on financial data during refresh (no red/green flashing of P&L or price cells). The ONLY permitted update animation on streaming rows is an opacity pulse 0.4 → 1 over 600ms on newly inserted rows.",
+      "rationale": "Color flashes on every tick is visually exhausting and obscures real direction changes; opacity pulse on insertion signals 'new' without introducing false movement signals.",
+      "category": "motion",
+      "tokens_affected": ["--success", "--danger"]
+    },
+    {
+      "id": "DESIGN-R-038",
+      "rule": "The app MUST be dark-only. Set color-scheme: dark on :root, apply @variant dark (&:where(:root, :root *)); in globals.css to force dark utilities, and DO NOT ship a light-mode toggle, prefers-color-scheme override, or theme switcher.",
+      "rationale": "Deployment contract is dark-only (tech-stack.json deployment.theme); adding a theme switcher doubles the design-system surface area and was explicitly rejected.",
+      "category": "color",
+      "tokens_affected": ["color-scheme"]
+    },
+    {
+      "id": "DESIGN-R-039",
+      "rule": "When linking multiple Recharts charts on the same x-axis (price + volume on Market Detail, strategy comparison on Compare), give them the same syncId so hover crosshairs align. Event annotations (news spikes, resolution times) MUST use <ReferenceLine> / <ReferenceArea> on the existing chart — never a separate stacked chart.",
+      "rationale": "Synchronized hover is a core affordance for multi-series analysis; separate annotation charts force the user to mentally correlate across containers.",
+      "category": "component",
+      "tokens_affected": []
+    },
+    {
+      "id": "DESIGN-R-040",
+      "rule": "The sky-cyan accent (#7dd3fc) and trading-semantic trio (#34d399 / #f87171 / #fbbf24) are the documented deltas from Linear's base system. The --bg-surface (#111826) and --bg-elevated (#182236) values override Linear's #191a1b / #28282c to match the approved proposal palette. Any further palette change MUST update this design system file AND every consumer token map (chartTheme.ts, globals.css @theme block) in the same commit.",
+      "rationale": "Palette drift between design-system.md, globals.css, and chartTheme.ts is the single largest source of visual inconsistency; atomic updates across all three are mandatory.",
+      "category": "color",
+      "tokens_affected": ["--accent", "--success", "--danger", "--warning", "--bg-surface", "--bg-elevated"]
+    }
+  ],
+  "total_rules": 40
+}

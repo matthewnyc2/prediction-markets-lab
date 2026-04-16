@@ -1,0 +1,92 @@
+Disambiguated Vocabulary — prediction-markets
+Step 9 · Autonomous · One canonical name per concept, one type per entity.
+
+All names are lowercase, hyphenated, noun-first, no abbreviations.
+Multi-meaning source words have been replaced with a single canonical form.
+
+---
+
+CANONICAL ENTITIES (nouns — each appears in semantic-spec and rules database)
+
+platform                 — one of: kalshi, polymarket, manifold, predictit
+market                   — a contract on a platform that pays 1 unit if a specific event happens
+market-side              — enum: yes, no
+market-price             — a decimal 0.00–1.00 representing implied probability of yes
+market-volume-24h        — cumulative notional volume across last 24 hours
+market-close-date        — calendar date/time after which the market resolves
+market-resolution        — enum: yes-resolved, no-resolved, cancelled, open
+order                    — an intent to buy or sell a market-side at a size
+order-side               — enum: buy, sell
+paper-fill               — a simulated execution of an order against stored or live price data
+paper-position           — an aggregation of paper-fills on a single market/side that have not yet been closed
+simulated-bankroll       — the person's starting capital for paper trading, default 10000 usd
+equity                   — simulated-bankroll + realised-pnl + unrealised-pnl
+realised-pnl             — closed-position profit and loss in usd
+unrealised-pnl           — open-position mark-to-market in usd
+brier-score              — mean squared error between forecasted probability and realised outcome (0 best, 0.25 coin-flip)
+sharpe-ratio             — (mean-return − risk-free-rate) / stdev-return, over a defined window
+sortino-ratio            — (mean-return − risk-free-rate) / downside-stdev-return
+win-rate                 — closed-positions-profitable / closed-positions-total
+max-drawdown             — largest peak-to-trough decline in equity curve, expressed as a percent
+strategy                 — a pluggable python class implementing decide and on-fill methods
+strategy-id              — one of: kelly-sizing, cross-platform-arbitrage, closing-momentum, news-spike-fade, market-maker
+strategy-state           — enum: on, off
+strategy-parameters      — key-value map of per-strategy tunables
+strategy-assigned-capital— usd amount allocated to a single strategy, must be ≤ equity at time of toggle-on
+strategy-pnl             — strategy-attributed realised-pnl + unrealised-pnl
+adapter                  — a python module that normalises one platform's api into the shared schema
+adapter-status           — enum: healthy, rate-limited, error, syncing
+adapter-last-sync        — utc timestamp of most recent successful sync
+backtest                 — a stored configuration of strategy + platforms + date-range + starting-bankroll, and its produced results
+backtest-result          — final-equity, sharpe-ratio, brier-score, win-rate, equity-curve-series, trade-list
+comparison-run           — an entry on the compare screen that wraps either a saved-backtest or a live-paper-trading-session
+live-paper-trading-session — a continuous period during which ≥1 strategy-state is on and adapters are ingesting live prices
+slippage-model           — rule for deriving a paper-fill price from current market-price; default mid ± 1¢ or top-of-book walk
+screen                   — one of the nine canonical screens: dashboard, markets, market-detail, strategies, paper-trades, backtest, compare, portfolio, data-ingestion
+
+---
+
+EQUIVALENCES RESOLVED (source phrase → canonical entity)
+
+"user"                   → person              (actor; never called user in artefacts)
+"the app"                → application         (singular local web application)
+"trade"                  → paper-fill          (plus order when referring to the intent before execution)
+"position"               → paper-position
+"portfolio"              → equity + paper-position[]  (decomposed; portfolio is a view, not an entity)
+"P&L"                    → pnl                 (further qualified as realised-pnl or unrealised-pnl or strategy-pnl)
+"bankroll" / "account"   → simulated-bankroll
+"starting capital"       → simulated-bankroll  (when at time of account creation)
+"live data" / "live feed"→ live-price-feed
+"historical data"        → stored-price-history
+"market" (the venue)     → platform            (to avoid colliding with market = contract)
+"market" (the contract)  → market              (canonical)
+"strategy" (the code)    → strategy
+"strategy" (the config)  → strategy-parameters + strategy-assigned-capital
+"run" (a backtest)       → backtest            (the noun); "run a backtest" → action: execute-backtest
+"run" (a live strategy)  → live-paper-trading-session
+"scored results"         → backtest-result
+"metric"                 → metric              (umbrella for: equity, brier-score, sharpe-ratio, sortino-ratio, win-rate, max-drawdown, pnl)
+"chart"                  → chart               (umbrella: equity-curve, price-history-chart, pnl-attribution-bars, overlay-pnl-chart)
+
+---
+
+CANONICAL ACTIONS (verbs — these appear in semantic-spec capabilities)
+
+ingest-markets           — adapter pulls new markets from a platform; idempotent on platform+market-id
+sync-historical-prices   — adapter pulls stored price history for markets within a date range
+stream-live-prices       — adapter delivers current market-price updates on a poll interval (default 30s)
+submit-paper-trade       — create an order and immediately produce a paper-fill via slippage-model
+toggle-strategy          — set strategy-state to on or off; on requires strategy-assigned-capital > 0
+execute-strategy-decide  — call strategy.decide(market-state) and receive zero or more orders
+execute-strategy-on-fill — call strategy.on-fill(paper-fill) for strategy bookkeeping
+execute-backtest         — replay a strategy over stored-price-history in chronological order; produce backtest-result
+save-backtest-as-comparison — persist a backtest-result as a comparison-run on the compare screen
+export-ledger            — emit paper-fill[] as csv or json
+
+---
+
+RULES FOLLOWED
+
+- Rule 5 · Only Existence: all entities above exist in stated-intent.txt or actionability-check.txt; none are added here
+- Rule 4 · Rules Database Is Single Source: downstream artefacts reference these names only
+- Rule 9 · End State = Set of Terminal States: entities are the vocabulary for terminal-states.json

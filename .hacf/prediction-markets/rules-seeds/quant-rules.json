@@ -1,0 +1,155 @@
+{
+  "domain": "quant-metrics",
+  "rules": [
+    {
+      "id": "QU-R-001",
+      "rule": "Price series MUST be represented as pandas.Series indexed by DatetimeIndex constructed with utc=True.",
+      "rationale": "Mixing naive and tz-aware datetimes breaks joins/resample; UTC is the project canonical timezone.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-002",
+      "rule": "Prediction market prices MUST be stored as decimal probabilities in [0, 1] (yes/no columns), not percentages.",
+      "rationale": "Brier score and Kelly formulas assume p in [0,1]; downstream resampling (ohlc) and forecasts expect this scale.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-003",
+      "rule": "Simple returns MUST use pandas.Series.pct_change(); log returns MUST use np.log(prices / prices.shift(1)).dropna(). Do not substitute one for the other.",
+      "rationale": "pct_change yields simple returns; log returns are required for additive compounding across periods.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-004",
+      "rule": "Sharpe ratio MUST annualise using sqrt(periods_per_year) * mean(excess) / std(excess, ddof=1), where excess = returns - rf/periods_per_year.",
+      "rationale": "Canonical annualised Sharpe formula per Example 2; ddof=1 matches sample std (Excel STDEV) finance convention.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-005",
+      "rule": "Sharpe implementations MUST guard against sigma == 0 or np.isnan(sigma) by returning 0.0 instead of dividing.",
+      "rationale": "Zero-volatility and all-NaN windows otherwise produce inf/NaN, poisoning downstream aggregation.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-006",
+      "rule": "Sortino ratio MUST define downside deviation as sqrt(mean(excess[excess < 0] ** 2)), NOT the std of negative returns.",
+      "rationale": "Example 3 defines dd as RMS of negative excess returns; using std(negatives) silently changes semantics.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-007",
+      "rule": "Sortino implementations MUST return 0.0 when downside deviation is 0 or NaN.",
+      "rationale": "Periods with no losses otherwise produce inf; return 0.0 keeps ratios comparable and aggregable.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-008",
+      "rule": "Max drawdown MUST be computed as (equity / equity.cummax()) - 1.0, with trough = dd.idxmin() and peak = equity.loc[:trough].idxmax(). Returns MUST be (float(dd.min()), peak, trough).",
+      "rationale": "Example 4 fixes the canonical algorithm; alternative peak-detection orderings silently produce wrong peak dates.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-009",
+      "rule": "Brier score for binary outcomes MUST be mean((forecasts - outcomes) ** 2) where forecasts in [0,1] and outcomes in {0,1}.",
+      "rationale": "Standard Brier definition per Example 5; applies to YES-probability forecasts only.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-010",
+      "rule": "Brier Skill Score MUST use the realised outcome mean as climatology when climatology is None, and MUST return 0.0 when the reference Brier is 0.",
+      "rationale": "Example 5 uses outcomes.mean() as default climatology; zero-reference guard prevents division by zero.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-011",
+      "rule": "Kelly fraction for binary payoff MUST be f = (b * p_win - q) / b where q = 1 - p_win and b = net odds, and MUST be clamped to [0.0, 1.0].",
+      "rationale": "Example 6 formula; clamping enforces full-Kelly cap and prevents negative (short) or >100% bankroll exposure.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-012",
+      "rule": "Kelly implementations MUST return 0.0 when b <= 0 and MUST wrap divisions in np.errstate(divide='ignore', invalid='ignore') for vectorised variants.",
+      "rationale": "Example 6 guards against non-positive odds and suppresses NumPy warnings during masked vectorisation.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-013",
+      "rule": "Rolling z-score MUST divide by sd.replace(0, np.nan) (ddof=1), never by raw std, to avoid silent inf values.",
+      "rationale": "Example 7 explicitly replaces zero std with NaN so downstream masks can drop degenerate windows.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-014",
+      "rule": "Hot-path metric computations MUST be vectorised with .to_numpy() + numpy ops; pure-Python loops and DataFrame.iterrows() are BANNED for any series exceeding 1000 rows.",
+      "rationale": "iterrows is orders of magnitude slower and allocates per-row Series objects; project pitfall section mandates vectorisation.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-015",
+      "rule": "Group-aggregations MUST prefer groupby(...).agg({...}) over groupby(...).apply(lambda ...).",
+      "rationale": "Performance tips section: .agg dispatches to C paths while .apply boxes each group through Python.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-016",
+      "rule": "Metric functions MUST be pure: inputs are pandas/numpy objects, outputs are floats/tuples, NO file, network, or database I/O inside the function body.",
+      "rationale": "All Example 2-6 functions take Series and return scalars; keeps metrics unit-testable and deterministic.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-017",
+      "rule": "Inputs to scipy.stats functions MUST be .dropna()'d before the call; do NOT rely on scipy to skip NaN.",
+      "rationale": "Gotcha section: scipy.stats returns NaN if ANY input is NaN, silently invalidating t-tests and p-values.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-018",
+      "rule": "For mixed/object dtype Series use pd.isna; reserve np.isnan for strictly numeric float arrays.",
+      "rationale": "Gotcha section: np.isnan raises on object dtype; pd.isna is the safe default for heterogeneous columns.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-019",
+      "rule": "Masked writes MUST use df.loc[mask, col] = value; chained assignment df[col][mask] = value is BANNED.",
+      "rationale": "Gotcha section: chained assignment silently fails with SettingWithCopyWarning, producing non-persistent writes.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-020",
+      "rule": "Default risk-free rate for Sharpe/Sortino is rf = 0.0; default periods_per_year = 252. Any override MUST be passed explicitly, and for 24/7 prediction markets callers SHOULD use a market-appropriate factor (e.g., 365 for daily, 8760 for hourly, 525600 for 1-min bars) rather than 252.",
+      "rationale": "Example 2-3 pin defaults to 252 (equities trading-day convention); prediction markets trade continuously so annualisation factor must reflect bar cadence.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-021",
+      "rule": ".rolling(window) outputs MUST be handled either via .dropna() or min_periods=1; consumers MUST NOT assume the first (window-1) rows are valid.",
+      "rationale": "Gotcha section: rolling emits NaN during warm-up; ignoring this contaminates downstream means and z-scores.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-022",
+      "rule": "Tick dataframes MUST be set_index('ts').sort_index() after pd.to_datetime(..., utc=True) before any resample or join.",
+      "rationale": "Example 1 mandates this pipeline; unsorted DatetimeIndex causes incorrect resample buckets and resample-order bugs.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-023",
+      "rule": "Equity curves MUST be built as starting_bankroll + fills.sort_values('ts')['pnl'].cumsum(), indexed by fill timestamp and named 'equity'.",
+      "rationale": "Example 10 canonical construction; unsorted fills produce non-monotonic equity and invalid drawdown calculations.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-024",
+      "rule": "News-spike detection MUST use prices.pct_change(window).abs() >= trigger_pct with project defaults trigger_pct=0.10 and window_min=15.",
+      "rationale": "Example 8 pins default thresholds; diverging values across modules breaks alert reproducibility.",
+      "source_file": "pandas-numpy-scipy.md"
+    },
+    {
+      "id": "QU-R-025",
+      "rule": "Version pins: pandas ^2.2, numpy ^1.26 (pin <2.0 unless all transitive deps confirmed NumPy-2-compatible), scipy ^1.14, python 3.12. Do NOT use np.cast or np.float_ (removed in NumPy 2.x); use np.float64.",
+      "rationale": "Version compatibility matrix + gotcha: NumPy 2.x is ABI-breaking and removed deprecated aliases; silent imports fail at runtime.",
+      "source_file": "pandas-numpy-scipy.md"
+    }
+  ]
+}

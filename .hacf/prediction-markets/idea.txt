@@ -1,0 +1,8 @@
+Prediction Markets Paper Trader & Strategy Backtester
+
+A local web application that lets the user:
+- Ingest and store historical market data from Kalshi, Polymarket, Manifold Markets, and PredictIt
+- Simulate trades on prediction markets without risking real money (paper trading)
+- Backtest quantitative strategies against historical markets
+- Track a simulated portfolio with P&L, Brier score, Sharpe ratio, win rate
+- Run pluggable strategies: Kelly sizing, cross-platform arbitrage scanner, closing momentum, news spike fade, market maker

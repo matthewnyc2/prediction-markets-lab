@@ -1,0 +1,41 @@
+{
+  "contract_id": "C-I-MD-004",
+  "interaction_id": "I-MD-004",
+  "function": {
+    "name": "handle_i_md_004",
+    "module_hint": "frontend.handlers.market_detail",
+    "inputs": [
+      {
+        "name": "size",
+        "type": "int"
+      }
+    ],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": "debounce-300ms",
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": []
+  },
+  "preconditions": [
+    {
+      "ref": "INV-002",
+      "condition": "market.price \u2208 [0, 1]"
+    }
+  ],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "INV-002",
+      "DESIGN-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "market-detail",
+    "success_transition": "market-detail"
+  }
+}

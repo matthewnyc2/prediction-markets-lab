@@ -1,0 +1,45 @@
+{
+  "project": "prediction-markets",
+  "source": "actionability-check.txt + stated-intent.txt A12",
+  "note": "All references use entities from disambiguated.txt only.",
+  "terminal_states": [
+    {
+      "id": "TS-01",
+      "name": "application-opens-and-strategy-trades-live",
+      "description": "The person opens the application, toggles a strategy-state to on with strategy-assigned-capital > 0, and within one live-price-feed poll cycle at least one paper-fill is recorded whose source = the toggled strategy-id.",
+      "observable_signals": [
+        "dashboard.active-strategies-panel shows the toggled strategy with on pill",
+        "dashboard.recent-trades-panel lists ≥1 new paper-fill with source = strategy-id",
+        "paper-trades.ledger-table contains ≥1 row matching the toggled strategy within 60 seconds of toggle-on"
+      ],
+      "satisfies_north_star_clause": "Strategy toggled on, paper trades execute against live or historical market data"
+    },
+    {
+      "id": "TS-02",
+      "name": "backtest-produces-scored-results",
+      "description": "The person selects a strategy-id, ≥1 platform, a date-range, and a simulated-bankroll on the backtest screen, clicks run-backtest-button, and receives a backtest-result containing final-equity, sharpe-ratio, brier-score, win-rate, and an equity-curve-series. No real-money api is contacted during the run.",
+      "observable_signals": [
+        "backtest.results-panel displays non-null final-equity, sharpe-ratio, brier-score, win-rate tiles",
+        "backtest.equity-curve renders a polyline with ≥2 points",
+        "adapter call log contains zero outbound calls to live trading endpoints during the run"
+      ],
+      "satisfies_north_star_clause": "Backtest runs and returns scored results without any real money changing hands"
+    },
+    {
+      "id": "TS-03",
+      "name": "cross-platform-and-cross-time-comparison",
+      "description": "The person adds two or more comparison-run entries on the compare screen that cover (a) at least two distinct platforms, or (b) at least two distinct date-ranges, and sees a single overlay-pnl-chart with color-coded series per run plus a comparison-table listing pnl, sharpe-ratio, brier-score, and win-rate per run.",
+      "observable_signals": [
+        "compare.overlay-pnl-chart renders ≥2 color-coded series",
+        "compare.comparison-table has ≥2 rows",
+        "comparison-table rows cover ≥2 distinct platforms OR ≥2 distinct date-ranges"
+      ],
+      "satisfies_north_star_clause": "Strategy performance can be compared across platforms and time ranges from a single local dashboard"
+    }
+  ],
+  "coverage_check": {
+    "north_star_clauses": 3,
+    "terminal_states_defined": 3,
+    "all_north_star_clauses_have_ts": true
+  }
+}

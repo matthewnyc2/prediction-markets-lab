@@ -1,0 +1,13 @@
+{
+  "project": "prediction-markets",
+  "total": 99,
+  "full_coverage": 99,
+  "incomplete": [],
+  "by_async_mode": {
+    "sync": 46,
+    "async-await": 53
+  },
+  "with_retry_policy": 52,
+  "with_timeout": 53,
+  "no_invented_policy": true
+}

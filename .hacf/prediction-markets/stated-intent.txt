@@ -1,0 +1,66 @@
+Stated Intent — prediction-markets
+Compiled from idea.txt + answers.txt. This is the sole input to downstream specification.
+
+---
+
+ORIGINAL IDEA (verbatim from idea.txt):
+
+Prediction Markets Paper Trader & Strategy Backtester
+
+A local web application that lets the user:
+- Ingest and store historical market data from Kalshi, Polymarket, Manifold Markets, and PredictIt
+- Simulate trades on prediction markets without risking real money (paper trading)
+- Backtest quantitative strategies against historical markets
+- Track a simulated portfolio with P&L, Brier score, Sharpe ratio, win rate
+- Run pluggable strategies: Kelly sizing, cross-platform arbitrage scanner, closing momentum, news spike fade, market maker
+
+---
+
+EXISTENCE ANSWERS (from answers.txt, person-confirmed via HTML proposal):
+
+A1 · APPLICATION CONTAINER
+A local web application does not exist today. When opened, it shows a Dashboard with metric tiles (equity, Brier score, Sharpe ratio, win rate), a 30-day equity curve, an active-strategies panel listing each strategy with on/off pill and per-strategy P&L, a recent-paper-trades panel (timestamp, platform, side, market, price). Left sidebar: Dashboard, Markets, Strategies, Paper Trades, Backtest, Compare, Portfolio, Data ingestion. Runs locally only, no authentication.
+
+A2 · MARKETS BROWSER
+The Markets screen shows a sortable table of all stored markets across the four platforms. Columns: platform chip, market title, YES price, NO price, 24h volume, close date. Filter pills for each platform, Open-only filter, volume-threshold filter. Clicking a row opens Market detail.
+
+A3 · MARKET DETAIL
+The Market detail screen shows the market title with platform chip, a price history chart (default 90-day YES price), a recent-fills table for that market, and a Place Paper Trade panel with BUY YES / BUY NO selector, size input, computed cost and max loss, Submit button. Submit records a simulated fill at the current price.
+
+A4 · STRATEGIES
+The Strategies screen shows five strategy cards: Kelly sizing, Cross-platform arbitrage, Closing momentum, News spike fade, Market maker. Each card has name, one-line description, on/off pill, parameters (Kelly fraction, arb minimum edge, momentum window, fade threshold, MM spread), assigned capital, running P&L. Toggling ON starts the strategy trading against live adapter feeds; OFF halts it.
+
+A5 · PAPER TRADES LEDGER
+The Paper Trades screen shows a full ledger: timestamp, platform, market, side (BUY/SELL YES/NO), quantity, entry price, exit price, P&L, source (strategy name or "Manual"). Filters: Open / Closed, by strategy, by platform, by date range.
+
+A6 · BACKTEST
+The Backtest screen has a Configuration panel (strategy selector, platform multi-select, date range picker, starting bankroll input, Run button) and a Results panel (final equity, Sharpe, Brier, win-rate tiles, equity curve). Running a backtest replays the selected strategy over historical data for the selected platforms and date range.
+
+A7 · COMPARE
+The Compare screen shows an overlay P&L chart (color-coded per run) and a comparison table: run name, strategy, platforms, period, P&L, Sharpe, Brier, win rate. Runs may be live sessions or saved backtests.
+
+A8 · PORTFOLIO
+The Portfolio screen shows all-time P&L, max drawdown, Sortino, average-trade tiles; an equity curve; a per-strategy P&L attribution bar chart.
+
+A9 · DATA INGESTION
+The Data ingestion screen shows a table of the four platform adapters: platform chip + name, status pill (HEALTHY / RATE LIMITED / ERROR), last sync timestamp, markets count, rows stored, action button (Sync now / Retry).
+
+A10 · STRATEGY PLUGIN INTERFACE
+Each strategy is a Python class implementing decide(market_state) → orders and on_fill(fill) → None. Dropping a new .py file into strategies/ auto-registers. The five built-ins are Kelly sizing, Cross-platform arbitrage, Closing momentum, News spike fade, Market maker.
+
+A11 · PAPER TRADING SEMANTICS
+Paper trades are simulated. Orders execute against stored historical price data (backtests) or live price feeds (live paper trading) using a slippage model: mid-price ± 1¢, or fill at top-of-book if order size crosses the spread. Nothing reaches real trading APIs. No real money.
+
+A12 · END STATES (observable success conditions)
+(a) The application can be opened, a strategy toggled on, and paper trades execute against live or historical market data.
+(b) A backtest runs and returns scored results (P&L curve, Sharpe, win rate, Brier) without any real money changing hands.
+(c) Strategy performance can be compared across platforms and time ranges from a single local dashboard.
+
+A13 · TECH STACK (defaults)
+Frontend: Next.js + TypeScript + Tailwind CSS; Recharts for charts.
+Backend: Python 3.12 + FastAPI; pandas, numpy, scipy for quantitative math; SQLAlchemy over SQLite (upgrade path to Postgres).
+Adapters: one Python module per platform (kalshi.py, polymarket.py, manifold.py, predictit.py), normalising into a shared schema.
+Local dev: npm run dev + uvicorn. No auth.
+
+A14 · ACCEPTED DEFAULTS
+Auth: none (local-only). Starting bankroll: $10,000 user-editable. Data refresh: live adapters poll 30s; historical on-demand. Manual trades: enabled on Market detail. Slippage: mid ±1¢ or top-of-book walk. Closing momentum window: last 6h. News-fade trigger: 10% move in 15min. MM spread: 2¢. Portfolio export: CSV + JSON. Theme: dark.

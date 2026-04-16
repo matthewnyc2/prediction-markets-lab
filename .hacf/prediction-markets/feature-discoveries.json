@@ -1,0 +1,475 @@
+{
+  "project": "prediction-markets",
+  "phase": "1",
+  "step": "12a",
+  "generated_at": "2026-04-16",
+  "sources": "WebSearch + WebFetch over public platform docs and quant-finance references. Every claim is cited in patterns_found[].source.",
+  "vocabulary_note": "All entity names reference disambiguated.txt only. No new entities introduced.",
+
+  "platform_adapters": [
+    {
+      "feature_id": "ADP-01",
+      "feature_name": "kalshi adapter",
+      "platform": "kalshi",
+      "api_base_url": "https://api.elections.kalshi.com/trade-api/v2",
+      "demo_base_url": "https://demo-api.kalshi.co/trade-api/v2",
+      "websocket_url": "wss://api.elections.kalshi.com/trade-api/ws/v2",
+      "auth_model": "api-key-optional (RSA PKCS#8 2048-bit signatures for write; read endpoints public). Headers: KALSHI-ACCESS-KEY, KALSHI-ACCESS-SIGNATURE, KALSHI-ACCESS-TIMESTAMP.",
+      "rate_limits": {
+        "basic_tier": { "read_per_sec": 20, "write_per_sec": 10 },
+        "advanced_tier": { "read_per_sec": 30, "write_per_sec": 30 },
+        "premier_tier": { "read_per_sec": 100, "write_per_sec": 100 },
+        "prime_tier": { "read_per_sec": 400, "write_per_sec": 400 },
+        "throttle_behaviour": "429 with Retry-After header; caller must honour exponential backoff"
+      },
+      "list_markets_endpoint": "GET /markets?limit=1000&status=open",
+      "current_price_endpoint": "GET /markets/{ticker}/orderbook — top-of-book yields yes-bid/yes-ask; market-price = mid",
+      "price_history_endpoint": "GET /markets/{ticker}/history — historical tick series retrievable retrospectively",
+      "data_format": "REST JSON + websocket channels (ticker, trade, orderbook_delta, market_lifecycle_v2). Public websocket channels need no auth.",
+      "market-side_encoding": "each market is paired binary; yes-side and no-side are complementary. market-price reported as integer cents 0-100 (normalise to 0.00-1.00 decimal per disambiguated.txt).",
+      "market-resolution_mapping": "status field → yes-resolved | no-resolved | cancelled | open",
+      "historical_available": "yes — candle/history endpoint returns retrospective ticks; no need to record live",
+      "known_quirks": [
+        "prices quoted as integer cents (1-99), never 0 or 100",
+        "market-volume-24h must be computed from trades feed; no direct 24h field on all tickers",
+        "paired yes/no means NO price = 100 - YES price by construction (no independent NO order book)",
+        "auth uses RSA key pair, not simple api key — adapter must sign requests even if reading private endpoints"
+      ],
+      "patterns_found": [
+        { "source": "https://docs.kalshi.com/getting_started/rate_limits", "pattern": "four-tier read/write quotas; Basic = 20 reads/sec, 10 writes/sec", "relevance": "high" },
+        { "source": "https://agentbets.ai/guides/prediction-market-api-reference/", "pattern": "base URL + websocket URL + endpoint shape reference", "relevance": "high" },
+        { "source": "https://docs.kalshi.com/getting_started/quick_start_websockets", "pattern": "public channels: ticker, trade, orderbook_delta, market_lifecycle_v2", "relevance": "high" }
+      ],
+      "pitfalls": [
+        { "description": "Integer-cent prices collide with disambiguated market-price type (0.00-1.00 decimal)", "mitigation": "adapter normalises cents/100 on ingest; schema stores decimal" },
+        { "description": "RSA signing is heavyweight for purely-read adapter", "mitigation": "run adapter in api-key-optional mode; fall back to unsigned public reads" },
+        { "description": "Rate limit 429 with Retry-After must be respected or adapter-status flips to rate-limited", "mitigation": "token bucket at 20 reads/sec minus safety margin; surface rate-limited pill" }
+      ],
+      "confidence": "high"
+    },
+    {
+      "feature_id": "ADP-02",
+      "feature_name": "polymarket adapter",
+      "platform": "polymarket",
+      "api_base_urls": {
+        "gamma_discovery": "https://gamma-api.polymarket.com",
+        "clob_trading_and_prices": "https://clob.polymarket.com",
+        "data": "https://data-api.polymarket.com"
+      },
+      "websocket_url": "wss://ws-subscriptions-clob.polymarket.com/ws/market",
+      "auth_model": "none-for-read. Gamma + CLOB read endpoints are public. Write endpoints (unused here — paper trades only) require L2 HMAC-SHA256 headers signed with an EOA wallet key.",
+      "rate_limits": {
+        "gamma_unauthenticated": "~60 requests/min (per pm.wiki) / 4,000 per 10s (per agentbets.ai). Use the conservative 60/min value until empirically tuned.",
+        "clob_read_authenticated": "~100 requests/min",
+        "websocket": "5 connections per IP",
+        "throttle_behaviour": "429 on excess"
+      },
+      "list_markets_endpoint": "GET gamma-api.polymarket.com/markets?limit=20&closed=false (paginate)",
+      "current_price_endpoint": "GET clob.polymarket.com/book?token_id={token_id} — returns bids/asks; mid = (best_bid + best_ask) / 2",
+      "price_history_endpoint": "GET clob.polymarket.com/prices-history?market={token_id}&interval=1d — retrospectively available",
+      "data_format": "REST JSON + CLOB websocket (market, user channels). YES and NO outcomes are two distinct ERC-1155 tokens, each has its own token_id and its own order book.",
+      "market-side_encoding": "each binary market has two independent token_ids — one for yes, one for no. Their prices theoretically sum to 1.00 but can diverge (arbitrage signal, see STR-02).",
+      "market-resolution_mapping": "gamma market object fields: active, closed, resolvedBy → yes-resolved | no-resolved | cancelled | open",
+      "historical_available": "yes — prices-history endpoint returns full retrospective series at configurable intervals",
+      "known_quirks": [
+        "CLOB — two separate token IDs per market means the yes/no order books are INDEPENDENT, unlike kalshi",
+        "price history requires token_id, not market_id — adapter must resolve market→tokens[] first",
+        "gamma.markets returns event hierarchy (Series → Events → Markets); normalise to flat market entities",
+        "enableOrderBook flag must be true before a market is tradable; otherwise only ui-priced"
+      ],
+      "patterns_found": [
+        { "source": "https://docs.polymarket.com/developers/gamma-markets-api/gamma-structure", "pattern": "two outcome tokens per market, each redeemable for $1", "relevance": "high" },
+        { "source": "https://pm.wiki/learn/polymarket-api", "pattern": "base URLs for gamma, clob, data; websocket URL", "relevance": "high" },
+        { "source": "https://agentbets.ai/guides/polymarket-gamma-api-guide/", "pattern": "prices-history endpoint shape + interval parameter", "relevance": "high" },
+        { "source": "https://github.com/Polymarket/py-clob-client", "pattern": "official python client handles L2 HMAC signing — adapter can import rather than reimplement if auth becomes needed", "relevance": "medium" }
+      ],
+      "pitfalls": [
+        { "description": "rate limit figures differ between sources (60/min vs 4000/10s)", "mitigation": "start conservative at 60/min, widen after live metrics; expose adapter-status pill" },
+        { "description": "yes-token-price + no-token-price ≠ 1.00 always", "mitigation": "schema stores both tokens' market-prices separately; do not derive NO from YES" },
+        { "description": "websocket limit of 5 connections per IP", "mitigation": "single shared connection multiplexing all market subscriptions in the adapter" }
+      ],
+      "confidence": "high"
+    },
+    {
+      "feature_id": "ADP-03",
+      "feature_name": "manifold adapter",
+      "platform": "manifold",
+      "api_base_url": "https://api.manifold.markets",
+      "websocket_url": "wss://api.manifold.markets/ws",
+      "auth_model": "api-key-optional. Read endpoints are public; authenticated requests use header Authorization: Key {key} or Authorization: Bearer {jwt}.",
+      "rate_limits": {
+        "per_ip_per_minute": 500,
+        "throttle_behaviour": "standard 429"
+      },
+      "list_markets_endpoint": "GET /v0/markets?limit=1000 (ordered by creation date; paginate with before cursor)",
+      "current_price_endpoint": "GET /v0/market/{marketId} — BINARY markets expose a probability field 0-1 directly",
+      "price_history_endpoint": "NOT AVAILABLE as single endpoint. Bets endpoint GET /v0/bets?contractId={id} returns full bet history from which price-history must be RECONSTRUCTED retrospectively.",
+      "data_format": "REST JSON + websocket (topics: global/new-bet, contract/{marketId}, requires 30-60s ping)",
+      "market-side_encoding": "BINARY markets have single probability 0-1 (yes-price directly; no-price = 1 - yes-price, unlike polymarket). Also supports MULTIPLE_CHOICE, PSEUDO_NUMERIC, POLL, BOUNTIED_QUESTION, FREE_RESPONSE.",
+      "market-resolution_mapping": "isResolved (bool), resolution (outcome string), resolutionTime (epoch ms) → yes-resolved | no-resolved | cancelled | open",
+      "historical_available": "partial — must be stitched from /v0/bets endpoint; each bet carries probBefore/probAfter which reconstructs the series. Requires the bet-stream-replay pattern.",
+      "known_quirks": [
+        "multiple market-type variants beyond binary — adapter must filter to BINARY for the four-platform unified schema (or handle PSEUDO_NUMERIC via probability mapping)",
+        "no direct price history — must reconstruct from bets",
+        "uses mana (manifold's virtual currency) not usd; market-price is still the 0-1 probability so usd mapping happens at paper-fill time, not ingest",
+        "websocket requires keepalive ping every 30-60s or connection drops"
+      ],
+      "patterns_found": [
+        { "source": "https://docs.manifold.markets/api", "pattern": "500 req/min per IP; Key/Bearer auth; websocket with 30-60s ping", "relevance": "high" },
+        { "source": "https://github.com/manifoldmarkets/manifold/blob/main/docs/docs/api.md", "pattern": "/v0/markets pagination; /v0/bets for trade history", "relevance": "high" }
+      ],
+      "pitfalls": [
+        { "description": "price-history must be reconstructed — O(bets) work", "mitigation": "on first sync, page through bets; cache locally; subsequent syncs incremental via createdTime filter" },
+        { "description": "non-binary market types could leak into unified schema", "mitigation": "adapter filter: only ingest where outcomeType === 'BINARY' (optionally PSEUDO_NUMERIC with explicit flag)" },
+        { "description": "mana vs usd unit confusion for volume fields", "mitigation": "market-volume-24h stays in mana for manifold; equity mapping uses probability only" }
+      ],
+      "confidence": "high"
+    },
+    {
+      "feature_id": "ADP-04",
+      "feature_name": "predictit adapter",
+      "platform": "predictit",
+      "api_base_url": "https://www.predictit.org/api/marketdata",
+      "all_markets_endpoint": "GET /all/",
+      "single_market_endpoint": "GET /markets/{market_id}",
+      "auth_model": "none-for-read. There is NO trading api at all (PredictIt has no programmatic trading).",
+      "rate_limits": {
+        "documented": "1 request per second",
+        "throttle_behaviour": "block / delay on abuse"
+      },
+      "data_refresh": "sixty seconds — the upstream data itself refreshes every 60s regardless of poll frequency",
+      "returned_fields_per_contract": [
+        "bestBuyYesCost",
+        "bestBuyNoCost",
+        "bestSellYesCost",
+        "bestSellNoCost",
+        "lastTradePrice",
+        "lastClosePrice"
+      ],
+      "price_history_endpoint": "NOT AVAILABLE via api. Historical data exists only as CSV downloads from the website. Live recording is the ONLY way to build stored-price-history going forward.",
+      "data_format": "REST JSON only. NO websocket.",
+      "market-side_encoding": "each market contains one or more contracts. Each contract has paired yes/no quotes (four prices: bestBuyYes, bestSellYes, bestBuyNo, bestSellNo). Shares not contracts — size-1 unit is one share paying $1 at resolution.",
+      "market-resolution_mapping": "status field → yes-resolved | no-resolved | cancelled | open (exact enum differs; adapter normalises)",
+      "historical_available": "NO — must be recorded live by the live-poll loop. This is the BINDING CONSTRAINT on backtest date-range for predictit.",
+      "known_quirks": [
+        "upstream refreshes every 60s, so polling faster than 1/60s yields no new data",
+        "no websocket, no trading api, no historical bulk api",
+        "prices are in cents not dollars in some fields — verify per-field",
+        "multi-contract markets (e.g. 'who wins the nomination?' has one contract per candidate)",
+        "rate-limit is 1 req/sec — plan adapter poll cadence carefully across all markets",
+        "data-license requires attribution on any UI surface that shows predictit numbers (non-commercial use)"
+      ],
+      "patterns_found": [
+        { "source": "https://www.predictit.org/api/marketdata/all/", "pattern": "single /all/ endpoint returns every active market+contract", "relevance": "high" },
+        { "source": "https://predictit.freshdesk.com/support/solutions/articles/12000001878-does-predictit-make-market-data-available-via-an-api-", "pattern": "60-second refresh + 1 req/sec limit + attribution requirement", "relevance": "high" }
+      ],
+      "pitfalls": [
+        { "description": "no historical api means backtests on predictit only cover dates since this application started recording", "mitigation": "open-question OQ-01; user must understand this constraint. Adapter writes every live tick to stored-price-history." },
+        { "description": "multi-contract markets break the one-market/one-binary assumption", "mitigation": "adapter flattens: each contract becomes its own market in the normalised schema with a contract-scoped market-id" },
+        { "description": "attribution requirement", "mitigation": "market detail screen shows platform-chip badge which already reads PredictIt" }
+      ],
+      "confidence": "high"
+    }
+  ],
+
+  "engine_patterns": [
+    {
+      "feature_id": "ENG-01",
+      "feature_name": "event-driven backtest replay engine",
+      "architecture_choice": "event-driven (not vectorised)",
+      "rationale": "The same strategy code must run in both execute-backtest AND live-paper-trading-session — disambiguated.txt has strategy.decide(market-state) → orders as a single contract. An event-driven replay that emits market-data-events in chronological order allows the SAME strategy class to be called in both modes, eliminating the look-ahead bias that vectorised backtests commonly suffer from.",
+      "components": [
+        "data-handler — reads stored-price-history OR live-price-feed and emits market-data-event",
+        "event-queue — FIFO of market-data-event | signal-event | order | paper-fill",
+        "strategy-runner — calls strategy.decide(market-state) when market-data-event arrives; produces zero or more orders",
+        "execution-handler — applies slippage-model to each order and emits paper-fill",
+        "portfolio-bookkeeper — updates paper-position, equity, realised-pnl, unrealised-pnl on each paper-fill",
+        "metrics-recorder — appends to equity-curve-series and computes rolling sharpe-ratio, brier-score, win-rate"
+      ],
+      "slippage_model_implementation": "per slippage-model in disambiguated.txt: default = mid-price ± 1¢ on the aggressor side (buy fills above mid, sell fills below mid). Fallback = top-of-book-walk when order size > best-level-size: walk the book level-by-level, consuming quantity at each price, weighted-average for final fill price.",
+      "order_book_crossing": "if order.size ≤ bbo-size: fill at bbo-price ± 1¢; else: walk levels, accumulate filled-quantity at each price * size until order.size satisfied; fill-price = volume-weighted average. Disambiguated.txt says 'top-of-book walk' — take that literally.",
+      "simulation_vs_reality_line": [
+        "SIMULATED: all paper-fills, all order fills, all portfolio state — per A11 'nothing reaches real trading APIs'",
+        "REAL: market-price data itself (live-price-feed or stored-price-history both come from actual platform APIs)",
+        "REAL: market-resolution outcomes (need to read resolved field from adapter to score brier-score)",
+        "SIMULATED: liquidity assumption — assume the paper-fill could have actually executed at the shown price+slippage; no impact on the real market"
+      ],
+      "patterns_found": [
+        { "source": "https://www.quantstart.com/articles/Event-Driven-Backtesting-with-Python-Part-I/", "pattern": "six-layer event-driven architecture: DataHandler, EventQueue, Strategy, Portfolio, ExecutionHandler, Performance", "relevance": "high" },
+        { "source": "https://nautilustrader.io/docs/latest/concepts/backtesting/", "pattern": "event-driven backtester enables code reuse between backtest and live with minimal changes", "relevance": "high" },
+        { "source": "https://www.interactivebrokers.com/campus/ibkr-quant-news/a-practical-breakdown-of-vector-based-vs-event-based-backtesting/", "pattern": "vectorised backtest is faster but enables look-ahead bugs; event-driven is slower but realistic", "relevance": "high" },
+        { "source": "https://timkimutai.medium.com/how-i-built-an-event-driven-backtesting-engine-in-python-25179a80cde0", "pattern": "python reference implementation with FillEvent that carries slippage + commission", "relevance": "medium" }
+      ],
+      "pitfalls": [
+        { "description": "look-ahead bias if the engine passes FUTURE price ticks to strategy.decide", "mitigation": "event queue strictly time-ordered; strategy receives only market-state-at-time-t, never t+1" },
+        { "description": "replay speed for multi-year backtests can be slow", "mitigation": "single-threaded event loop is fine at prediction-market tick density (far lower than hft); only optimise if measurement shows need" },
+        { "description": "live mode drift vs backtest mode — two slightly different code paths diverge over time", "mitigation": "one engine class with a data-handler polymorphism; backtest-data-handler and live-data-handler both emit identical market-data-event shape" }
+      ],
+      "confidence": "high"
+    }
+  ],
+
+  "metrics_formulas": [
+    {
+      "feature_id": "MET-01",
+      "feature_name": "brier-score",
+      "formula": "BS = (1/N) * Σ (forecast_probability_i - realised_outcome_i)^2",
+      "prediction_market_adaptation": "In prediction markets, market-price IS a forecast probability. For each closed paper-position, forecast = market-price at time of entry; realised = 1 if market-resolution == yes-resolved and side was yes (or no-resolved and side was no), else 0. N = total closed paper-positions.",
+      "interpretation": "0 = perfect calibration; 0.25 = coin-flip (random); 1 = always certain and always wrong. Per disambiguated.txt brier-score entry.",
+      "patterns_found": [
+        { "source": "https://en.wikipedia.org/wiki/Brier_score", "pattern": "mean squared error between predicted probability and outcome 0/1", "relevance": "high" },
+        { "source": "https://www.cwdatasolutions.com/post/calibration-and-skill-of-the-kalshi-prediction-markets", "pattern": "brier on prediction-market prices directly — market-price acts as the forecast", "relevance": "high" }
+      ],
+      "pitfalls": [
+        { "description": "which price to use as the forecast — entry price, average holding price, or price at close?", "mitigation": "OQ-02 in open_questions. RECOMMENDED: entry price (most common in trading literature; captures the decision point)" },
+        { "description": "positions on markets that resolve CANCELLED have no outcome 0/1", "mitigation": "OQ-03 in open_questions. RECOMMENDED: exclude from denominator N" }
+      ],
+      "confidence": "high"
+    },
+    {
+      "feature_id": "MET-02",
+      "feature_name": "sharpe-ratio",
+      "formula": "Sharpe = (mean(daily_returns) - daily_risk_free_rate) / stdev(daily_returns) * sqrt(annualisation_factor)",
+      "recommended_convention": "daily returns computed on equity curve; annualisation_factor = 252 trading days (standard trading-asset convention). risk-free-rate default = 0 for paper trading (user cannot actually earn risk-free interest on simulated-bankroll).",
+      "daily_return_definition": "equity[t] / equity[t-1] - 1, sampled at day boundaries from equity-curve-series",
+      "patterns_found": [
+        { "source": "https://en.wikipedia.org/wiki/Sharpe_ratio", "pattern": "formula with annualisation √N where N = sampling periods per year", "relevance": "high" },
+        { "source": "https://blog.quantinsti.com/sharpe-ratio-applications-algorithmic-trading/", "pattern": "252 trading days is the conventional annualisation factor", "relevance": "high" }
+      ],
+      "pitfalls": [
+        { "description": "prediction markets run 24/7 on some platforms (polymarket, manifold) but kalshi follows US trading hours", "mitigation": "use 365 OR 252 consistently — recommend 252 as default to match classic finance; expose as config" },
+        { "description": "stdev undefined for N=1 return", "mitigation": "sharpe-ratio returns null (tile shows '—') until ≥2 returns observed" },
+        { "description": "risk-free-rate assumption", "mitigation": "default 0; disambiguated.txt definition is agnostic" }
+      ],
+      "confidence": "high"
+    },
+    {
+      "feature_id": "MET-03",
+      "feature_name": "sortino-ratio",
+      "formula": "Sortino = (mean(daily_returns) - target_return) / downside_deviation * sqrt(annualisation_factor)",
+      "downside_deviation_formula": "sqrt( (1/N) * Σ min(0, daily_return_i - target_return)^2 ) — only returns BELOW target contribute",
+      "recommended_convention": "target_return = 0 (Minimum Acceptable Return = 0, i.e. do not lose money); same √252 annualisation as sharpe for consistency",
+      "patterns_found": [
+        { "source": "https://en.wikipedia.org/wiki/Sortino_ratio", "pattern": "downside deviation uses only returns < target, zero for returns ≥ target", "relevance": "high" },
+        { "source": "https://rpc.cfainstitute.org/sites/default/files/-/media/documents/code/gips/the-sortino-ratio.pdf", "pattern": "CFA/GIPS canonical formulation", "relevance": "high" }
+      ],
+      "pitfalls": [
+        { "description": "denominator can be zero if no negative returns yet", "mitigation": "return null (tile '—') until ≥1 downside return" },
+        { "description": "target_return often set to risk-free rate, not zero", "mitigation": "keep zero default to match sharpe risk-free-rate=0 default; expose as config" }
+      ],
+      "confidence": "high"
+    },
+    {
+      "feature_id": "MET-04",
+      "feature_name": "max-drawdown",
+      "formula": "MDD = max_over_t ( (running_peak[t] - equity[t]) / running_peak[t] )",
+      "algorithm": "for each point in equity-curve-series, track running_peak = max(running_peak, equity[t]); drawdown[t] = (running_peak - equity[t]) / running_peak; max-drawdown = max(drawdown[]). Express as percent (positive number).",
+      "python_canonical": "running_max = np.maximum.accumulate(equity); drawdowns = (running_max - equity) / running_max; mdd = drawdowns.max()",
+      "patterns_found": [
+        { "source": "https://www.quantstart.com/articles/Event-Driven-Backtesting-with-Python-Part-VII/", "pattern": "cumulative-max-based drawdown computation", "relevance": "high" },
+        { "source": "https://medium.com/cloudcraftz/measuring-maximum-drawdown-and-its-python-implementation-99a3963e158f", "pattern": "np.maximum.accumulate pattern", "relevance": "high" }
+      ],
+      "pitfalls": [
+        { "description": "percent vs dollar drawdown ambiguity", "mitigation": "disambiguated.txt already specifies percent; Portfolio tile labels 'max drawdown %'" },
+        { "description": "running_peak starts at simulated-bankroll; drawdown before first gain is always 0", "mitigation": "initialise running_peak = equity[0] = simulated-bankroll" }
+      ],
+      "confidence": "high"
+    },
+    {
+      "feature_id": "MET-05",
+      "feature_name": "win-rate",
+      "formula": "win-rate = closed-positions-profitable / closed-positions-total",
+      "scope": "computed only over paper-positions whose market-resolution ∈ {yes-resolved, no-resolved}. Open positions excluded. Cancelled positions excluded.",
+      "tie_handling": "realised-pnl exactly 0 on a position is counted as a LOSS (conservative; matches common trading convention)",
+      "patterns_found": [
+        { "source": "https://en.wikipedia.org/wiki/Sharpe_ratio", "pattern": "win-rate is trivial arithmetic; care is in what counts as 'closed'", "relevance": "medium" }
+      ],
+      "pitfalls": [
+        { "description": "positions closed by user manual exit before market-resolution — are they 'closed'?", "mitigation": "YES — any paper-position with zero net size is closed. realised-pnl comparison > 0 determines win" },
+        { "description": "cancelled markets", "mitigation": "OQ-03 — recommend excluding from both numerator and denominator" }
+      ],
+      "confidence": "high"
+    }
+  ],
+
+  "strategy_specs": [
+    {
+      "feature_id": "STR-01",
+      "strategy_id": "kelly-sizing",
+      "formula_binary_payoff": "f* = (p - market_price) / (1 - market_price) for BUY YES where p = strategy's estimated true probability, market_price = current-yes-price. Derived from classic Kelly f = (bp - q)/b with b = (1 - market_price)/market_price for 0/1 payoff.",
+      "position_size_usd": "kelly_fraction * f* * strategy-assigned-capital, where kelly_fraction is the parameter (0 < kelly_fraction ≤ 1, typical 0.25)",
+      "edge_requirement": "only trade when f* > 0 (equivalently, p > market_price for yes side, or p < market_price for no side)",
+      "true_probability_estimator": "NOT SPECIFIED by north star — this is OQ-04. Options: (1) use market-price from another platform as p (crosses into arbitrage), (2) use simple time-decay prior, (3) user-supplied oracle. RECOMMENDED: default to cross-platform mid (p = mean of other-platform prices for the same event) as the baseline estimator; user can override via strategy-parameters.",
+      "patterns_found": [
+        { "source": "https://en.wikipedia.org/wiki/Kelly_criterion", "pattern": "f* = (bp - q) / b; fractional Kelly recommended for real-world use", "relevance": "high" },
+        { "source": "https://arxiv.org/html/2412.14144v1", "pattern": "explicit Kelly application to prediction markets with binary 0/1 payoff", "relevance": "high" },
+        { "source": "https://navnoorbawa.substack.com/p/the-math-of-prediction-markets-binary", "pattern": "simplified form (p - p_m)/(1 - p_m)", "relevance": "high" }
+      ],
+      "pitfalls": [
+        { "description": "full-kelly induces ~33% probability of halving bankroll", "mitigation": "default kelly_fraction = 0.25; expose in strategy-parameters" },
+        { "description": "f* can exceed 1 numerically near certainty — would demand >100% of bankroll", "mitigation": "cap bet_size at strategy-assigned-capital" },
+        { "description": "no true probability p means Kelly is meaningless", "mitigation": "OQ-04 — require strategy-parameters.p_source to be specified at toggle-on time" }
+      ],
+      "confidence": "high"
+    },
+    {
+      "feature_id": "STR-02",
+      "strategy_id": "cross-platform-arbitrage",
+      "detection_rule": "For the SAME resolving event present on ≥2 platforms: edge = 1 - (yes_price_platform_A + no_price_platform_B). If edge > min_edge_threshold, submit paired orders: BUY YES on platform A and BUY NO on platform B.",
+      "default_min_edge_threshold": "0.02 (2¢). Tightenable via strategy-parameters.arb_minimum_edge.",
+      "position_size": "limited by min(available_liquidity_A, available_liquidity_B, strategy-assigned-capital / 2)",
+      "execution_sequencing_risk": "fills are NEVER simultaneous. slippage-model applies independently on each platform. Arbitrage can evaporate mid-execution (one leg fills, other moves). For PAPER TRADING this risk is simulated via: apply slippage-model to leg A first (time t), then re-read platform-B market-price at (t + 30s poll interval or next event), apply slippage-model to leg B. If platform-B price moved adversely past the breakeven, the arb still 'executes' in paper mode but with realised-pnl capturing the loss. This is REALISTIC and prevents trivially profitable synthetic arbs.",
+      "market_matching": "cross-platform event identity is OQ-05. Options: (1) manual mapping table, (2) fuzzy match on market-title + market-close-date, (3) hash of normalised event spec. RECOMMENDED: start with manual mapping for the handful of popular cross-listed events (US elections, crypto price markets) and log match candidates for human review.",
+      "patterns_found": [
+        { "source": "https://dev.to/benjamin_martin_749c1d57f/polymarket-x-kalshi-arbitrage-27di", "pattern": "edge = 1 - (poly_yes + kalshi_no)", "relevance": "high" },
+        { "source": "https://ahasignals.com/research/prediction-market-arbitrage-strategies/", "pattern": "5pp divergence occurs 15-20% of the time; 10pp is high-divergence signal", "relevance": "high" },
+        { "source": "https://www.trevorlasn.com/blog/how-prediction-market-polymarket-kalshi-arbitrage-works", "pattern": "execution risk dominates — fills are never simultaneous", "relevance": "high" },
+        { "source": "https://github.com/CarlosIbCu/polymarket-kalshi-btc-arbitrage-bot", "pattern": "reference implementation with real-time arb detection (read-only)", "relevance": "medium" }
+      ],
+      "pitfalls": [
+        { "description": "fee differential can eat the arb — kalshi has up to 3% taker fees", "mitigation": "min_edge_threshold should account for platform-specific fees; default 2¢ is conservative for low-fee platforms only. OQ-06." },
+        { "description": "market matching errors cause fake arbitrage", "mitigation": "OQ-05 recommended approach: conservative manual mapping" },
+        { "description": "settlement currency mismatch (USDC vs USD vs mana)", "mitigation": "paper trading abstracts currency to usd; adapter metadata records native currency for real-arb research only" }
+      ],
+      "confidence": "high"
+    },
+    {
+      "feature_id": "STR-03",
+      "strategy_id": "closing-momentum",
+      "window": "last 6 hours before market-close-date (per defaults.closing_momentum_window_hours = 6)",
+      "feature_extraction": "within the closing-window, compute momentum_score = (current_market_price - market_price_at_window_open) / window_open_price. Optionally add volume-weighted confirmation: require market-volume-in-window > baseline.",
+      "entry_rule": "if momentum_score > +threshold AND current_time within [market-close-date - 6h, market-close-date - exit_buffer]: BUY YES. if momentum_score < -threshold: BUY NO. threshold default 0.05 (5%).",
+      "exit_rule": "close at market-resolution, OR at close_buffer before close (default 15 min before) to avoid illiquidity spike, OR on momentum reversal (momentum_score flips sign by more than threshold/2).",
+      "position_size": "fixed kelly-fraction or fixed-fraction of strategy-assigned-capital per entry (parameter); scale by recent volume if desired",
+      "patterns_found": [
+        { "source": "https://www.heygotrade.com/en/blog/momentum-trading-framework-complete-system/", "pattern": "momentum = price-change + volume confirmation; exit on momentum weakening", "relevance": "high" },
+        { "source": "https://blog.quantinsti.com/momentum-trading-strategies/", "pattern": "rolling-window momentum with explicit entry/exit thresholds", "relevance": "high" }
+      ],
+      "pitfalls": [
+        { "description": "near market-close-date liquidity thins — wide spreads inflate slippage", "mitigation": "exit_buffer default 15 min; slippage-model's top-of-book walk naturally handles thin books" },
+        { "description": "markets can close faster than 6h window if adapter sync missed", "mitigation": "always check market-close-date - now > 0; skip if negative" }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "feature_id": "STR-04",
+      "strategy_id": "news-spike-fade",
+      "event_detector": "within any rolling 15-min window (defaults.news_fade_window_minutes), compute price_move = abs(current_market_price - market_price_15min_ago). If price_move / market_price_15min_ago > 0.10 (defaults.news_fade_trigger_pct = 10%), mark as spike.",
+      "fade_direction": "take the opposite side: if spike was UP, BUY NO; if spike was DOWN, BUY YES. Premise is overreaction reverts.",
+      "position_size": "fade_fraction (strategy-parameter) * strategy-assigned-capital. Scale inversely with recent volatility to avoid compounding exposure during persistent news cycles.",
+      "exit_rules": [
+        "take-profit: close when price reverts halfway back to pre-spike level (50% retrace)",
+        "stop-loss: close if spike continues another 50% in the same direction (i.e. reject the fade)",
+        "time-stop: close after 60 minutes regardless (OQ-07 — default configurable)",
+        "market-resolution if reached first"
+      ],
+      "patterns_found": [
+        { "source": "https://masterytraderacademy.com/news-fade-strategy-profitable-guide/", "pattern": "wait for overreaction to exhaust, fade the emotion", "relevance": "high" },
+        { "source": "https://www.luxalgo.com/blog/mean-reversion-playbook-fade-scale-exit/", "pattern": "scale in on further extensions; defined exit levels", "relevance": "high" }
+      ],
+      "pitfalls": [
+        { "description": "spikes can be TRUE information — fading them loses money systematically in resolved news", "mitigation": "max_open_fades parameter caps exposure; stop-loss cuts losers quickly" },
+        { "description": "15-min window detection ambiguous when new tick arrives — rolling vs discrete buckets", "mitigation": "rolling window over all ticks; re-evaluate on each market-data-event" },
+        { "description": "no true news event detection — only price-proxy", "mitigation": "acceptable; north star explicitly says '10% move in 15min' is the trigger" }
+      ],
+      "confidence": "medium"
+    },
+    {
+      "feature_id": "STR-05",
+      "strategy_id": "market-maker",
+      "quoting_algorithm": "Avellaneda-Stoikov-inspired paper MM. Each market-data-event, quote bid = mid - spread/2 + inventory_skew, ask = mid + spread/2 + inventory_skew. Default spread = 2¢ (defaults.market_maker_spread_cents).",
+      "inventory_skew": "skew = -gamma * q * sigma^2 * (T - t), where q = current paper-position size, sigma = recent volatility, gamma = risk-aversion parameter. Simplified form: skew = -k * q * bp_per_unit. As long inventory grows, ask tightens and bid loosens, pulling position back to zero.",
+      "adverse_selection_protection": [
+        "widen spread when rolling_volatility > threshold (spike likely means informed flow)",
+        "max_inventory parameter: stop quoting one side when |q| ≥ max_inventory",
+        "pull quotes within N minutes before market-resolution (stale quote sniper risk)",
+        "never quote through the real top-of-book from the adapter — i.e. our simulated bid ≤ real best-bid + slippage budget"
+      ],
+      "inventory_management": "target inventory = 0. Reservation price = mid - q * gamma * sigma^2. Spread maintains profit on mean-reverting flow.",
+      "patterns_found": [
+        { "source": "https://stanford.edu/class/msande448/2018/Final/Reports/gr5.pdf", "pattern": "Avellaneda-Stoikov reservation-price formula + optimal spread", "relevance": "high" },
+        { "source": "https://medium.com/@degensugarboo/avellaneda-and-stoikov-mm-paper-implementation-b7011b5a7532", "pattern": "python implementation reference", "relevance": "medium" },
+        { "source": "https://hummingbot.org/blog/guide-to-the-avellaneda--stoikov-strategy/", "pattern": "parameter tuning for gamma, sigma, inventory_target in practical bots", "relevance": "medium" }
+      ],
+      "pitfalls": [
+        { "description": "in paper trading, our quotes don't interact with real flow — simulating fills requires a counter-flow model", "mitigation": "OQ-08 — RECOMMENDED: fill MM quote whenever real platform top-of-book CROSSES our quoted price; otherwise, no fill. This matches the slippage-model philosophy of using live prices to adjudicate synthetic orders." },
+        { "description": "T-t (time-to-close) is ambiguous on perpetual manifold markets with no close", "mitigation": "fallback T-t = 7 days if market-close-date is null" },
+        { "description": "gamma parameter tuning is non-trivial", "mitigation": "expose in strategy-parameters; default gamma = 0.1 and document that positive values increase inventory aversion" }
+      ],
+      "confidence": "medium"
+    }
+  ],
+
+  "open_questions": [
+    {
+      "id": "OQ-01",
+      "area": "predictit historical data",
+      "question": "PredictIt has no historical API — backtests will only cover dates since the application first recorded live. How should the UI present this constraint? Should the backtest date-range picker disable dates before the earliest stored-price-history for the selected platform?",
+      "impact_if_unresolved": "person selects 2020 date range for PredictIt, backtest returns empty or misleading results",
+      "recommended_default": "disable date-range dates earlier than min(stored-price-history.timestamp) per platform; show tooltip 'No data recorded before {date}'"
+    },
+    {
+      "id": "OQ-02",
+      "area": "brier-score price-to-use",
+      "question": "Brier score compares forecast vs outcome. Which price is the forecast — entry price, volume-weighted average of fills, or the market price at moment of resolution?",
+      "impact_if_unresolved": "brier-score tile value shifts materially depending on choice",
+      "recommended_default": "entry price (per paper-fill). Document the choice in tooltip on the brier tile."
+    },
+    {
+      "id": "OQ-03",
+      "area": "cancelled markets",
+      "question": "How should paper-positions on markets with market-resolution = cancelled be handled in brier-score, win-rate, P&L?",
+      "impact_if_unresolved": "paper-positions stuck in limbo; metrics numerators/denominators inconsistent",
+      "recommended_default": "refund entry cost (realised-pnl = 0); exclude from brier-score N; exclude from win-rate denominator"
+    },
+    {
+      "id": "OQ-04",
+      "area": "kelly-sizing true probability source",
+      "question": "Kelly needs an estimated true probability p. North star does not specify a p-source for kelly-sizing in isolation.",
+      "impact_if_unresolved": "kelly-sizing cannot execute meaningful trades",
+      "recommended_default": "strategy-parameter p_source ∈ { 'cross-platform-mean', 'user-override', 'fixed-offset-from-market' }; default = 'cross-platform-mean' (average of market-price across platforms listing the same event, excluding the platform being traded)"
+    },
+    {
+      "id": "OQ-05",
+      "area": "cross-platform event identity",
+      "question": "How to determine that a kalshi market and a polymarket market represent the same underlying event?",
+      "impact_if_unresolved": "arbitrage strategy mis-pairs markets → fake arbs with real P&L losses",
+      "recommended_default": "v1: manual mapping table (CSV of kalshi_ticker ↔ polymarket_token_id ↔ manifold_id ↔ predictit_contract_id); v2: fuzzy match on title + close date requiring human confirmation"
+    },
+    {
+      "id": "OQ-06",
+      "area": "platform fee modelling",
+      "question": "Should paper-fills model platform-specific fees (kalshi taker up to 3%, polymarket gas, predictit per-trade)? Stated-intent does not mention fees.",
+      "impact_if_unresolved": "arbitrage edge calculations systematically overstated",
+      "recommended_default": "add optional fee-model to adapter metadata: 0 by default for strict paper mode; enableable per strategy for realistic sim. OUT OF SCOPE unless person asks."
+    },
+    {
+      "id": "OQ-07",
+      "area": "strategy time-stops",
+      "question": "News-spike-fade and closing-momentum exits reference time-based cutoffs (60min, 15min pre-close) that are not in defaults list.",
+      "impact_if_unresolved": "implementer guesses; review may reject",
+      "recommended_default": "add to strategy-parameters with defaults (60min fade_timeout, 15min close_buffer); surface in Strategies screen parameter UI"
+    },
+    {
+      "id": "OQ-08",
+      "area": "market-maker fill simulation",
+      "question": "MM posts passive quotes; the slippage-model in stated-intent only covers AGGRESSIVE orders (mid ± 1¢, top-of-book walk). How do passive quotes get filled in paper mode?",
+      "impact_if_unresolved": "MM strategy never generates paper-fills; cannot demo",
+      "recommended_default": "Passive fill rule: MM quote fills whenever real platform top-of-book CROSSES the quoted price (real best-ask ≤ our bid, or real best-bid ≥ our ask). Fill size = min(quote_size, opposing-side top-of-book size)."
+    },
+    {
+      "id": "OQ-09",
+      "area": "sell-side orders (shorting)",
+      "question": "order-side enum includes 'sell'. Can a strategy SHORT a position it doesn't already hold? On real kalshi/polymarket you can — it's equivalent to buying the NO side. Is this the interpretation?",
+      "impact_if_unresolved": "strategies may emit sell orders the engine can't process",
+      "recommended_default": "sell = close existing paper-position (reduce). Opening a short = BUY on the opposite market-side. Surface this in the plugin-interface docstring so strategies follow the convention."
+    },
+    {
+      "id": "OQ-10",
+      "area": "multi-contract markets (predictit, manifold multi-choice)",
+      "question": "PredictIt markets can contain multiple contracts; manifold has MULTIPLE_CHOICE and PSEUDO_NUMERIC types. Stated-intent only acknowledges binary.",
+      "impact_if_unresolved": "adapter either drops these markets or ingests them inconsistently",
+      "recommended_default": "v1: filter to binary only. Flatten predictit multi-contract by treating each contract as its own normalised market. Document non-binary support as explicit out-of-scope."
+    }
+  ]
+}

@@ -1,0 +1,218 @@
+{
+  "agent": "B3",
+  "screens_covered": ["paper-trades", "backtest"],
+  "produced_at": "2026-04-16",
+  "interactions": [
+    {
+      "interaction_id": "I-PT-001",
+      "source_state": "paper-trades",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?status=all&limit=100",
+      "rules_referenced": ["BE-R-*","HTML-R-*"],
+      "notes": "Initial ledger load with default filters"
+    },
+    {
+      "interaction_id": "I-PT-002",
+      "source_state": "paper-trades",
+      "trigger": "click status filter pill (All / Open / Closed)",
+      "category": "filter_change",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?status={value}",
+      "rules_referenced": ["HTML-R-*"]
+    },
+    {
+      "interaction_id": "I-PT-003",
+      "source_state": "paper-trades",
+      "trigger": "click strategy filter pill (Kelly / Arb / Momentum / Fade / MM / Manual)",
+      "category": "filter_change",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?source={strategy_id|manual}",
+      "rules_referenced": ["HS-005"]
+    },
+    {
+      "interaction_id": "I-PT-004",
+      "source_state": "paper-trades",
+      "trigger": "click platform filter pill",
+      "category": "filter_change",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?platform={kalshi|polymarket|manifold|predictit}",
+      "rules_referenced": ["HTML-R-*"]
+    },
+    {
+      "interaction_id": "I-PT-005",
+      "source_state": "paper-trades",
+      "trigger": "change date-range picker",
+      "category": "filter_change",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?from={iso}&to={iso}",
+      "rules_referenced": ["BE-R-*"]
+    },
+    {
+      "interaction_id": "I-PT-006",
+      "source_state": "paper-trades",
+      "trigger": "click market cell in row",
+      "category": "drilldown",
+      "target_screen": "market-detail",
+      "rules_referenced": ["HTML-R-*"]
+    },
+    {
+      "interaction_id": "I-PT-007",
+      "source_state": "paper-trades",
+      "trigger": "click Export CSV button",
+      "category": "export",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills/export?format=csv&filters=...",
+      "rules_referenced": ["BE-R-*"],
+      "notes": "Downloads csv attachment; uses same active filter set"
+    },
+    {
+      "interaction_id": "I-PT-008",
+      "source_state": "paper-trades",
+      "trigger": "click Export JSON button",
+      "category": "export",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills/export?format=json&filters=...",
+      "rules_referenced": ["BE-R-*"]
+    },
+    {
+      "interaction_id": "I-PT-009",
+      "source_state": "paper-trades",
+      "trigger": "click column sort (Time / Qty / Entry / Exit / P&L)",
+      "category": "sort_change",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?order={field}&dir={asc|desc}",
+      "rules_referenced": ["HTML-R-*"]
+    },
+    {
+      "interaction_id": "I-PT-010",
+      "source_state": "paper-trades",
+      "trigger": "30s poll refresh (only when Open filter active)",
+      "category": "refresh",
+      "target_screen": "paper-trades",
+      "endpoint": "GET /api/paper-fills?status=open",
+      "rules_referenced": ["FW-R-*"],
+      "notes": "Closed fills don't change; open fills need refresh to reflect exit prices"
+    },
+    {
+      "interaction_id": "I-PT-011",
+      "source_state": "paper-trades",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "rules_referenced": ["HTML-R-*"]
+    },
+
+    {
+      "interaction_id": "I-BT-001",
+      "source_state": "backtest",
+      "trigger": "page load",
+      "category": "api_call",
+      "target_screen": "backtest",
+      "endpoint": "GET /api/strategies + GET /api/adapters/price-history-range",
+      "rules_referenced": ["BE-R-*","API-R-*"],
+      "notes": "Fetches strategy list and min(stored-price-history.timestamp) per platform for date-picker bounds (OQ-01)"
+    },
+    {
+      "interaction_id": "I-BT-002",
+      "source_state": "backtest",
+      "trigger": "change strategy picker",
+      "category": "input_change",
+      "target_screen": "backtest",
+      "elements_involved": ["strategy-picker"],
+      "rules_referenced": ["HTML-R-*"]
+    },
+    {
+      "interaction_id": "I-BT-003",
+      "source_state": "backtest",
+      "trigger": "toggle platform in multiselect",
+      "category": "filter_change",
+      "target_screen": "backtest",
+      "elements_involved": ["platform-multiselect"],
+      "rules_referenced": ["HTML-R-*","API-R-*"],
+      "notes": "If PredictIt toggled and date-range < first-sync date, show warning 'No PredictIt data before {date}'"
+    },
+    {
+      "interaction_id": "I-BT-004",
+      "source_state": "backtest",
+      "trigger": "change date-range picker",
+      "category": "input_change",
+      "target_screen": "backtest",
+      "elements_involved": ["date-range-picker"],
+      "rules_referenced": ["API-R-*"],
+      "notes": "Disabled dates < min(stored-price-history.timestamp) per selected platform (OQ-01 resolution)"
+    },
+    {
+      "interaction_id": "I-BT-005",
+      "source_state": "backtest",
+      "trigger": "change starting-bankroll input",
+      "category": "input_change",
+      "target_screen": "backtest",
+      "elements_involved": ["starting-bankroll"],
+      "rules_referenced": ["BE-R-*"],
+      "notes": "Integer ≥ 1 USD; default $10,000"
+    },
+    {
+      "interaction_id": "I-BT-006",
+      "source_state": "backtest",
+      "trigger": "click run-backtest button",
+      "category": "api_call",
+      "target_screen": "backtest",
+      "endpoint": "POST /api/backtests",
+      "request_body": {"strategy_id":"...","platforms":["..."],"from":"...","to":"...","bankroll":10000},
+      "async_mode_hint": "async-await-long-running",
+      "rules_referenced": ["INV-006","TS-02","FS-003","QU-R-*"],
+      "notes": "Long-running; UI shows progress; button disabled during run; response includes final-equity + sharpe + brier + win-rate + equity-curve-series (TS-02)"
+    },
+    {
+      "interaction_id": "I-BT-007",
+      "source_state": "backtest",
+      "trigger": "run-backtest completes successfully",
+      "category": "state_change",
+      "target_screen": "backtest",
+      "elements_involved": ["results-panel","equity-curve","tiles"],
+      "rules_referenced": ["TS-02"],
+      "notes": "Reveals results-panel (conditional display); tiles populate; equity-curve renders"
+    },
+    {
+      "interaction_id": "I-BT-008",
+      "source_state": "backtest",
+      "trigger": "run-backtest encounters bankruptcy (equity < 0)",
+      "category": "state_change",
+      "target_screen": "backtest",
+      "elements_involved": ["results-panel"],
+      "rules_referenced": ["CSC-006","FS-004"],
+      "notes": "Halts replay; displays BANKRUPT flag; equity-curve terminates; subsequent ticks not processed"
+    },
+    {
+      "interaction_id": "I-BT-009",
+      "source_state": "backtest",
+      "trigger": "click save-as-comparison button",
+      "category": "api_call",
+      "target_screen": "backtest",
+      "endpoint": "POST /api/comparison-runs",
+      "request_body": {"source_type":"backtest","source_id":"..."},
+      "rules_referenced": ["CSC-004"],
+      "notes": "Creates comparison-run; navigates (or offers link) to compare screen"
+    },
+    {
+      "interaction_id": "I-BT-010",
+      "source_state": "backtest",
+      "trigger": "run-backtest fails (e.g., invalid config)",
+      "category": "state_change",
+      "target_screen": "backtest",
+      "elements_involved": ["run-backtest-button"],
+      "rules_referenced": ["BE-R-*"],
+      "notes": "HTTP 422; UI shows error message; button re-enabled; results-panel remains hidden or shows last successful run if any"
+    },
+    {
+      "interaction_id": "I-BT-011",
+      "source_state": "backtest",
+      "trigger": "click sidebar nav item",
+      "category": "navigation",
+      "target_screen": "{selected}",
+      "rules_referenced": ["HTML-R-*"]
+    }
+  ]
+}

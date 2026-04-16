@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prediction Markets — Paper Trader</title>
+<style>
+  :root {
+    --bg:        #0d1117;
+    --surface:   #161b22;
+    --border:    #21262d;
+    --text:      #e6edf3;
+    --muted:     #7d8590;
+    --green:     #3fb950;
+    --red:       #f85149;
+    --yellow:    #d29922;
+    --blue:      #58a6ff;
+    --purple:    #bc8cff;
+    --orange:    #ffa657;
+    --radius:    8px;
+    --font:      'SF Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ── Nav ─────────────────────────────────────────── */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 52px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.3px;
+  }
+
+  .nav-brand .dot {
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .nav-tabs {
+    display: flex;
+    gap: 0;
+  }
+
+  .nav-tab {
+    padding: 6px 16px;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    font-size: 13px;
+  }
+
+  .nav-tab.active {
+    color: var(--text);
+    border-bottom-color: var(--blue);
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: var(--font);
+    font-size: 12px;
+  }
+
+  .nav-stat { display: flex; flex-direction: column; align-items: flex-end; }
+  .nav-stat .label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .nav-stat .value { font-weight: 700; }
+
+  .badge {
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .badge-green { background: rgba(63,185,80,0.15); color: var(--green); }
+  .badge-red   { background: rgba(248,81,73,0.15);  color: var(--red); }
+  .badge-blue  { background: rgba(88,166,255,0.12); color: var(--blue); }
+  .badge-yellow{ background: rgba(210,153,34,0.15); color: var(--yellow); }
+
+  /* ── Layout ──────────────────────────────────────── */
+  .layout {
+    display: grid;
+    grid-template-columns: 220px 1fr 300px;
+    grid-template-rows: auto 1fr;
+    height: calc(100vh - 52px);
+    overflow: hidden;
+  }
+
+  /* ── Sidebar ─────────────────────────────────────── */
+  .sidebar {
+    grid-row: 1 / 3;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px 0;
+  }
+
+  .sidebar-section { margin-bottom: 24px; }
+  .sidebar-header {
+    padding: 0 16px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+  }
+
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 16px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+
+  .sidebar-item:hover { background: rgba(255,255,255,0.04); }
+  .sidebar-item.active { background: rgba(88,166,255,0.08); border-left: 2px solid var(--blue); }
+
+  .sidebar-item .name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+  }
+
+  .strat-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+
+  /* ── Summary bar ─────────────────────────────────── */
+  .summary-bar {
+    grid-column: 2 / 3;
+    display: flex;
+    gap: 1px;
+    background: var(--border);
+    border-bottom: 1px solid var(--border);
+    height: 76px;
+  }
+
+  .summary-card {
+    flex: 1;
+    background: var(--surface);
+    padding: 14px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .summary-card .s-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .summary-card .s-value {
+    font-family: var(--font);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .summary-card .s-sub {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* ── Main content ────────────────────────────────── */
+  .main {
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Right panel ─────────────────────────────────── */
+  .right-panel {
+    grid-row: 2 / 3;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* ── Cards ───────────────────────────────────────── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card-title {
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── Equity chart ────────────────────────────────── */
+  .chart-wrap {
+    padding: 16px;
+    position: relative;
+  }
+
+  canvas { display: block; }
+
+  /* ── Table ───────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th {
+    text-align: left;
+    padding: 8px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  th:not(:first-child) { text-align: right; }
+
+  td {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(33,38,45,0.6);
+    vertical-align: middle;
+    font-size: 12px;
+  }
+
+  td:not(:first-child) { text-align: right; font-family: var(--font); }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .market-name { font-weight: 500; }
+  .market-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  .prob-bar {
+    width: 80px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-left: auto;
+    margin-top: 4px;
+  }
+
+  .prob-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--blue);
+  }
+
+  /* ── Signal log ──────────────────────────────────── */
+  .signal-list { display: flex; flex-direction: column; }
+
+  .signal-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(33,38,45,0.6);
+    font-size: 12px;
+  }
+
+  .signal-item:last-child { border-bottom: none; }
+
+  .signal-icon {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .signal-icon.buy  { background: rgba(63,185,80,0.15);  color: var(--green); }
+  .signal-icon.sell { background: rgba(248,81,73,0.15);   color: var(--red); }
+  .signal-icon.arb  { background: rgba(188,140,255,0.15); color: var(--purple); }
+  .signal-icon.info { background: rgba(88,166,255,0.12);  color: var(--blue); }
+
+  .signal-body { flex: 1; min-width: 0; }
+  .signal-title { font-weight: 500; }
+  .signal-meta  { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .signal-time  { color: var(--muted); font-size: 11px; white-space: nowrap; flex-shrink: 0; }
+
+  /* ── Stats grid ──────────────────────────────────── */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+  }
+
+  .stat-cell {
+    background: var(--surface);
+    padding: 12px 14px;
+  }
+
+  .stat-cell .s-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .stat-cell .s-value { font-family: var(--font); font-size: 16px; font-weight: 700; margin-top: 4px; }
+
+  /* ── Platform status ─────────────────────────────── */
+  .platform-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(33,38,45,0.6);
+    font-size: 12px;
+  }
+
+  .platform-row:last-child { border-bottom: none; }
+
+  .platform-name { display: flex; align-items: center; gap: 8px; }
+  .online-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 4px var(--green); }
+  .offline-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
+
+  /* ── Scrollbar ───────────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .green  { color: var(--green); }
+  .red    { color: var(--red); }
+  .yellow { color: var(--yellow); }
+  .blue   { color: var(--blue); }
+  .purple { color: var(--purple); }
+  .muted  { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ── Nav ── -->
+<nav>
+  <div class="nav-brand">
+    <div class="dot"></div>
+    PredictTrader
+    <span class="badge badge-blue">PAPER</span>
+  </div>
+
+  <div class="nav-tabs">
+    <div class="nav-tab active">Dashboard</div>
+    <div class="nav-tab">Positions</div>
+    <div class="nav-tab">Backtest</div>
+    <div class="nav-tab">Markets</div>
+    <div class="nav-tab">Strategies</div>
+  </div>
+
+  <div class="nav-right">
+    <div class="nav-stat">
+      <span class="label">Cash</span>
+      <span class="value blue">$8,241.50</span>
+    </div>
+    <div class="nav-stat">
+      <span class="label">Portfolio</span>
+      <span class="value">$11,384.22</span>
+    </div>
+    <div class="nav-stat">
+      <span class="label">Today</span>
+      <span class="value green">+$312.40</span>
+    </div>
+    <div style="width:1px; height:28px; background:var(--border)"></div>
+    <span class="muted" style="font-size:11px">16 Apr 2026 · 14:32:07 ET</span>
+  </div>
+</nav>
+
+<!-- ── Layout ── -->
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-header">Strategies</div>
+      <div class="sidebar-item active">
+        <div class="name">
+          <div class="strat-dot" style="background:var(--green)"></div>
+          Kelly Sizing
+        </div>
+        <span class="badge badge-green">ON</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="name">
+          <div class="strat-dot" style="background:var(--purple)"></div>
+          Arb Scanner
+        </div>
+        <span class="badge badge-green">ON</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="name">
+          <div class="strat-dot" style="background:var(--orange)"></div>
+          Closing Momentum
+        </div>
+        <span class="badge badge-yellow">IDLE</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="name">
+          <div class="strat-dot" style="background:var(--blue)"></div>
+          News Spike Fade
+        </div>
+        <span class="badge badge-yellow">IDLE</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="name">
+          <div class="strat-dot" style="background:var(--muted)"></div>
+          Market Maker
+        </div>
+        <span class="badge" style="background:rgba(125,133,144,0.15); color:var(--muted)">OFF</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-header">Platforms</div>
+      <div style="padding: 0 16px;">
+        <div class="platform-row">
+          <div class="platform-name"><div class="online-dot"></div> Kalshi</div>
+          <span class="muted">142ms</span>
+        </div>
+        <div class="platform-row">
+          <div class="platform-name"><div class="online-dot"></div> Polymarket</div>
+          <span class="muted">89ms</span>
+        </div>
+        <div class="platform-row">
+          <div class="platform-name"><div class="online-dot"></div> Manifold</div>
+          <span class="muted">210ms</span>
+        </div>
+        <div class="platform-row">
+          <div class="platform-name"><div class="offline-dot"></div> PredictIt</div>
+          <span class="red">timeout</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-header">Backtests</div>
+      <div class="sidebar-item">
+        <div class="name" style="flex-direction:column; align-items:flex-start; gap:2px;">
+          <span>Kelly · 90d</span>
+          <span class="muted" style="font-size:10px">Kalshi · ran 2h ago</span>
+        </div>
+        <span class="green" style="font-family:var(--font); font-size:12px;">+34.2%</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="name" style="flex-direction:column; align-items:flex-start; gap:2px;">
+          <span>Arb · 30d</span>
+          <span class="muted" style="font-size:10px">Cross-platform · ran 5h ago</span>
+        </div>
+        <span class="green" style="font-family:var(--font); font-size:12px;">+12.8%</span>
+      </div>
+      <div class="sidebar-item">
+        <div class="name" style="flex-direction:column; align-items:flex-start; gap:2px;">
+          <span>Momentum · 60d</span>
+          <span class="muted" style="font-size:10px">Polymarket · ran 1d ago</span>
+        </div>
+        <span class="red" style="font-family:var(--font); font-size:12px;">−4.1%</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Summary bar ── -->
+  <div class="summary-bar">
+    <div class="summary-card">
+      <span class="s-label">Total P&L (all time)</span>
+      <span class="s-value green">+$1,384.22</span>
+      <span class="s-sub">Started at $10,000.00</span>
+    </div>
+    <div class="summary-card">
+      <span class="s-label">Open Positions</span>
+      <span class="s-value">8</span>
+      <span class="s-sub">$3,142.72 at risk</span>
+    </div>
+    <div class="summary-card">
+      <span class="s-label">Win Rate</span>
+      <span class="s-value">63.4%</span>
+      <span class="s-sub">47 resolved markets</span>
+    </div>
+    <div class="summary-card">
+      <span class="s-label">Brier Score</span>
+      <span class="s-value blue">0.182</span>
+      <span class="s-sub">vs market avg 0.224</span>
+    </div>
+    <div class="summary-card">
+      <span class="s-label">Sharpe Ratio</span>
+      <span class="s-value">1.84</span>
+      <span class="s-sub">30-day rolling</span>
+    </div>
+  </div>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- Equity Curve -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          Portfolio Equity Curve
+          <span class="badge badge-green">+13.84% all time</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <span class="badge badge-blue" style="cursor:pointer">7D</span>
+          <span class="badge" style="background:rgba(255,255,255,0.05); cursor:pointer">30D</span>
+          <span class="badge" style="background:rgba(255,255,255,0.05); cursor:pointer">ALL</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="equityChart" width="700" height="160"></canvas>
+      </div>
+    </div>
+
+    <!-- Open Positions -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Open Positions</div>
+        <span class="muted">8 active · $3,142.72 exposure</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Market</th>
+            <th>Platform</th>
+            <th>Side</th>
+            <th>Shares</th>
+            <th>Avg Cost</th>
+            <th>Last</th>
+            <th>Unrealized P&L</th>
+            <th>Resolves</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="market-name">Fed cuts rates in May 2026?</div>
+              <div class="market-sub">FOMC · Monetary Policy</div>
+            </td>
+            <td><span class="blue">Kalshi</span></td>
+            <td><span class="green">YES</span></td>
+            <td>320</td>
+            <td>$0.58</td>
+            <td>$0.71</td>
+            <td class="green">+$41.60</td>
+            <td class="muted">May 7</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="market-name">Trump approval above 45% in Apr?</div>
+              <div class="market-sub">Politics · Polling</div>
+            </td>
+            <td><span class="purple">Polymarket</span></td>
+            <td><span class="red">NO</span></td>
+            <td>500</td>
+            <td>$0.62</td>
+            <td>$0.55</td>
+            <td class="green">+$35.00</td>
+            <td class="muted">Apr 30</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="market-name">Bitcoin above $100K by June?</div>
+              <div class="market-sub">Crypto · Price Target</div>
+            </td>
+            <td><span class="blue">Kalshi</span></td>
+            <td><span class="green">YES</span></td>
+            <td>200</td>
+            <td>$0.44</td>
+            <td>$0.38</td>
+            <td class="red">−$12.00</td>
+            <td class="muted">Jun 30</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="market-name">US enters recession in 2026?</div>
+              <div class="market-sub">Economics · GDP</div>
+            </td>
+            <td><span class="purple">Polymarket</span></td>
+            <td><span class="green">YES</span></td>
+            <td>400</td>
+            <td>$0.31</td>
+            <td>$0.35</td>
+            <td class="green">+$16.00</td>
+            <td class="muted">Dec 31</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="market-name">Nvidia beats Q1 earnings?</div>
+              <div class="market-sub">Equities · Earnings</div>
+            </td>
+            <td><span class="blue">Kalshi</span></td>
+            <td><span class="green">YES</span></td>
+            <td>600</td>
+            <td>$0.72</td>
+            <td>$0.78</td>
+            <td class="green">+$36.00</td>
+            <td class="muted">May 22</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </main>
+
+  <!-- ── Right Panel ── -->
+  <aside class="right-panel">
+
+    <!-- Strategy Stats -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Kelly Sizing — Stats</div>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-cell">
+          <div class="s-label">Trades</div>
+          <div class="s-value">47</div>
+        </div>
+        <div class="stat-cell">
+          <div class="s-label">Win Rate</div>
+          <div class="s-value green">63%</div>
+        </div>
+        <div class="stat-cell">
+          <div class="s-label">Avg Edge</div>
+          <div class="s-value">8.4%</div>
+        </div>
+        <div class="stat-cell">
+          <div class="s-label">Max DD</div>
+          <div class="s-value red">−6.2%</div>
+        </div>
+        <div class="stat-cell">
+          <div class="s-label">Brier</div>
+          <div class="s-value blue">0.182</div>
+        </div>
+        <div class="stat-cell">
+          <div class="s-label">ROI</div>
+          <div class="s-value green">+13.8%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signal Log -->
+    <div class="card" style="flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column;">
+      <div class="card-header">
+        <div class="card-title">Signal Log</div>
+        <span class="muted" style="font-size:11px;">live</span>
+      </div>
+      <div class="signal-list" style="overflow-y:auto; flex:1;">
+
+        <div class="signal-item">
+          <div class="signal-icon buy">▲</div>
+          <div class="signal-body">
+            <div class="signal-title">BUY YES · Fed May cut</div>
+            <div class="signal-meta">Kelly 12% · edge 9.2% · Kalshi 0.71</div>
+          </div>
+          <div class="signal-time">14:31</div>
+        </div>
+
+        <div class="signal-item">
+          <div class="signal-icon arb">⇄</div>
+          <div class="signal-body">
+            <div class="signal-title">ARB · BTC $100K</div>
+            <div class="signal-meta">Kalshi 38¢ vs Polymarket 42¢ · 4¢ spread</div>
+          </div>
+          <div class="signal-time">14:28</div>
+        </div>
+
+        <div class="signal-item">
+          <div class="signal-icon sell">▼</div>
+          <div class="signal-body">
+            <div class="signal-title">SELL YES · Nvidia earnings</div>
+            <div class="signal-meta">Take profit · cost 72¢ → 78¢ · +8.3%</div>
+          </div>
+          <div class="signal-time">14:19</div>
+        </div>
+
+        <div class="signal-item">
+          <div class="signal-icon info">i</div>
+          <div class="signal-body">
+            <div class="signal-title">Market resolved · YES</div>
+            <div class="signal-meta">CPI above 3% Apr? · +$88.00 realized</div>
+          </div>
+          <div class="signal-time">13:52</div>
+        </div>
+
+        <div class="signal-item">
+          <div class="signal-icon buy">▲</div>
+          <div class="signal-body">
+            <div class="signal-title">BUY YES · Recession 2026</div>
+            <div class="signal-meta">Kelly 8% · edge 6.1% · Polymarket 0.35</div>
+          </div>
+          <div class="signal-time">13:41</div>
+        </div>
+
+        <div class="signal-item">
+          <div class="signal-icon arb">⇄</div>
+          <div class="signal-body">
+            <div class="signal-title">ARB · Trump approval</div>
+            <div class="signal-meta">Kalshi 55¢ vs Polymarket 58¢ · executed</div>
+          </div>
+          <div class="signal-time">13:20</div>
+        </div>
+
+        <div class="signal-item">
+          <div class="signal-icon info">i</div>
+          <div class="signal-body">
+            <div class="signal-title">PredictIt — connection lost</div>
+            <div class="signal-meta">Retrying every 60s · arb scanner paused</div>
+          </div>
+          <div class="signal-time">12:08</div>
+        </div>
+
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<script>
+// ── Equity curve ──────────────────────────────────────
+const canvas = document.getElementById('equityChart');
+const ctx    = canvas.getContext('2d');
+
+// Make canvas crisp on HiDPI
+const dpr = window.devicePixelRatio || 1;
+const W = canvas.offsetWidth  || 700;
+const H = canvas.offsetHeight || 160;
+canvas.width  = W * dpr;
+canvas.height = H * dpr;
+canvas.style.width  = W + 'px';
+canvas.style.height = H + 'px';
+ctx.scale(dpr, dpr);
+
+// Fake 7-day equity data
+const points = [
+  10000, 10180, 10095, 10340, 10280, 10510, 10620,
+  10480, 10700, 10830, 10760, 10990, 11120, 11080,
+  11240, 11180, 11320, 11260, 11384
+];
+
+const pad    = { top: 12, right: 16, bottom: 28, left: 56 };
+const cW     = W - pad.left - pad.right;
+const cH     = H - pad.top  - pad.bottom;
+const minV   = Math.min(...points) - 100;
+const maxV   = Math.max(...points) + 100;
+const scaleX = i => pad.left + (i / (points.length - 1)) * cW;
+const scaleY = v => pad.top  + (1 - (v - minV) / (maxV - minV)) * cH;
+
+// Grid lines
+ctx.strokeStyle = '#21262d';
+ctx.lineWidth = 1;
+[10000, 10500, 11000, 11500].forEach(v => {
+  const y = scaleY(v);
+  ctx.beginPath();
+  ctx.moveTo(pad.left, y);
+  ctx.lineTo(pad.left + cW, y);
+  ctx.stroke();
+  ctx.fillStyle = '#7d8590';
+  ctx.font = '10px SF Mono, Fira Code, monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText('$' + v.toLocaleString(), pad.left - 6, y + 3.5);
+});
+
+// Gradient fill
+const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + cH);
+grad.addColorStop(0,   'rgba(63,185,80,0.22)');
+grad.addColorStop(1,   'rgba(63,185,80,0)');
+
+ctx.beginPath();
+ctx.moveTo(scaleX(0), scaleY(points[0]));
+points.forEach((v, i) => ctx.lineTo(scaleX(i), scaleY(v)));
+ctx.lineTo(scaleX(points.length - 1), pad.top + cH);
+ctx.lineTo(scaleX(0), pad.top + cH);
+ctx.closePath();
+ctx.fillStyle = grad;
+ctx.fill();
+
+// Line
+ctx.beginPath();
+ctx.moveTo(scaleX(0), scaleY(points[0]));
+points.forEach((v, i) => ctx.lineTo(scaleX(i), scaleY(v)));
+ctx.strokeStyle = '#3fb950';
+ctx.lineWidth   = 2;
+ctx.lineJoin    = 'round';
+ctx.stroke();
+
+// Current value dot
+const lx = scaleX(points.length - 1);
+const ly = scaleY(points[points.length - 1]);
+ctx.beginPath();
+ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+ctx.fillStyle = '#3fb950';
+ctx.fill();
+ctx.strokeStyle = '#0d1117';
+ctx.lineWidth = 2;
+ctx.stroke();
+
+// X labels (days)
+const days = ['Apr 9','Apr 10','Apr 11','Apr 12','Apr 13','Apr 14','Apr 15','Apr 16'];
+ctx.fillStyle = '#7d8590';
+ctx.font = '10px SF Mono, Fira Code, monospace';
+ctx.textAlign = 'center';
+days.forEach((d, i) => {
+  const x = pad.left + (i / (days.length - 1)) * cW;
+  ctx.fillText(d, x, H - 6);
+});
+</script>
+
+</body>
+</html>

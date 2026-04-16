@@ -1,0 +1,37 @@
+{
+  "contract_id": "C-I-DASH-015",
+  "interaction_id": "I-DASH-015",
+  "function": {
+    "name": "handle_i_dash_015",
+    "module_hint": "frontend.handlers.dashboard",
+    "inputs": [],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": null,
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": []
+  },
+  "preconditions": [
+    {
+      "ref": "INV-001",
+      "condition": "equity == simulated_bankroll + sum(closed_position.realised_pnl) + sum(open_position.unrealised_pnl) BEFORE call"
+    }
+  ],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "INV-001",
+      "PR-003",
+      "HS-004"
+    ],
+    "external_rule_refs": [],
+    "source_state": "dashboard",
+    "success_transition": "dashboard"
+  }
+}

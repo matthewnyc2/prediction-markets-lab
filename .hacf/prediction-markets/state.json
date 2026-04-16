@@ -1,0 +1,142 @@
+{
+  "project": "prediction-markets",
+  "mode": "greenfield",
+  "schema_version": "APR10",
+  "phase": "review",
+  "step": "complete",
+  "phase_status": "locked",
+  "skill": "hacf-review",
+  "status": "locked",
+  "step_d_attempts": 0,
+  "locked": true,
+  "completed_steps": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "9",
+    "10",
+    "11",
+    "12a",
+    "12b",
+    "12c",
+    "12d",
+    "13",
+    "14",
+    "15",
+    "16",
+    "phase2-A",
+    "phase2-B",
+    "phase2-C",
+    "phase2-D",
+    "phase2-E",
+    "phase2-F",
+    "phase2-G",
+    "phase2-H"
+  ],
+  "phase_1_exit_criteria_met": true,
+  "lock_hashes": {
+    "terminal-states.json": "4a5371f21d6115cbbd14340b9ab193c0281aae4f9311e69738e6ac4bfce7d09c",
+    "rules-database.json": "dd295a95f5643e9a3cd1173b507399666e3d15917278b700144a3debd91e6388",
+    "state-chain.json": "b6db5002a30aca3114a0721b84b6009e70dcb9e46873ee8da87bbf92af7bdd04",
+    "contracts": "98b3b39a42d71ee2b3d002a7424d5ac7af40193e4e7df1bf461a8e7067a44a8d"
+  },
+  "handoff_reports": {
+    "create-to-review": "ready",
+    "review-to-build": "ready",
+    "build-to-verify": null,
+    "build-to-repair": null,
+    "repair-to-verify": null
+  },
+  "build_progress": {
+    "total_functions": 0,
+    "built": 0,
+    "failed": 0,
+    "pending": 0,
+    "pods_active": 0,
+    "agents_active": 0
+  },
+  "total_repair_cycles": 0,
+  "repair_log": [],
+  "commits": [],
+  "artifacts_summary": {
+    "screens": 9,
+    "terminal_states": 3,
+    "rules_total": 122,
+    "invariants": 10,
+    "forbidden_states": 7,
+    "persistence_rules": 7,
+    "security_rules": 4,
+    "hidden_state": 5,
+    "cross_screen_conditions": 7,
+    "boundary_invariants": 5,
+    "exclusions": 19,
+    "tech_kb_files": 11
+  },
+  "created_at": "2026-04-16T21:44:55.177457+00:00",
+  "updated_at": "2026-04-16T23:22:24.916750+00:00",
+  "proof_certificates": {
+    "chain_correctness": {
+      "solver": "manual",
+      "produced_at": "2026-04-16T23:22:21.918326+00:00",
+      "queries": [
+        {
+          "name": "acyclic",
+          "result": "PASS",
+          "details": {
+            "cycles_found": 0
+          }
+        },
+        {
+          "name": "terminal_reachability",
+          "result": "PASS",
+          "details": {
+            "TS-01": [
+              {
+                "leaf": "I-STR-002",
+                "reachable": true
+              },
+              {
+                "leaf": "I-MD-005",
+                "reachable": true
+              },
+              {
+                "leaf": "I-DASH-013",
+                "reachable": true
+              }
+            ],
+            "TS-02": [
+              {
+                "leaf": "I-BT-006",
+                "reachable": true
+              },
+              {
+                "leaf": "I-BT-007",
+                "reachable": true
+              }
+            ],
+            "TS-03": [
+              {
+                "leaf": "I-CMP-005",
+                "reachable": true
+              },
+              {
+                "leaf": "I-CMP-008",
+                "reachable": true
+              }
+            ]
+          }
+        },
+        {
+          "name": "wave_monotonicity",
+          "result": "PASS",
+          "details": "Every interaction's wave = max(dep.wave) + 1 by construction in forward_plan.py"
+        }
+      ],
+      "overall": "PASS"
+    }
+  }
+}

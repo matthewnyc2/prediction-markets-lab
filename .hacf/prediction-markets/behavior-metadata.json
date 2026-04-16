@@ -1,0 +1,3534 @@
+{
+  "project": "prediction-markets",
+  "phase": "2",
+  "step": "C",
+  "produced_at": "2026-04-16",
+  "total_interactions": 99,
+  "method": "deterministic-policy-map (CATEGORY_POLICY + LONG_RUNNING_OVERRIDES)",
+  "interactions": [
+    {
+      "interaction_id": "I-CMP-001",
+      "source_state": "compare",
+      "trigger": "page load",
+      "target_function": "handle_i_cmp_001",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "compare",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "compare",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "compare",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "compare",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "BE-R-*",
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-CMP-002",
+      "source_state": "compare",
+      "trigger": "click add-run button",
+      "target_function": "handle_i_cmp_002",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "compare",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-CMP-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-CMP-003",
+      "source_state": "compare",
+      "trigger": "pick 'add from backtest'",
+      "target_function": "handle_i_cmp_003",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "compare",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "compare",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "compare",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "compare",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [
+        "I-CMP-001",
+        "I-CMP-002"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-CMP-004",
+      "source_state": "compare",
+      "trigger": "pick 'add from live session'",
+      "target_function": "handle_i_cmp_004",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "compare",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "compare",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "compare",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "compare",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [
+        "I-CMP-001",
+        "I-CMP-002"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-CMP-005",
+      "source_state": "compare",
+      "trigger": "confirm run selection in picker",
+      "target_function": "handle_i_cmp_005",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "compare",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "compare",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "compare",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "compare",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backend database",
+          "description": "persisted record"
+        }
+      ],
+      "dependencies": [
+        "I-CMP-001",
+        "I-CMP-003"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "CSC-004",
+        "TS-03",
+        "FS-005"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-CMP-006",
+      "source_state": "compare",
+      "trigger": "click remove-run button",
+      "target_function": "handle_i_cmp_006",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "compare",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "compare",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "compare",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "compare",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [
+        "I-CMP-001"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-CMP-007",
+      "source_state": "compare",
+      "trigger": "edit run label (text input)",
+      "target_function": "handle_i_cmp_007",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": "debounce-300ms",
+      "success_transition": "compare",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-CMP-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-CMP-008",
+      "source_state": "compare",
+      "trigger": "TS-03 satisfied condition",
+      "target_function": "handle_i_cmp_008",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "compare",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-CMP-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "TS-03"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-CMP-009",
+      "source_state": "compare",
+      "trigger": "click sidebar nav item",
+      "target_function": "handle_i_cmp_009",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "sidebar-target-screen",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-CMP-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PF-001",
+      "source_state": "portfolio",
+      "trigger": "page load",
+      "target_function": "handle_i_pf_001",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "portfolio",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "portfolio",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "portfolio",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "portfolio",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "BE-R-*",
+        "HS-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PF-002",
+      "source_state": "portfolio",
+      "trigger": "click timeframe toggle (7d / 30d / 90d / ytd / all)",
+      "target_function": "handle_i_pf_002",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "portfolio",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "portfolio",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "portfolio",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [
+        "I-PF-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "QU-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PF-003",
+      "source_state": "portfolio",
+      "trigger": "click Export CSV",
+      "target_function": "handle_i_pf_003",
+      "async_mode": "async-await",
+      "timeout_ms": 30000,
+      "retry_policy": {
+        "max_retries": 1,
+        "backoff": "none"
+      },
+      "concurrency_policy": "single-at-a-time",
+      "success_transition": "portfolio",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "portfolio",
+          "ui_effect": "toast-export-failed-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "file-download",
+          "target": "browser",
+          "description": "csv or json attachment"
+        }
+      ],
+      "dependencies": [
+        "I-PF-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "disable-export-button-during-download",
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PF-004",
+      "source_state": "portfolio",
+      "trigger": "click Export JSON",
+      "target_function": "handle_i_pf_004",
+      "async_mode": "async-await",
+      "timeout_ms": 30000,
+      "retry_policy": {
+        "max_retries": 1,
+        "backoff": "none"
+      },
+      "concurrency_policy": "single-at-a-time",
+      "success_transition": "portfolio",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "portfolio",
+          "ui_effect": "toast-export-failed-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "file-download",
+          "target": "browser",
+          "description": "csv or json attachment"
+        }
+      ],
+      "dependencies": [
+        "I-PF-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "disable-export-button-during-download",
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PF-005",
+      "source_state": "portfolio",
+      "trigger": "click attribution bar for a strategy",
+      "target_function": "handle_i_pf_005",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "paper-trades",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-PF-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "CSC-003",
+        "HS-005"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PF-006",
+      "source_state": "portfolio",
+      "trigger": "30s poll refresh",
+      "target_function": "handle_i_pf_006",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 500
+      },
+      "concurrency_policy": "skip-if-in-flight",
+      "success_transition": "portfolio",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "portfolio",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "portfolio",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "cache-invalidation",
+          "target": "SWR cache for screen data",
+          "description": "30s poll revalidate"
+        }
+      ],
+      "dependencies": [
+        "I-PF-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "FW-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PF-007",
+      "source_state": "portfolio",
+      "trigger": "insufficient data edge case (sortino <20 trades)",
+      "target_function": "handle_i_pf_007",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "portfolio",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-PF-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "QU-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PF-008",
+      "source_state": "portfolio",
+      "trigger": "click sidebar nav item",
+      "target_function": "handle_i_pf_008",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "sidebar-target-screen",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-PF-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DI-001",
+      "source_state": "data-ingestion",
+      "trigger": "page load",
+      "target_function": "handle_i_di_001",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "data-ingestion",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "data-ingestion",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "data-ingestion",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "data-ingestion",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [
+        "API-R-*"
+      ],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DI-002",
+      "source_state": "data-ingestion",
+      "trigger": "click Sync now on Kalshi row",
+      "target_function": "handle_i_di_002",
+      "async_mode": "async-await",
+      "timeout_ms": 120000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 1000
+      },
+      "concurrency_policy": "serial-per-adapter",
+      "success_transition": "data-ingestion",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "data-ingestion",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "data-ingestion",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "data-ingestion",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backend database",
+          "description": "persisted record"
+        },
+        {
+          "type": "db-write",
+          "target": "markets + price_ticks",
+          "description": "normalised from platform api"
+        },
+        {
+          "type": "external-api-read",
+          "target": "platform public api",
+          "description": "rate-limited, read-only (INV-007)"
+        }
+      ],
+      "dependencies": [
+        "I-DI-001"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "pill-syncing-and-button-disabled",
+      "validation_rule_refs": [
+        "SR-003",
+        "CSC-005"
+      ],
+      "external_rule_refs": [
+        "API-R-*"
+      ],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DI-003",
+      "source_state": "data-ingestion",
+      "trigger": "click Sync now on Polymarket row",
+      "target_function": "handle_i_di_003",
+      "async_mode": "async-await",
+      "timeout_ms": 120000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 1000
+      },
+      "concurrency_policy": "serial-per-adapter",
+      "success_transition": "data-ingestion",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "data-ingestion",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "data-ingestion",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "data-ingestion",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backend database",
+          "description": "persisted record"
+        },
+        {
+          "type": "db-write",
+          "target": "markets + price_ticks",
+          "description": "normalised from platform api"
+        },
+        {
+          "type": "external-api-read",
+          "target": "platform public api",
+          "description": "rate-limited, read-only (INV-007)"
+        }
+      ],
+      "dependencies": [
+        "I-DI-001"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "pill-syncing-and-button-disabled",
+      "validation_rule_refs": [
+        "SR-003"
+      ],
+      "external_rule_refs": [
+        "API-R-*"
+      ],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DI-004",
+      "source_state": "data-ingestion",
+      "trigger": "click Sync now on Manifold row",
+      "target_function": "handle_i_di_004",
+      "async_mode": "async-await",
+      "timeout_ms": 600000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 1000
+      },
+      "concurrency_policy": "serial-per-adapter",
+      "success_transition": "data-ingestion",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "data-ingestion",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "data-ingestion",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "data-ingestion",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backend database",
+          "description": "persisted record"
+        },
+        {
+          "type": "db-write",
+          "target": "markets + price_ticks",
+          "description": "normalised from platform api"
+        },
+        {
+          "type": "external-api-read",
+          "target": "platform public api",
+          "description": "rate-limited, read-only (INV-007)"
+        }
+      ],
+      "dependencies": [
+        "I-DI-001"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "pill-syncing-and-button-disabled",
+      "validation_rule_refs": [
+        "SR-003"
+      ],
+      "external_rule_refs": [
+        "API-R-*"
+      ],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DI-005",
+      "source_state": "data-ingestion",
+      "trigger": "click Retry on PredictIt row (when rate-limited)",
+      "target_function": "handle_i_di_005",
+      "async_mode": "async-await",
+      "timeout_ms": 120000,
+      "retry_policy": {
+        "max_retries": 5,
+        "backoff": "exponential",
+        "base_ms": 2000
+      },
+      "concurrency_policy": "serial-per-adapter",
+      "success_transition": "data-ingestion",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "data-ingestion",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "data-ingestion",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "data-ingestion",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backend database",
+          "description": "persisted record"
+        }
+      ],
+      "dependencies": [
+        "I-DI-001"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "pill-syncing-and-button-disabled",
+      "validation_rule_refs": [
+        "SR-003"
+      ],
+      "external_rule_refs": [
+        "API-R-*"
+      ],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DI-006",
+      "source_state": "data-ingestion",
+      "trigger": "status transitions healthy \u2192 rate-limited or error",
+      "target_function": "handle_i_di_006",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "data-ingestion",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-DI-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "CSC-005",
+        "FS-006"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DI-007",
+      "source_state": "data-ingestion",
+      "trigger": "30s poll refresh",
+      "target_function": "handle_i_di_007",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 500
+      },
+      "concurrency_policy": "skip-if-in-flight",
+      "success_transition": "data-ingestion",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "data-ingestion",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "data-ingestion",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "cache-invalidation",
+          "target": "SWR cache for screen data",
+          "description": "30s poll revalidate"
+        }
+      ],
+      "dependencies": [
+        "I-DI-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "FS-006",
+        "FW-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DI-008",
+      "source_state": "data-ingestion",
+      "trigger": "click sidebar nav item",
+      "target_function": "handle_i_di_008",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "sidebar-target-screen",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-DI-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-001",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Dashboard' (self)",
+      "target_function": "handle_i_dash_001",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "dashboard",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-002",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Markets'",
+      "target_function": "handle_i_dash_002",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "markets",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-003",
+        "HTML-R-004",
+        "HTML-R-005"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-003",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Strategies'",
+      "target_function": "handle_i_dash_003",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "strategies",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-003",
+        "HTML-R-004",
+        "HTML-R-005"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-004",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Paper Trades'",
+      "target_function": "handle_i_dash_004",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "paper-trades",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-005",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Backtest'",
+      "target_function": "handle_i_dash_005",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "backtest",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-006",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Compare'",
+      "target_function": "handle_i_dash_006",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "compare",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-007",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Portfolio'",
+      "target_function": "handle_i_dash_007",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "portfolio",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-008",
+      "source_state": "dashboard",
+      "trigger": "click on sidebar nav item 'Data ingestion'",
+      "target_function": "handle_i_dash_008",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "data-ingestion",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-009",
+      "source_state": "dashboard",
+      "trigger": "page mount \u2014 initial load of dashboard route",
+      "target_function": "handle_i_dash_009",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "dashboard",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "dashboard",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "dashboard",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "dashboard",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "FE-R-027",
+        "BE-R-001",
+        "INV-001",
+        "PR-003",
+        "HS-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-010",
+      "source_state": "dashboard",
+      "trigger": "SWR periodic refresh every 30s while dashboard is mounted",
+      "target_function": "handle_i_dash_010",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 500
+      },
+      "concurrency_policy": "skip-if-in-flight",
+      "success_transition": "dashboard",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "dashboard",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "dashboard",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "cache-invalidation",
+          "target": "SWR cache for screen data",
+          "description": "30s poll revalidate"
+        }
+      ],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "FE-R-027",
+        "FE-R-024",
+        "HS-002",
+        "HS-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-011",
+      "source_state": "dashboard",
+      "trigger": "hover on equity-curve chart series",
+      "target_function": "handle_i_dash_011",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "dashboard",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "FE-R-024",
+        "FE-R-025"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-012",
+      "source_state": "dashboard",
+      "trigger": "click on a row in active-strategies-panel",
+      "target_function": "handle_i_dash_012",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "strategies",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-022",
+        "CSC-001",
+        "CSC-007"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-013",
+      "source_state": "dashboard",
+      "trigger": "click on a row in recent-trades-panel",
+      "target_function": "handle_i_dash_013",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "market-detail",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-022",
+        "INV-004",
+        "CSC-002"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-014",
+      "source_state": "dashboard",
+      "trigger": "click on 'View all' link in recent-trades-panel header",
+      "target_function": "handle_i_dash_014",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "paper-trades",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-022"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-DASH-015",
+      "source_state": "dashboard",
+      "trigger": "no paper-fills exist yet OR <1 day of portfolio history",
+      "target_function": "handle_i_dash_015",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "dashboard",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "INV-001",
+        "PR-003",
+        "HS-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-001",
+      "source_state": "markets",
+      "trigger": "click on sidebar nav item 'Dashboard'",
+      "target_function": "handle_i_mkt_001",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "dashboard",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-003",
+        "HTML-R-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-002",
+      "source_state": "markets",
+      "trigger": "page mount \u2014 initial load of /markets route",
+      "target_function": "handle_i_mkt_002",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "markets",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "markets",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "FE-R-027",
+        "FE-R-028",
+        "BE-R-007",
+        "BE-R-009",
+        "PR-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-003",
+      "source_state": "markets",
+      "trigger": "SWR periodic refresh every 30s while markets is mounted",
+      "target_function": "handle_i_mkt_003",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 500
+      },
+      "concurrency_policy": "skip-if-in-flight",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "cache-invalidation",
+          "target": "SWR cache for screen data",
+          "description": "30s poll revalidate"
+        }
+      ],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "FE-R-027",
+        "FE-R-028"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-004",
+      "source_state": "markets",
+      "trigger": "type into search-input (debounced)",
+      "target_function": "handle_i_mkt_004",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "HTML-R-016",
+        "BE-R-008"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-005",
+      "source_state": "markets",
+      "trigger": "click 'All' platform-filter pill",
+      "target_function": "handle_i_mkt_005",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "HTML-R-015",
+        "HTML-R-016"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-006",
+      "source_state": "markets",
+      "trigger": "click 'Kalshi' platform-filter pill",
+      "target_function": "handle_i_mkt_006",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "HTML-R-015",
+        "HTML-R-016",
+        "BE-R-009"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-007",
+      "source_state": "markets",
+      "trigger": "click 'Polymarket' platform-filter pill",
+      "target_function": "handle_i_mkt_007",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "HTML-R-015",
+        "HTML-R-016",
+        "BE-R-009"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-008",
+      "source_state": "markets",
+      "trigger": "click 'Manifold' platform-filter pill",
+      "target_function": "handle_i_mkt_008",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "HTML-R-015",
+        "HTML-R-016",
+        "BE-R-009"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-009",
+      "source_state": "markets",
+      "trigger": "click 'PredictIt' platform-filter pill",
+      "target_function": "handle_i_mkt_009",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "HTML-R-015",
+        "HTML-R-016",
+        "BE-R-009"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-010",
+      "source_state": "markets",
+      "trigger": "toggle 'Open only' filter pill",
+      "target_function": "handle_i_mkt_010",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "serial-per-strategy",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "markets",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "markets",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-state-set",
+      "ui_locking_rule": "disable-toggle-until-response",
+      "validation_rule_refs": [
+        "HTML-R-016"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-011",
+      "source_state": "markets",
+      "trigger": "toggle 'Volume >$10k' filter pill",
+      "target_function": "handle_i_mkt_011",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "serial-per-strategy",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "markets",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "markets",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-state-set",
+      "ui_locking_rule": "disable-toggle-until-response",
+      "validation_rule_refs": [
+        "HTML-R-016"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-012",
+      "source_state": "markets",
+      "trigger": "click 'YES' column header",
+      "target_function": "handle_i_mkt_012",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "FE-R-023"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-013",
+      "source_state": "markets",
+      "trigger": "click 'NO' column header",
+      "target_function": "handle_i_mkt_013",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "FE-R-023"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-014",
+      "source_state": "markets",
+      "trigger": "click 'Vol 24h' column header",
+      "target_function": "handle_i_mkt_014",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "FE-R-023"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-015",
+      "source_state": "markets",
+      "trigger": "click 'Close' column header",
+      "target_function": "handle_i_mkt_015",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "FE-R-023"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-016",
+      "source_state": "markets",
+      "trigger": "click on a markets-table row (tr.link)",
+      "target_function": "handle_i_mkt_016",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "market-detail",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-013",
+        "HTML-R-014",
+        "INV-002"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-017",
+      "source_state": "markets",
+      "trigger": "pagination next/prev when table exceeds threshold",
+      "target_function": "handle_i_mkt_017",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "markets",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "markets",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "markets",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "markets",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "BE-R-008",
+        "FE-R-027"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MKT-018",
+      "source_state": "markets",
+      "trigger": "filter combination produces zero rows",
+      "target_function": "handle_i_mkt_018",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "markets",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-013"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MD-001",
+      "source_state": "market-detail",
+      "trigger": "page load",
+      "target_function": "handle_i_md_001",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "market-detail",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "market-detail",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "market-detail",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "market-detail",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "FE-R-004",
+        "BE-R-002"
+      ],
+      "external_rule_refs": [
+        "API-R-*"
+      ],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MD-002",
+      "source_state": "market-detail",
+      "trigger": "click BUY YES button",
+      "target_function": "handle_i_md_002",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "market-detail",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-MD-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "DESIGN-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MD-003",
+      "source_state": "market-detail",
+      "trigger": "click BUY NO button",
+      "target_function": "handle_i_md_003",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "market-detail",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-MD-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "DESIGN-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MD-004",
+      "source_state": "market-detail",
+      "trigger": "change size input",
+      "target_function": "handle_i_md_004",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": "debounce-300ms",
+      "success_transition": "market-detail",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-MD-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "INV-002",
+        "DESIGN-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MD-005",
+      "source_state": "market-detail",
+      "trigger": "click submit-paper-trade",
+      "target_function": "handle_i_md_005",
+      "async_mode": "async-await",
+      "timeout_ms": 5000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 200
+      },
+      "concurrency_policy": "reject-if-in-flight",
+      "success_transition": "market-detail",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "market-detail",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "market-detail",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "market-detail",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backend database",
+          "description": "persisted record"
+        },
+        {
+          "type": "db-write",
+          "target": "paper_fills + paper_positions (atomic)",
+          "description": "PR-001 atomic transaction"
+        },
+        {
+          "type": "metric-recompute",
+          "target": "equity + brier + sharpe + winrate",
+          "description": "INV-001 equity invariant"
+        }
+      ],
+      "dependencies": [
+        "I-MD-001",
+        "I-MD-002",
+        "I-MD-004"
+      ],
+      "idempotency_rule": "idempotency-key-required",
+      "ui_locking_rule": "disable-submit-and-show-confirming",
+      "validation_rule_refs": [
+        "INV-001",
+        "INV-004",
+        "INV-007",
+        "PR-001",
+        "PR-007",
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MD-006",
+      "source_state": "market-detail",
+      "trigger": "submit-paper-trade fails (insufficient bankroll)",
+      "target_function": "handle_i_md_006",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "market-detail",
+      "failure_transitions": [],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "paper_fills + paper_positions (atomic)",
+          "description": "PR-001 atomic transaction"
+        },
+        {
+          "type": "metric-recompute",
+          "target": "equity + brier + sharpe + winrate",
+          "description": "INV-001 equity invariant"
+        }
+      ],
+      "dependencies": [
+        "I-MD-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "INV-008"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MD-007",
+      "source_state": "market-detail",
+      "trigger": "30s poll refresh",
+      "target_function": "handle_i_md_007",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 500
+      },
+      "concurrency_policy": "skip-if-in-flight",
+      "success_transition": "market-detail",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "market-detail",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "market-detail",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "cache-invalidation",
+          "target": "SWR cache for screen data",
+          "description": "30s poll revalidate"
+        }
+      ],
+      "dependencies": [
+        "I-MD-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "FW-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-MD-008",
+      "source_state": "market-detail",
+      "trigger": "click sidebar nav item",
+      "target_function": "handle_i_md_008",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "sidebar-target-screen",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-MD-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-STR-001",
+      "source_state": "strategies",
+      "trigger": "page load",
+      "target_function": "handle_i_str_001",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "strategies",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "strategies",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "strategies",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "strategies",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "BE-R-*",
+        "FW-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-STR-002",
+      "source_state": "strategies",
+      "trigger": "toggle Kelly sizing ON",
+      "target_function": "handle_i_str_002",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "strategies",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "strategies",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "strategies",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "strategies",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backend database",
+          "description": "persisted record"
+        },
+        {
+          "type": "db-write",
+          "target": "strategy_state_log",
+          "description": "PR-002 audit log"
+        }
+      ],
+      "dependencies": [
+        "I-STR-001",
+        "I-STR-005"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "INV-003",
+        "INV-008",
+        "FS-001",
+        "PR-002",
+        "CSC-001"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-STR-003",
+      "source_state": "strategies",
+      "trigger": "toggle any strategy OFF",
+      "target_function": "handle_i_str_003",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "strategies",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "strategies",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "strategies",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "strategies",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backend database",
+          "description": "persisted record"
+        },
+        {
+          "type": "db-write",
+          "target": "strategy_state_log",
+          "description": "PR-002 audit log"
+        }
+      ],
+      "dependencies": [
+        "I-STR-001"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "PR-002",
+        "CSC-007",
+        "FS-007"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-STR-004",
+      "source_state": "strategies",
+      "trigger": "change strategy parameter (kelly-fraction, min-edge, window-hours, threshold, spread)",
+      "target_function": "handle_i_str_004",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": "debounce-300ms",
+      "success_transition": "strategies",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-STR-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "BE-R-*",
+        "QU-R-024"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-STR-005",
+      "source_state": "strategies",
+      "trigger": "change strategy assigned capital",
+      "target_function": "handle_i_str_005",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": "debounce-300ms",
+      "success_transition": "strategies",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-STR-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "INV-008",
+        "FS-001"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-STR-006",
+      "source_state": "strategies",
+      "trigger": "click running-pnl on a strategy card",
+      "target_function": "handle_i_str_006",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "paper-trades",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-STR-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-*",
+        "CSC-003"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-STR-007",
+      "source_state": "strategies",
+      "trigger": "click sidebar nav item",
+      "target_function": "handle_i_str_007",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "sidebar-target-screen",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-STR-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-STR-008",
+      "source_state": "strategies",
+      "trigger": "toggle-on attempt with assigned-capital = 0",
+      "target_function": "handle_i_str_008",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "strategies",
+      "failure_transitions": [],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "strategy_state_log",
+          "description": "PR-002 audit log"
+        }
+      ],
+      "dependencies": [
+        "I-STR-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "INV-003",
+        "FS-001"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-STR-009",
+      "source_state": "strategies",
+      "trigger": "toggle-on attempt exceeding equity",
+      "target_function": "handle_i_str_009",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "strategies",
+      "failure_transitions": [],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "strategy_state_log",
+          "description": "PR-002 audit log"
+        }
+      ],
+      "dependencies": [
+        "I-STR-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "INV-008"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-STR-010",
+      "source_state": "strategies",
+      "trigger": "30s poll refresh",
+      "target_function": "handle_i_str_010",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 500
+      },
+      "concurrency_policy": "skip-if-in-flight",
+      "success_transition": "strategies",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "strategies",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "strategies",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "cache-invalidation",
+          "target": "SWR cache for screen data",
+          "description": "30s poll revalidate"
+        }
+      ],
+      "dependencies": [
+        "I-STR-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "FW-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-STR-011",
+      "source_state": "strategies",
+      "trigger": "new strategy .py file dropped in strategies/ directory",
+      "target_function": "handle_i_str_011",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "strategies",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-STR-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "FW-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PT-001",
+      "source_state": "paper-trades",
+      "trigger": "page load",
+      "target_function": "handle_i_pt_001",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "paper-trades",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "paper-trades",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "paper-trades",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "paper-trades",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "paper_fills + paper_positions (atomic)",
+          "description": "PR-001 atomic transaction"
+        },
+        {
+          "type": "metric-recompute",
+          "target": "equity + brier + sharpe + winrate",
+          "description": "INV-001 equity invariant"
+        }
+      ],
+      "dependencies": [],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "BE-R-*",
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PT-002",
+      "source_state": "paper-trades",
+      "trigger": "click status filter pill (All / Open / Closed)",
+      "target_function": "handle_i_pt_002",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "paper-trades",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "paper_fills + paper_positions (atomic)",
+          "description": "PR-001 atomic transaction"
+        },
+        {
+          "type": "metric-recompute",
+          "target": "equity + brier + sharpe + winrate",
+          "description": "INV-001 equity invariant"
+        }
+      ],
+      "dependencies": [
+        "I-PT-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PT-003",
+      "source_state": "paper-trades",
+      "trigger": "click strategy filter pill (Kelly / Arb / Momentum / Fade / MM / Manual)",
+      "target_function": "handle_i_pt_003",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "paper-trades",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "paper_fills + paper_positions (atomic)",
+          "description": "PR-001 atomic transaction"
+        },
+        {
+          "type": "metric-recompute",
+          "target": "equity + brier + sharpe + winrate",
+          "description": "INV-001 equity invariant"
+        }
+      ],
+      "dependencies": [
+        "I-PT-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "HS-005"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PT-004",
+      "source_state": "paper-trades",
+      "trigger": "click platform filter pill",
+      "target_function": "handle_i_pt_004",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "paper-trades",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "paper_fills + paper_positions (atomic)",
+          "description": "PR-001 atomic transaction"
+        },
+        {
+          "type": "metric-recompute",
+          "target": "equity + brier + sharpe + winrate",
+          "description": "INV-001 equity invariant"
+        }
+      ],
+      "dependencies": [
+        "I-PT-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PT-005",
+      "source_state": "paper-trades",
+      "trigger": "change date-range picker",
+      "target_function": "handle_i_pt_005",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "paper-trades",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "paper_fills + paper_positions (atomic)",
+          "description": "PR-001 atomic transaction"
+        },
+        {
+          "type": "metric-recompute",
+          "target": "equity + brier + sharpe + winrate",
+          "description": "INV-001 equity invariant"
+        }
+      ],
+      "dependencies": [
+        "I-PT-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PT-006",
+      "source_state": "paper-trades",
+      "trigger": "click market cell in row",
+      "target_function": "handle_i_pt_006",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "market-detail",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-PT-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PT-007",
+      "source_state": "paper-trades",
+      "trigger": "click Export CSV button",
+      "target_function": "handle_i_pt_007",
+      "async_mode": "async-await",
+      "timeout_ms": 30000,
+      "retry_policy": {
+        "max_retries": 1,
+        "backoff": "none"
+      },
+      "concurrency_policy": "single-at-a-time",
+      "success_transition": "paper-trades",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "paper-trades",
+          "ui_effect": "toast-export-failed-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "paper_fills + paper_positions (atomic)",
+          "description": "PR-001 atomic transaction"
+        },
+        {
+          "type": "metric-recompute",
+          "target": "equity + brier + sharpe + winrate",
+          "description": "INV-001 equity invariant"
+        },
+        {
+          "type": "file-download",
+          "target": "browser",
+          "description": "csv or json attachment"
+        }
+      ],
+      "dependencies": [
+        "I-PT-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "disable-export-button-during-download",
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PT-008",
+      "source_state": "paper-trades",
+      "trigger": "click Export JSON button",
+      "target_function": "handle_i_pt_008",
+      "async_mode": "async-await",
+      "timeout_ms": 30000,
+      "retry_policy": {
+        "max_retries": 1,
+        "backoff": "none"
+      },
+      "concurrency_policy": "single-at-a-time",
+      "success_transition": "paper-trades",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "paper-trades",
+          "ui_effect": "toast-export-failed-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "paper_fills + paper_positions (atomic)",
+          "description": "PR-001 atomic transaction"
+        },
+        {
+          "type": "metric-recompute",
+          "target": "equity + brier + sharpe + winrate",
+          "description": "INV-001 equity invariant"
+        },
+        {
+          "type": "file-download",
+          "target": "browser",
+          "description": "csv or json attachment"
+        }
+      ],
+      "dependencies": [
+        "I-PT-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "disable-export-button-during-download",
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PT-009",
+      "source_state": "paper-trades",
+      "trigger": "click column sort (Time / Qty / Entry / Exit / P&L)",
+      "target_function": "handle_i_pt_009",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "paper-trades",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "paper_fills + paper_positions (atomic)",
+          "description": "PR-001 atomic transaction"
+        },
+        {
+          "type": "metric-recompute",
+          "target": "equity + brier + sharpe + winrate",
+          "description": "INV-001 equity invariant"
+        }
+      ],
+      "dependencies": [
+        "I-PT-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PT-010",
+      "source_state": "paper-trades",
+      "trigger": "30s poll refresh (only when Open filter active)",
+      "target_function": "handle_i_pt_010",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 500
+      },
+      "concurrency_policy": "skip-if-in-flight",
+      "success_transition": "paper-trades",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "paper-trades",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "paper_fills + paper_positions (atomic)",
+          "description": "PR-001 atomic transaction"
+        },
+        {
+          "type": "metric-recompute",
+          "target": "equity + brier + sharpe + winrate",
+          "description": "INV-001 equity invariant"
+        },
+        {
+          "type": "cache-invalidation",
+          "target": "SWR cache for screen data",
+          "description": "30s poll revalidate"
+        }
+      ],
+      "dependencies": [
+        "I-PT-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "FW-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-PT-011",
+      "source_state": "paper-trades",
+      "trigger": "click sidebar nav item",
+      "target_function": "handle_i_pt_011",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "sidebar-target-screen",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-PT-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-BT-001",
+      "source_state": "backtest",
+      "trigger": "page load",
+      "target_function": "handle_i_bt_001",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "backtest",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "backtest",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "backtest",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "backtest",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [
+        "API-R-*"
+      ],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-BT-002",
+      "source_state": "backtest",
+      "trigger": "change strategy picker",
+      "target_function": "handle_i_bt_002",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": "debounce-300ms",
+      "success_transition": "backtest",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-BT-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-BT-003",
+      "source_state": "backtest",
+      "trigger": "toggle platform in multiselect",
+      "target_function": "handle_i_bt_003",
+      "async_mode": "async-await",
+      "timeout_ms": 8000,
+      "retry_policy": {
+        "max_retries": 2,
+        "backoff": "linear",
+        "base_ms": 300
+      },
+      "concurrency_policy": "cancel-previous",
+      "success_transition": "backtest",
+      "failure_transitions": [
+        {
+          "condition": "http-error",
+          "transition": "backtest",
+          "ui_effect": "table-error-state-with-retry"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "backtest",
+          "ui_effect": "table-error-state-with-retry"
+        }
+      ],
+      "side_effects": [],
+      "dependencies": [
+        "I-BT-001"
+      ],
+      "idempotency_rule": "idempotent-read",
+      "ui_locking_rule": "table-skeleton-during-fetch",
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [
+        "API-R-*"
+      ],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-BT-004",
+      "source_state": "backtest",
+      "trigger": "change date-range picker",
+      "target_function": "handle_i_bt_004",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": "debounce-300ms",
+      "success_transition": "backtest",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-BT-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [],
+      "external_rule_refs": [
+        "API-R-*"
+      ],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-BT-005",
+      "source_state": "backtest",
+      "trigger": "change starting-bankroll input",
+      "target_function": "handle_i_bt_005",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": "debounce-300ms",
+      "success_transition": "backtest",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-BT-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-BT-006",
+      "source_state": "backtest",
+      "trigger": "click run-backtest button",
+      "target_function": "handle_i_bt_006",
+      "async_mode": "async-await",
+      "timeout_ms": 300000,
+      "retry_policy": null,
+      "concurrency_policy": "reject-if-another-running",
+      "success_transition": "backtest",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "backtest",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "backtest",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "backtest",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backend database",
+          "description": "persisted record"
+        },
+        {
+          "type": "db-write",
+          "target": "backtests + backtest_results",
+          "description": "replay output persisted"
+        },
+        {
+          "type": "db-read",
+          "target": "price_ticks (historical)",
+          "description": "event-driven replay"
+        }
+      ],
+      "dependencies": [
+        "I-BT-001"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-run-and-show-progress-bar",
+      "validation_rule_refs": [
+        "INV-006",
+        "TS-02",
+        "FS-003",
+        "QU-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-BT-007",
+      "source_state": "backtest",
+      "trigger": "run-backtest completes successfully",
+      "target_function": "handle_i_bt_007",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "backtest",
+      "failure_transitions": [],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backtests + backtest_results",
+          "description": "replay output persisted"
+        },
+        {
+          "type": "db-read",
+          "target": "price_ticks (historical)",
+          "description": "event-driven replay"
+        }
+      ],
+      "dependencies": [
+        "I-BT-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "TS-02"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-BT-008",
+      "source_state": "backtest",
+      "trigger": "run-backtest encounters bankruptcy (equity < 0)",
+      "target_function": "handle_i_bt_008",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "backtest",
+      "failure_transitions": [],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backtests + backtest_results",
+          "description": "replay output persisted"
+        },
+        {
+          "type": "db-read",
+          "target": "price_ticks (historical)",
+          "description": "event-driven replay"
+        }
+      ],
+      "dependencies": [
+        "I-BT-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "CSC-006",
+        "FS-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-BT-009",
+      "source_state": "backtest",
+      "trigger": "click save-as-comparison button",
+      "target_function": "handle_i_bt_009",
+      "async_mode": "async-await",
+      "timeout_ms": 10000,
+      "retry_policy": {
+        "max_retries": 3,
+        "backoff": "exponential",
+        "base_ms": 250
+      },
+      "concurrency_policy": "queue-latest",
+      "success_transition": "backtest",
+      "failure_transitions": [
+        {
+          "condition": "http-4xx-validation-error",
+          "transition": "backtest",
+          "ui_effect": "inline-error-beside-field"
+        },
+        {
+          "condition": "http-5xx-server-error",
+          "transition": "backtest",
+          "ui_effect": "toast-retry-option"
+        },
+        {
+          "condition": "network-timeout",
+          "transition": "backtest",
+          "ui_effect": "toast-check-connection"
+        }
+      ],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backend database",
+          "description": "persisted record"
+        }
+      ],
+      "dependencies": [
+        "I-BT-001",
+        "I-BT-007"
+      ],
+      "idempotency_rule": "idempotency-key-required-for-writes",
+      "ui_locking_rule": "disable-submit-and-spin-until-response",
+      "validation_rule_refs": [
+        "CSC-004"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-BT-010",
+      "source_state": "backtest",
+      "trigger": "run-backtest fails (e.g., invalid config)",
+      "target_function": "handle_i_bt_010",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "backtest",
+      "failure_transitions": [],
+      "side_effects": [
+        {
+          "type": "db-write",
+          "target": "backtests + backtest_results",
+          "description": "replay output persisted"
+        },
+        {
+          "type": "db-read",
+          "target": "price_ticks (historical)",
+          "description": "event-driven replay"
+        }
+      ],
+      "dependencies": [
+        "I-BT-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "BE-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    },
+    {
+      "interaction_id": "I-BT-011",
+      "source_state": "backtest",
+      "trigger": "click sidebar nav item",
+      "target_function": "handle_i_bt_011",
+      "async_mode": "sync",
+      "timeout_ms": null,
+      "retry_policy": null,
+      "concurrency_policy": null,
+      "success_transition": "sidebar-target-screen",
+      "failure_transitions": [],
+      "side_effects": [],
+      "dependencies": [
+        "I-BT-001"
+      ],
+      "idempotency_rule": null,
+      "ui_locking_rule": null,
+      "validation_rule_refs": [
+        "HTML-R-*"
+      ],
+      "external_rule_refs": [],
+      "invented_policy_detected": false
+    }
+  ]
+}

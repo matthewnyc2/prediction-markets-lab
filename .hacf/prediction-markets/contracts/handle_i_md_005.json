@@ -1,0 +1,127 @@
+{
+  "contract_id": "C-I-MD-005",
+  "interaction_id": "I-MD-005",
+  "function": {
+    "name": "handle_i_md_005",
+    "module_hint": "backend.handlers.market_detail",
+    "inputs": [
+      {
+        "name": "platform",
+        "type": "Platform"
+      },
+      {
+        "name": "market_id",
+        "type": "str"
+      },
+      {
+        "name": "side",
+        "type": "MarketSide"
+      },
+      {
+        "name": "size",
+        "type": "int"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "paper_fill",
+        "type": "PaperFill"
+      }
+    ]
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 5000,
+    "retry_policy": {
+      "max_retries": 2,
+      "backoff": "linear",
+      "base_ms": 200
+    },
+    "concurrency_policy": "reject-if-in-flight",
+    "idempotency_rule": "idempotency-key-required",
+    "ui_locking_rule": "disable-submit-and-show-confirming",
+    "failure_transitions": [
+      {
+        "condition": "http-4xx-validation-error",
+        "transition": "market-detail",
+        "ui_effect": "inline-error-beside-field"
+      },
+      {
+        "condition": "http-5xx-server-error",
+        "transition": "market-detail",
+        "ui_effect": "toast-retry-option"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "market-detail",
+        "ui_effect": "toast-check-connection"
+      }
+    ],
+    "side_effects": [
+      {
+        "type": "db-write",
+        "target": "backend database",
+        "description": "persisted record"
+      },
+      {
+        "type": "db-write",
+        "target": "paper_fills + paper_positions (atomic)",
+        "description": "PR-001 atomic transaction"
+      },
+      {
+        "type": "metric-recompute",
+        "target": "equity + brier + sharpe + winrate",
+        "description": "INV-001 equity invariant"
+      }
+    ]
+  },
+  "preconditions": [
+    {
+      "ref": "INV-001",
+      "condition": "equity == simulated_bankroll + sum(closed_position.realised_pnl) + sum(open_position.unrealised_pnl) BEFORE call"
+    },
+    {
+      "ref": "INV-004",
+      "condition": "paper_fill.market_id exists in markets AND paper_fill.source in (strategy_ids \u222a {'manual'})"
+    },
+    {
+      "ref": "INV-007",
+      "condition": "no write to a real-money trading endpoint on any platform adapter"
+    },
+    {
+      "ref": "INV-004",
+      "condition": "market exists and is open"
+    },
+    {
+      "ref": "local",
+      "condition": "size > 0 AND side in {'yes','no'}"
+    }
+  ],
+  "postconditions": [
+    {
+      "ref": "INV-001",
+      "condition": "equity recomputed to reflect new paper_fill"
+    },
+    {
+      "ref": "PR-001",
+      "condition": "paper_fill + paper_position written atomically"
+    },
+    {
+      "ref": "CSC-002",
+      "condition": "paper-trades ledger and dashboard recent-trades show new row"
+    }
+  ],
+  "references": {
+    "validation_rule_refs": [
+      "INV-001",
+      "INV-004",
+      "INV-007",
+      "PR-001",
+      "PR-007",
+      "BE-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "market-detail",
+    "success_transition": "market-detail"
+  }
+}

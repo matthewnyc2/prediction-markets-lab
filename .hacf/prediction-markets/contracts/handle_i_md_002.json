@@ -1,0 +1,30 @@
+{
+  "contract_id": "C-I-MD-002",
+  "interaction_id": "I-MD-002",
+  "function": {
+    "name": "handle_i_md_002",
+    "module_hint": "frontend.handlers.market_detail",
+    "inputs": [],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": null,
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": []
+  },
+  "preconditions": [],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "DESIGN-R-*"
+    ],
+    "external_rule_refs": [],
+    "source_state": "market-detail",
+    "success_transition": "market-detail"
+  }
+}

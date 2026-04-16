@@ -1,0 +1,45 @@
+{
+  "contract_id": "C-I-STR-005",
+  "interaction_id": "I-STR-005",
+  "function": {
+    "name": "handle_i_str_005",
+    "module_hint": "frontend.handlers.strategies",
+    "inputs": [
+      {
+        "name": "strategy_id",
+        "type": "StrategyId"
+      },
+      {
+        "name": "capital_usd",
+        "type": "int"
+      }
+    ],
+    "outputs": []
+  },
+  "behavior_inherited": {
+    "async_mode": "sync",
+    "timeout_ms": null,
+    "retry_policy": null,
+    "concurrency_policy": "debounce-300ms",
+    "idempotency_rule": null,
+    "ui_locking_rule": null,
+    "failure_transitions": [],
+    "side_effects": []
+  },
+  "preconditions": [
+    {
+      "ref": "INV-008",
+      "condition": "sum(s.assigned_capital for s in strategies where s.state=='on') + new_capital <= equity"
+    }
+  ],
+  "postconditions": [],
+  "references": {
+    "validation_rule_refs": [
+      "INV-008",
+      "FS-001"
+    ],
+    "external_rule_refs": [],
+    "source_state": "strategies",
+    "success_transition": "strategies"
+  }
+}

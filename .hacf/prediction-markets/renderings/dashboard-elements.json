@@ -1,0 +1,27 @@
+{
+  "screen": "dashboard",
+  "rendering_status": "confirmed",
+  "data_elements": [
+    { "name": "equity-tile",            "type": "metric",  "label": "Equity",      "format": "currency" },
+    { "name": "brier-tile",             "type": "metric",  "label": "Brier score", "format": "decimal-3" },
+    { "name": "sharpe-tile",            "type": "metric",  "label": "Sharpe",      "format": "decimal-2" },
+    { "name": "win-rate-tile",          "type": "metric",  "label": "Win rate",    "format": "percent" },
+    { "name": "equity-curve",           "type": "chart",   "label": "30-day equity curve" },
+    { "name": "active-strategies-panel","type": "table",   "columns": ["strategy-name","on-off-pill","pnl"] },
+    { "name": "recent-trades-panel",    "type": "table",   "columns": ["timestamp","platform","side","market","price"] }
+  ],
+  "interactive_elements": [
+    { "name": "strategy-row-link",      "type": "link",   "action": "navigate to strategies screen" },
+    { "name": "trade-row-link",         "type": "link",   "action": "navigate to market-detail for that market" },
+    { "name": "sidebar-nav",            "type": "nav",    "targets": ["dashboard","markets","strategies","paper-trades","backtest","compare","portfolio","data-ingestion"] }
+  ],
+  "navigation_paths": [
+    { "from": "dashboard", "to": "strategies",     "trigger": "click strategy row" },
+    { "from": "dashboard", "to": "market-detail",  "trigger": "click trade row" },
+    { "from": "dashboard", "to": "paper-trades",   "trigger": "click 'recent trades' header" }
+  ],
+  "conditional_displays": [
+    { "element": "active-strategies-panel", "condition": "strategies table lists 5 strategies with state on or off" },
+    { "element": "equity-curve",            "condition": "requires ≥1 day of portfolio history; otherwise shows empty-state message" }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "contract_id": "C-I-DI-003",
+  "interaction_id": "I-DI-003",
+  "function": {
+    "name": "handle_i_di_003",
+    "module_hint": "backend.handlers.data_ingestion",
+    "inputs": [
+      {
+        "name": "platform",
+        "type": "Platform"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "sync_job_id",
+        "type": "str"
+      }
+    ]
+  },
+  "behavior_inherited": {
+    "async_mode": "async-await",
+    "timeout_ms": 120000,
+    "retry_policy": {
+      "max_retries": 3,
+      "backoff": "exponential",
+      "base_ms": 1000
+    },
+    "concurrency_policy": "serial-per-adapter",
+    "idempotency_rule": "idempotency-key-required-for-writes",
+    "ui_locking_rule": "pill-syncing-and-button-disabled",
+    "failure_transitions": [
+      {
+        "condition": "http-4xx-validation-error",
+        "transition": "data-ingestion",
+        "ui_effect": "inline-error-beside-field"
+      },
+      {
+        "condition": "http-5xx-server-error",
+        "transition": "data-ingestion",
+        "ui_effect": "toast-retry-option"
+      },
+      {
+        "condition": "network-timeout",
+        "transition": "data-ingestion",
+        "ui_effect": "toast-check-connection"
+      }
+    ],
+    "side_effects": [
+      {
+        "type": "db-write",
+        "target": "backend database",
+        "description": "persisted record"
+      },
+      {
+        "type": "db-write",
+        "target": "markets + price_ticks",
+        "description": "normalised from platform api"
+      },
+      {
+        "type": "external-api-read",
+        "target": "platform public api",
+        "description": "rate-limited, read-only (INV-007)"
+      }
+    ]
+  },
+  "preconditions": [],
+  "postconditions": [
+    {
+      "ref": "PR-004",
+      "condition": "ingest-markets idempotent on (platform, platform-market-id)"
+    },
+    {
+      "ref": "CSC-005",
+      "condition": "dashboard platform-health reflects adapter status change"
+    }
+  ],
+  "references": {
+    "validation_rule_refs": [
+      "SR-003"
+    ],
+    "external_rule_refs": [
+      "API-R-*"
+    ],
+    "source_state": "data-ingestion",
+    "success_transition": "data-ingestion"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "project": "prediction-markets",
+  "phase": "3",
+  "verified_at": "2026-04-16",
+  "runtime_checks": {
+    "python": { "installed": true, "version": "3.14.2", "declared_min": "3.12", "meets_requirement": true },
+    "git":    { "installed": true, "initialized": true },
+    "node":   { "declared": "20.x LTS", "check_deferred_until_frontend_phase": true },
+    "pnpm":   { "declared": "9.x",      "check_deferred_until_frontend_phase": true },
+    "uv":     { "declared": "latest",   "check_deferred_until_dependency_install": true }
+  },
+  "dependency_install_gate": "pending",
+  "note": "Dependencies declared in pyproject.toml. Per anti-mocking rule, no fake packages installed. User runs `uv venv && uv pip install -e .[dev]` to materialize the environment. Stack gate is satisfied by declaration + pin in pyproject matching verifiedLibraries.json.",
+  "overall": "DECLARED_AND_READY"
+}

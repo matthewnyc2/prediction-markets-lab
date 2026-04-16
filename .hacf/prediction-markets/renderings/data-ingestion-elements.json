@@ -1,0 +1,24 @@
+{
+  "screen": "data-ingestion",
+  "rendering_status": "confirmed",
+  "data_elements": [
+    { "name": "adapters-table", "type": "table", "columns": ["platform-chip","platform-name","status-pill","last-sync","markets-count","rows-stored","action-button"] }
+  ],
+  "rows": [
+    { "adapter": "kalshi",     "platform-name": "Kalshi" },
+    { "adapter": "polymarket", "platform-name": "Polymarket" },
+    { "adapter": "manifold",   "platform-name": "Manifold" },
+    { "adapter": "predictit",  "platform-name": "PredictIt" }
+  ],
+  "status_values": ["healthy","rate-limited","error","syncing"],
+  "interactive_elements": [
+    { "name": "sync-now-button", "type": "button", "one-per-row": true, "action": "trigger-manual-sync" },
+    { "name": "retry-button",    "type": "button", "one-per-row": true, "shown-when": "status = rate-limited or error" }
+  ],
+  "navigation_paths": [],
+  "conditional_displays": [
+    { "element": "retry-button",   "condition": "shown only when status-pill = rate-limited or error" },
+    { "element": "sync-now-button","condition": "shown when status-pill = healthy" },
+    { "element": "status-pill",    "condition": "changes color per status value; 'syncing' shows spinner" }
+  ]
+}

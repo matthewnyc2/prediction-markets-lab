@@ -1,0 +1,615 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Prediction Markets Paper Trader — Proposal</title>
+<style>
+  :root {
+    --bg: #0b0f17;
+    --bg-2: #111826;
+    --bg-3: #182236;
+    --fg: #e6edf7;
+    --fg-dim: #8ea0bd;
+    --fg-mute: #566178;
+    --accent: #7dd3fc;
+    --accent-2: #34d399;
+    --warn: #fbbf24;
+    --danger: #f87171;
+    --line: #1f2a40;
+    --line-2: #2b3a58;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: -apple-system, Segoe UI, Inter, Roboto, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 14px; line-height: 1.55; }
+  a { color: var(--accent); text-decoration: none; }
+  code, .mono { font-family: var(--mono); }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 40px 28px 80px; }
+
+  /* Hero */
+  .hero { border: 1px solid var(--line); background: linear-gradient(180deg, #111a2c 0%, #0b0f17 100%); border-radius: 14px; padding: 36px 32px; }
+  .eyebrow { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-mute); }
+  .hero h1 { margin: 8px 0 12px; font-size: 30px; font-weight: 650; letter-spacing: -0.01em; }
+  .hero p { margin: 0; color: var(--fg-dim); max-width: 860px; }
+  .hero .meta { display: flex; gap: 24px; margin-top: 22px; flex-wrap: wrap; color: var(--fg-mute); font-size: 12px; }
+  .hero .meta b { color: var(--fg); font-weight: 500; }
+
+  .cta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 22px; padding: 16px; border: 1px dashed var(--line-2); border-radius: 10px; background: rgba(125,211,252,0.03); }
+  .cta b { color: var(--accent); }
+  .cta span { color: var(--fg-dim); font-size: 13px; }
+
+  h2 { font-size: 20px; margin: 48px 0 14px; letter-spacing: -0.005em; }
+  h2 .num { color: var(--accent); font-family: var(--mono); font-weight: 500; margin-right: 10px; font-size: 15px; }
+  h3 { font-size: 15px; font-weight: 600; margin: 24px 0 8px; }
+  p { color: var(--fg-dim); }
+
+  .card { background: var(--bg-2); border: 1px solid var(--line); border-radius: 12px; padding: 20px 22px; }
+  .grid { display: grid; gap: 16px; }
+  .grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) {
+    .grid.cols-2, .grid.cols-3, .grid.cols-4 { grid-template-columns: 1fr; }
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--fg-mute); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; }
+  tr:last-child td { border-bottom: none; }
+  td.num, th.num { font-family: var(--mono); text-align: right; }
+  .pos { color: var(--accent-2); }
+  .neg { color: var(--danger); }
+  .dim { color: var(--fg-mute); }
+
+  /* Mockup chrome */
+  .screen { background: var(--bg-2); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .screen .bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--bg-3); }
+  .screen .bar .dots { display: flex; gap: 6px; }
+  .screen .bar .dots i { width: 10px; height: 10px; border-radius: 50%; background: #2e3a55; display: inline-block; }
+  .screen .bar .dots i:nth-child(1) { background: #ef4444; }
+  .screen .bar .dots i:nth-child(2) { background: #f59e0b; }
+  .screen .bar .dots i:nth-child(3) { background: #10b981; }
+  .screen .bar .url { font-family: var(--mono); font-size: 11px; color: var(--fg-mute); padding: 4px 10px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px; }
+  .screen .body { display: grid; grid-template-columns: 180px 1fr; min-height: 420px; }
+  .screen .nav { border-right: 1px solid var(--line); padding: 14px 12px; background: #0d1422; }
+  .screen .nav .logo { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: var(--fg); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+  .screen .nav .logo::before { content: ""; display: inline-block; width: 12px; height: 12px; background: linear-gradient(135deg, var(--accent), var(--accent-2)); border-radius: 3px; }
+  .screen .nav ul { list-style: none; padding: 0; margin: 0; }
+  .screen .nav li { font-size: 12px; color: var(--fg-dim); padding: 7px 8px; border-radius: 6px; margin-bottom: 2px; display: flex; justify-content: space-between; align-items: center; }
+  .screen .nav li.active { background: var(--bg-3); color: var(--fg); }
+  .screen .nav li .badge { font-size: 10px; color: var(--accent); background: rgba(125,211,252,0.12); padding: 1px 6px; border-radius: 10px; }
+  .screen .main { padding: 18px 22px; overflow: hidden; }
+  .screen .main h4 { margin: 0 0 4px; font-size: 16px; }
+  .screen .main .sub { color: var(--fg-mute); font-size: 12px; margin-bottom: 16px; }
+
+  /* Tiles */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+  @media (max-width: 700px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .tile { background: var(--bg-3); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  .tile .k { font-size: 10px; color: var(--fg-mute); letter-spacing: 0.1em; text-transform: uppercase; }
+  .tile .v { font-size: 20px; font-family: var(--mono); margin-top: 4px; }
+  .tile .d { font-size: 11px; color: var(--fg-mute); margin-top: 2px; }
+
+  /* Chart mock */
+  .chart { background: var(--bg-3); border: 1px solid var(--line); border-radius: 8px; padding: 10px; height: 160px; position: relative; overflow: hidden; }
+  .chart svg { width: 100%; height: 100%; }
+  .sparkbar { display: flex; align-items: flex-end; gap: 3px; height: 100%; }
+  .sparkbar span { flex: 1; background: linear-gradient(180deg, var(--accent) 0%, #0284c7 100%); border-radius: 2px 2px 0 0; }
+
+  /* Pills */
+  .pill { font-size: 11px; padding: 2px 8px; border: 1px solid var(--line-2); border-radius: 999px; color: var(--fg-dim); font-family: var(--mono); }
+  .pill.on { color: var(--accent-2); border-color: rgba(52, 211, 153, 0.4); background: rgba(52,211,153,0.06); }
+  .pill.off { color: var(--fg-mute); }
+  .pill.warn { color: var(--warn); border-color: rgba(251, 191, 36, 0.4); background: rgba(251, 191, 36, 0.06); }
+
+  /* Platform chips */
+  .chip { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-family: var(--mono); margin-right: 4px; }
+  .chip.kalshi { background: #1e3a8a; color: #bfdbfe; }
+  .chip.poly   { background: #6b21a8; color: #e9d5ff; }
+  .chip.mani   { background: #065f46; color: #a7f3d0; }
+  .chip.predit { background: #7c2d12; color: #fed7aa; }
+
+  .glossary { background: var(--bg-2); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--fg-dim); margin: 12px 0; }
+  .glossary b { color: var(--fg); }
+
+  .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; align-items: stretch; }
+  @media (max-width: 900px) { .flow { grid-template-columns: 1fr 1fr; } }
+  .flow .step { background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; position: relative; }
+  .flow .step .n { font-family: var(--mono); font-size: 11px; color: var(--accent); margin-bottom: 6px; }
+  .flow .step .t { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .flow .step .d { font-size: 12px; color: var(--fg-dim); }
+
+  footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--fg-mute); font-size: 12px; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 12px; font-size: 12px; color: var(--fg-dim); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="eyebrow">HACF · Phase 1 · Step 6 Proposal</div>
+  <h1>Prediction Markets Paper Trader &amp; Strategy Backtester</h1>
+  <p><b style="color:var(--fg)">North star:</b> A local web application where you can toggle on a strategy, watch it place paper trades against live or historical market data, backtest it, and compare its scored performance across Kalshi, Polymarket, Manifold, and PredictIt — all without risking real money.</p>
+  <div class="meta">
+    <div><b>Platforms</b> · Kalshi · Polymarket · Manifold · PredictIt</div>
+    <div><b>Deployment</b> · Local-only (no auth, runs on your machine)</div>
+    <div><b>Strategies</b> · Kelly · Arbitrage · Closing Momentum · News Fade · Market Maker</div>
+  </div>
+  <div class="cta">
+    <b>To approve:</b>
+    <span>Reply <code style="color:var(--accent-2)">approve</code> to lock this proposal and advance to HACF Step 7, or list specific changes (add/remove screen, rename, change elements, adjust strategy list).</span>
+  </div>
+</section>
+
+<!-- WHAT THIS IS -->
+<h2><span class="num">§1</span>What this program is, plainly</h2>
+<div class="card">
+  <p style="margin-top:0"><b style="color:var(--fg)">Prediction markets</b> are sites where people buy and sell contracts that pay $1 if a specified event happens (e.g. "Will the Fed cut rates in June?"). The current price of a contract reflects the crowd's probability estimate.</p>
+  <p><b style="color:var(--fg)">Paper trading</b> means simulating orders — the app pretends you bought the contract, records what would have happened, and tracks a fake portfolio balance. No real money moves.</p>
+  <p><b style="color:var(--fg)">Backtesting</b> means running a strategy against historical market data to see how it <i>would have</i> performed, so you can evaluate an idea before trading it live.</p>
+  <p style="margin-bottom:0"><b style="color:var(--fg)">Why this app exists (from your why.txt):</b> you want to develop and validate quantitative strategies — Kelly sizing, arbitrage, momentum, fade — without financial exposure, and you need performance metrics (P&amp;L, Brier, Sharpe, win rate) to know whether a strategy actually works before risking real capital.</p>
+</div>
+
+<!-- GLOSSARY -->
+<h2><span class="num">§2</span>Key concepts (so the screens make sense)</h2>
+<div class="grid cols-2">
+  <div class="glossary"><b>Brier score</b> — measures how well-calibrated a probability forecast is. Lower is better; 0 is perfect, 0.25 is a coin-flip guesser. Used here because prediction-market prices <i>are</i> probability forecasts.</div>
+  <div class="glossary"><b>Sharpe ratio</b> — risk-adjusted return. (average return − risk-free rate) / volatility. &gt;1 is good, &gt;2 is great. Industry-standard for comparing strategies.</div>
+  <div class="glossary"><b>Win rate</b> — % of trades that closed profitable. Useful but incomplete: you can have a low win rate and still make money if your wins are bigger than your losses.</div>
+  <div class="glossary"><b>Kelly sizing</b> — a formula for how much of your bankroll to bet when you believe the true probability differs from the market price. Maximises long-run growth.</div>
+  <div class="glossary"><b>Arbitrage scanner</b> — watches for the same (or very similar) contract priced differently across the 4 platforms. Buys low on one, sells high on the other, locks in a theoretical risk-free edge.</div>
+  <div class="glossary"><b>Market maker</b> — a strategy that quotes both a buy and sell price on a market and profits from the spread, rather than from predicting direction.</div>
+</div>
+
+<!-- SYSTEM ARCHITECTURE -->
+<h2><span class="num">§3</span>How the pieces fit together</h2>
+<div class="flow">
+  <div class="step">
+    <div class="n">01 · Ingest</div>
+    <div class="t">Platform adapters</div>
+    <div class="d">Pull historical + live markets from Kalshi, Polymarket, Manifold, PredictIt. Normalize into a common format.</div>
+  </div>
+  <div class="step">
+    <div class="n">02 · Store</div>
+    <div class="t">Local database</div>
+    <div class="d">SQLite/Postgres holds markets, prices, trades, fills, portfolio snapshots. No cloud.</div>
+  </div>
+  <div class="step">
+    <div class="n">03 · Decide</div>
+    <div class="t">Strategy engine</div>
+    <div class="d">5 pluggable strategies read market data and emit orders. User toggles which are active.</div>
+  </div>
+  <div class="step">
+    <div class="n">04 · Simulate</div>
+    <div class="t">Paper trading engine</div>
+    <div class="d">Executes orders against recorded price data or live feeds. Updates portfolio.</div>
+  </div>
+  <div class="step">
+    <div class="n">05 · Evaluate</div>
+    <div class="t">Metrics &amp; dashboard</div>
+    <div class="d">Computes P&amp;L, Brier, Sharpe, win rate. Backtester replays history. UI visualises everything.</div>
+  </div>
+</div>
+
+<!-- SCREEN INVENTORY -->
+<h2><span class="num">§4</span>Screen inventory</h2>
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>#</th><th>Screen</th><th>Purpose</th><th>Primary elements</th></tr></thead>
+  <tbody>
+    <tr><td class="num dim">1</td><td><b>Dashboard</b></td><td>Single-glance portfolio and activity overview</td><td>Metric tiles · equity curve · active strategies · recent trades · adapter health</td></tr>
+    <tr><td class="num dim">2</td><td><b>Markets</b></td><td>Browse + search markets from all 4 platforms</td><td>Platform filter · search · sortable table · live price + change</td></tr>
+    <tr><td class="num dim">3</td><td><b>Market detail</b></td><td>Drill into one market, manually paper-trade it</td><td>Price history chart · order book · buy/sell YES/NO panel · size input</td></tr>
+    <tr><td class="num dim">4</td><td><b>Strategies</b></td><td>Turn strategies on/off, tune parameters</td><td>5 strategy cards · on/off toggle · parameter sliders · capital allocation</td></tr>
+    <tr><td class="num dim">5</td><td><b>Paper Trades</b></td><td>Ledger of every simulated order</td><td>Open positions · closed positions · filter by strategy/platform/date</td></tr>
+    <tr><td class="num dim">6</td><td><b>Backtest</b></td><td>Replay a strategy over historical window</td><td>Strategy picker · date range · platform picker · Run button · results pane</td></tr>
+    <tr><td class="num dim">7</td><td><b>Compare</b></td><td>Put multiple backtests or live runs side-by-side</td><td>Comparison table · overlay P&amp;L chart · metric deltas</td></tr>
+    <tr><td class="num dim">8</td><td><b>Portfolio</b></td><td>Historical account analytics</td><td>Equity curve · drawdown · per-strategy attribution · metric cards</td></tr>
+    <tr><td class="num dim">9</td><td><b>Data ingestion</b></td><td>Adapter health + manual sync controls</td><td>Status per platform · last sync · row counts · errors · "Sync now"</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- MOCKUPS -->
+<h2><span class="num">§5</span>Screen mockups</h2>
+<p>Low-fidelity mockups to show layout and information density. Visual polish comes at HACF Step 14 (design system) and Step 15 (wireframes).</p>
+
+<!-- Screen 1: Dashboard -->
+<h3>1 · Dashboard</h3>
+<div class="screen">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:3000/</div></div>
+  <div class="body">
+    <div class="nav">
+      <div class="logo">PMARKETS</div>
+      <ul>
+        <li class="active">Dashboard</li>
+        <li>Markets <span class="badge">4218</span></li>
+        <li>Strategies <span class="badge">3 on</span></li>
+        <li>Paper Trades</li>
+        <li>Backtest</li>
+        <li>Compare</li>
+        <li>Portfolio</li>
+        <li>Data ingestion</li>
+      </ul>
+    </div>
+    <div class="main">
+      <h4>Portfolio overview</h4>
+      <div class="sub">Simulated account · paper mode · updated 3s ago</div>
+      <div class="tiles">
+        <div class="tile"><div class="k">Equity</div><div class="v">$12,418.22</div><div class="d pos">+$2,418 · +24.2% YTD</div></div>
+        <div class="tile"><div class="k">Brier score</div><div class="v">0.142</div><div class="d pos">better than market avg 0.201</div></div>
+        <div class="tile"><div class="k">Sharpe</div><div class="v">1.87</div><div class="d">30-day rolling</div></div>
+        <div class="tile"><div class="k">Win rate</div><div class="v">58.4%</div><div class="d">237 / 406 trades</div></div>
+      </div>
+      <div class="chart">
+        <svg viewbox="0 0 400 140" preserveAspectRatio="none">
+          <polyline fill="none" stroke="#7dd3fc" stroke-width="1.5" points="0,110 20,108 40,102 60,98 80,95 100,88 120,82 140,85 160,78 180,72 200,68 220,62 240,65 260,55 280,48 300,42 320,38 340,32 360,28 380,22 400,18" />
+          <polyline fill="rgba(125,211,252,0.08)" stroke="none" points="0,110 20,108 40,102 60,98 80,95 100,88 120,82 140,85 160,78 180,72 200,68 220,62 240,65 260,55 280,48 300,42 320,38 340,32 360,28 380,22 400,18 400,140 0,140" />
+        </svg>
+      </div>
+      <div class="grid cols-2" style="margin-top:16px">
+        <div class="card" style="background:var(--bg-3);padding:12px">
+          <div class="k" style="font-size:10px;color:var(--fg-mute);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Active strategies</div>
+          <table style="font-size:12px"><tbody>
+            <tr><td>Kelly sizing</td><td><span class="pill on">ON</span></td><td class="num pos">+$842</td></tr>
+            <tr><td>Arb scanner</td><td><span class="pill on">ON</span></td><td class="num pos">+$311</td></tr>
+            <tr><td>Closing momentum</td><td><span class="pill on">ON</span></td><td class="num neg">−$78</td></tr>
+            <tr><td>News fade</td><td><span class="pill off">OFF</span></td><td class="num dim">—</td></tr>
+            <tr><td>Market maker</td><td><span class="pill off">OFF</span></td><td class="num dim">—</td></tr>
+          </tbody></table>
+        </div>
+        <div class="card" style="background:var(--bg-3);padding:12px">
+          <div class="k" style="font-size:10px;color:var(--fg-mute);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px">Recent paper trades</div>
+          <table style="font-size:12px"><tbody>
+            <tr><td class="mono dim">14:02</td><td><span class="chip kalshi">KAL</span>BUY YES "Fed cuts Jun"</td><td class="num">$0.42</td></tr>
+            <tr><td class="mono dim">13:57</td><td><span class="chip poly">POLY</span>SELL YES "Trump 2028"</td><td class="num">$0.31</td></tr>
+            <tr><td class="mono dim">13:44</td><td><span class="chip mani">MAN</span>BUY NO "GPT-6 in 2026"</td><td class="num">$0.68</td></tr>
+            <tr><td class="mono dim">13:30</td><td><span class="chip predit">PRE</span>BUY YES "Senate flip"</td><td class="num">$0.22</td></tr>
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 2: Markets -->
+<h3>2 · Markets</h3>
+<div class="screen">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:3000/markets</div></div>
+  <div class="body">
+    <div class="nav"><div class="logo">PMARKETS</div><ul>
+      <li>Dashboard</li><li class="active">Markets <span class="badge">4218</span></li><li>Strategies</li><li>Paper Trades</li><li>Backtest</li><li>Compare</li><li>Portfolio</li><li>Data ingestion</li>
+    </ul></div>
+    <div class="main">
+      <h4>All markets</h4>
+      <div class="sub">4,218 markets across 4 platforms · last refresh 32s ago</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <span class="pill on">All</span><span class="pill">Kalshi · 842</span><span class="pill">Polymarket · 1,911</span><span class="pill">Manifold · 1,203</span><span class="pill">PredictIt · 262</span>
+        <span class="pill warn">Open only</span><span class="pill">Volume &gt;$10k</span>
+      </div>
+      <table>
+        <thead><tr><th>Platform</th><th>Market</th><th class="num">YES</th><th class="num">NO</th><th class="num">Vol 24h</th><th class="num">Close</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip kalshi">KAL</span></td><td>Will the Fed cut rates in June 2026?</td><td class="num">0.42</td><td class="num">0.58</td><td class="num">$48,201</td><td class="mono dim">Jun 12</td></tr>
+          <tr><td><span class="chip poly">POLY</span></td><td>Will Bitcoin close &gt; $120k by Q3?</td><td class="num">0.31</td><td class="num">0.69</td><td class="num">$812,401</td><td class="mono dim">Sep 30</td></tr>
+          <tr><td><span class="chip mani">MAN</span></td><td>GPT-6 released by end of 2026?</td><td class="num">0.32</td><td class="num">0.68</td><td class="num">M8,201</td><td class="mono dim">Dec 31</td></tr>
+          <tr><td><span class="chip predit">PRE</span></td><td>Democrats retake Senate in 2026?</td><td class="num">0.22</td><td class="num">0.78</td><td class="num">$6,402</td><td class="mono dim">Nov 03</td></tr>
+          <tr><td><span class="chip kalshi">KAL</span></td><td>S&amp;P 500 close green this week?</td><td class="num">0.61</td><td class="num">0.39</td><td class="num">$22,110</td><td class="mono dim">Apr 18</td></tr>
+          <tr><td><span class="chip poly">POLY</span></td><td>Taylor Swift tours Asia 2026?</td><td class="num">0.74</td><td class="num">0.26</td><td class="num">$104,221</td><td class="mono dim">Dec 31</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 3: Market detail -->
+<h3>3 · Market detail</h3>
+<div class="screen">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:3000/markets/kalshi/fedcut-jun26</div></div>
+  <div class="body">
+    <div class="nav"><div class="logo">PMARKETS</div><ul>
+      <li>Dashboard</li><li class="active">Markets</li><li>Strategies</li><li>Paper Trades</li><li>Backtest</li><li>Compare</li><li>Portfolio</li><li>Data ingestion</li>
+    </ul></div>
+    <div class="main">
+      <h4><span class="chip kalshi">KAL</span>Will the Fed cut rates in June 2026?</h4>
+      <div class="sub">Closes Jun 12, 2026 · 24h volume $48,201 · open interest $214k</div>
+      <div class="grid cols-2" style="margin-top:10px">
+        <div>
+          <div class="chart" style="height:200px">
+            <svg viewbox="0 0 400 200" preserveAspectRatio="none">
+              <polyline fill="none" stroke="#7dd3fc" stroke-width="1.5" points="0,100 25,98 50,92 75,102 100,96 125,110 150,118 175,112 200,108 225,115 250,122 275,110 300,104 325,98 350,104 375,96 400,84" />
+              <line x1="0" y1="160" x2="400" y2="160" stroke="#2b3a58" stroke-dasharray="3 4" />
+            </svg>
+          </div>
+          <div class="dim" style="font-size:11px;margin-top:6px">90-day YES price · current 0.42 · high 0.71 · low 0.28</div>
+        </div>
+        <div class="card" style="background:var(--bg-3)">
+          <div style="font-size:12px;color:var(--fg-mute);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Place paper trade</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px">
+            <div class="pill on" style="flex:1;text-align:center;padding:8px">BUY YES · 0.42</div>
+            <div class="pill" style="flex:1;text-align:center;padding:8px">BUY NO · 0.58</div>
+          </div>
+          <div style="font-size:11px;color:var(--fg-mute);margin-bottom:4px">Size (contracts)</div>
+          <div class="mono" style="background:var(--bg);border:1px solid var(--line);padding:6px 10px;border-radius:6px;margin-bottom:10px">250</div>
+          <div style="font-size:11px;color:var(--fg-mute);margin-bottom:4px">Cost · max loss</div>
+          <div class="mono">$105.00 · $105.00</div>
+          <div style="margin-top:12px;background:var(--accent);color:#0b0f17;padding:8px;border-radius:6px;text-align:center;font-weight:600">Submit paper trade</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px;background:var(--bg-3)">
+        <div style="font-size:12px;color:var(--fg-mute);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Recent fills on this market</div>
+        <table style="font-size:12px"><tbody>
+          <tr><td class="mono dim">14:02</td><td>BUY YES · Kelly strategy</td><td class="num">0.42</td><td class="num">250</td></tr>
+          <tr><td class="mono dim">13:41</td><td>SELL YES · manual</td><td class="num">0.44</td><td class="num">100</td></tr>
+          <tr><td class="mono dim">13:18</td><td>BUY YES · Closing momentum</td><td class="num">0.39</td><td class="num">500</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 4: Strategies -->
+<h3>4 · Strategies</h3>
+<div class="screen">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:3000/strategies</div></div>
+  <div class="body">
+    <div class="nav"><div class="logo">PMARKETS</div><ul>
+      <li>Dashboard</li><li>Markets</li><li class="active">Strategies <span class="badge">3 on</span></li><li>Paper Trades</li><li>Backtest</li><li>Compare</li><li>Portfolio</li><li>Data ingestion</li>
+    </ul></div>
+    <div class="main">
+      <h4>Pluggable strategies</h4>
+      <div class="sub">5 strategies · 3 enabled · combined capital $8,000 of $12,418 equity</div>
+      <div class="grid cols-2">
+        <div class="card" style="background:var(--bg-3)"><div style="display:flex;justify-content:space-between"><b>Kelly sizing</b><span class="pill on">ON</span></div><div class="dim" style="font-size:12px;margin:6px 0">Bets size ∝ edge / odds. Requires a probability model input.</div><div class="mono" style="font-size:11px;color:var(--fg-mute)">Capital: $3,000 · Fraction: ¼-Kelly · P&amp;L: +$842</div></div>
+        <div class="card" style="background:var(--bg-3)"><div style="display:flex;justify-content:space-between"><b>Cross-platform arb</b><span class="pill on">ON</span></div><div class="dim" style="font-size:12px;margin:6px 0">Buys low / sells high when the same contract is mispriced across platforms.</div><div class="mono" style="font-size:11px;color:var(--fg-mute)">Capital: $2,500 · Min edge: 3¢ · P&amp;L: +$311</div></div>
+        <div class="card" style="background:var(--bg-3)"><div style="display:flex;justify-content:space-between"><b>Closing momentum</b><span class="pill on">ON</span></div><div class="dim" style="font-size:12px;margin:6px 0">Rides price movement in the final hours before market close.</div><div class="mono" style="font-size:11px;color:var(--fg-mute)">Capital: $2,500 · Window: last 6h · P&amp;L: −$78</div></div>
+        <div class="card" style="background:var(--bg-3)"><div style="display:flex;justify-content:space-between"><b>News spike fade</b><span class="pill off">OFF</span></div><div class="dim" style="font-size:12px;margin:6px 0">Counter-trades sharp price moves that follow news events, expecting overreaction.</div><div class="mono" style="font-size:11px;color:var(--fg-mute)">Capital: — · Threshold: 10% move in 15min · P&amp;L: —</div></div>
+        <div class="card" style="background:var(--bg-3)"><div style="display:flex;justify-content:space-between"><b>Market maker</b><span class="pill off">OFF</span></div><div class="dim" style="font-size:12px;margin:6px 0">Quotes both sides and profits from the bid/ask spread.</div><div class="mono" style="font-size:11px;color:var(--fg-mute)">Capital: — · Spread: 2¢ · P&amp;L: —</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 5: Paper Trades -->
+<h3>5 · Paper Trades</h3>
+<div class="screen">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:3000/trades</div></div>
+  <div class="body">
+    <div class="nav"><div class="logo">PMARKETS</div><ul>
+      <li>Dashboard</li><li>Markets</li><li>Strategies</li><li class="active">Paper Trades</li><li>Backtest</li><li>Compare</li><li>Portfolio</li><li>Data ingestion</li>
+    </ul></div>
+    <div class="main">
+      <h4>Paper trading ledger</h4>
+      <div class="sub">406 trades total · 18 open · 388 closed</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <span class="pill on">All</span><span class="pill">Open</span><span class="pill">Closed</span>
+        <span class="pill">Kelly</span><span class="pill">Arb</span><span class="pill">Momentum</span><span class="pill">Manual</span>
+      </div>
+      <table>
+        <thead><tr><th>Time</th><th>Platform</th><th>Market</th><th>Side</th><th class="num">Qty</th><th class="num">Entry</th><th class="num">Exit</th><th class="num">P&amp;L</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr><td class="mono dim">14:02</td><td><span class="chip kalshi">KAL</span></td><td>Fed cuts Jun 2026</td><td>BUY YES</td><td class="num">250</td><td class="num">0.42</td><td class="num dim">—</td><td class="num dim">open</td><td class="dim">Kelly</td></tr>
+          <tr><td class="mono dim">13:57</td><td><span class="chip poly">POLY</span></td><td>Trump 2028</td><td>SELL YES</td><td class="num">100</td><td class="num">0.33</td><td class="num">0.31</td><td class="num pos">+$2.00</td><td class="dim">Arb</td></tr>
+          <tr><td class="mono dim">13:44</td><td><span class="chip mani">MAN</span></td><td>GPT-6 in 2026</td><td>BUY NO</td><td class="num">200</td><td class="num">0.70</td><td class="num">0.68</td><td class="num neg">−$4.00</td><td class="dim">Momentum</td></tr>
+          <tr><td class="mono dim">13:30</td><td><span class="chip predit">PRE</span></td><td>Senate flip</td><td>BUY YES</td><td class="num">1000</td><td class="num">0.19</td><td class="num">0.22</td><td class="num pos">+$30.00</td><td class="dim">Manual</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 6: Backtest -->
+<h3>6 · Backtest</h3>
+<div class="screen">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:3000/backtest</div></div>
+  <div class="body">
+    <div class="nav"><div class="logo">PMARKETS</div><ul>
+      <li>Dashboard</li><li>Markets</li><li>Strategies</li><li>Paper Trades</li><li class="active">Backtest</li><li>Compare</li><li>Portfolio</li><li>Data ingestion</li>
+    </ul></div>
+    <div class="main">
+      <h4>Backtest runner</h4>
+      <div class="sub">Replay a strategy on stored historical market data</div>
+      <div class="grid cols-2">
+        <div class="card" style="background:var(--bg-3)">
+          <div style="font-size:12px;color:var(--fg-mute);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px">Configuration</div>
+          <div style="font-size:11px;color:var(--fg-mute);margin-bottom:2px">Strategy</div>
+          <div class="mono" style="background:var(--bg);border:1px solid var(--line);padding:6px 10px;border-radius:6px;margin-bottom:10px">Kelly sizing ▾</div>
+          <div style="font-size:11px;color:var(--fg-mute);margin-bottom:2px">Platforms</div>
+          <div style="margin-bottom:10px"><span class="chip kalshi">KAL</span><span class="chip poly">POLY</span><span class="chip mani">MAN</span><span class="chip predit">PRE</span></div>
+          <div style="font-size:11px;color:var(--fg-mute);margin-bottom:2px">Date range</div>
+          <div class="mono" style="background:var(--bg);border:1px solid var(--line);padding:6px 10px;border-radius:6px;margin-bottom:10px">2024-01-01 → 2026-04-15</div>
+          <div style="font-size:11px;color:var(--fg-mute);margin-bottom:2px">Starting bankroll</div>
+          <div class="mono" style="background:var(--bg);border:1px solid var(--line);padding:6px 10px;border-radius:6px;margin-bottom:14px">$10,000</div>
+          <div style="background:var(--accent);color:#0b0f17;padding:10px;border-radius:6px;text-align:center;font-weight:600">Run backtest</div>
+        </div>
+        <div>
+          <div class="tiles" style="grid-template-columns:repeat(2,1fr);margin-bottom:12px">
+            <div class="tile"><div class="k">Final equity</div><div class="v">$14,210</div><div class="d pos">+42.1%</div></div>
+            <div class="tile"><div class="k">Sharpe</div><div class="v">2.04</div><div class="d">over 842d</div></div>
+            <div class="tile"><div class="k">Brier</div><div class="v">0.138</div><div class="d">8,412 predictions</div></div>
+            <div class="tile"><div class="k">Win rate</div><div class="v">61.8%</div><div class="d">412 / 667 trades</div></div>
+          </div>
+          <div class="chart" style="height:200px">
+            <svg viewbox="0 0 400 200" preserveAspectRatio="none">
+              <polyline fill="none" stroke="#34d399" stroke-width="1.5" points="0,180 25,172 50,168 75,160 100,158 125,148 150,152 175,140 200,130 225,124 250,110 275,112 300,98 325,88 350,76 375,62 400,50" />
+              <polyline fill="rgba(52,211,153,0.08)" stroke="none" points="0,180 25,172 50,168 75,160 100,158 125,148 150,152 175,140 200,130 225,124 250,110 275,112 300,98 325,88 350,76 375,62 400,50 400,200 0,200" />
+            </svg>
+          </div>
+          <div class="dim" style="font-size:11px;margin-top:6px">Equity curve · backtest output</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 7: Compare -->
+<h3>7 · Compare</h3>
+<div class="screen">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:3000/compare</div></div>
+  <div class="body">
+    <div class="nav"><div class="logo">PMARKETS</div><ul>
+      <li>Dashboard</li><li>Markets</li><li>Strategies</li><li>Paper Trades</li><li>Backtest</li><li class="active">Compare</li><li>Portfolio</li><li>Data ingestion</li>
+    </ul></div>
+    <div class="main">
+      <h4>Compare runs</h4>
+      <div class="sub">Overlay strategies, platforms, time ranges — find what actually works</div>
+      <div class="chart" style="height:220px">
+        <svg viewbox="0 0 400 220" preserveAspectRatio="none">
+          <polyline fill="none" stroke="#7dd3fc" stroke-width="1.5" points="0,180 50,170 100,160 150,142 200,128 250,112 300,98 350,82 400,62" />
+          <polyline fill="none" stroke="#fbbf24" stroke-width="1.5" points="0,180 50,178 100,168 150,172 200,158 250,162 300,142 350,130 400,118" />
+          <polyline fill="none" stroke="#f87171" stroke-width="1.5" points="0,180 50,184 100,190 150,178 200,186 250,180 300,188 350,194 400,190" />
+        </svg>
+      </div>
+      <table style="margin-top:16px">
+        <thead><tr><th>Run</th><th>Strategy</th><th>Platforms</th><th>Period</th><th class="num">P&amp;L</th><th class="num">Sharpe</th><th class="num">Brier</th><th class="num">Win %</th></tr></thead>
+        <tbody>
+          <tr><td><span style="display:inline-block;width:10px;height:10px;background:#7dd3fc;border-radius:50%"></span> Kelly · all</td><td>Kelly sizing</td><td><span class="chip kalshi">KAL</span><span class="chip poly">POLY</span><span class="chip mani">MAN</span><span class="chip predit">PRE</span></td><td class="dim">24 mo</td><td class="num pos">+42.1%</td><td class="num">2.04</td><td class="num">0.138</td><td class="num">61.8</td></tr>
+          <tr><td><span style="display:inline-block;width:10px;height:10px;background:#fbbf24;border-radius:50%"></span> Arb only</td><td>Cross-platform arb</td><td><span class="chip kalshi">KAL</span><span class="chip poly">POLY</span></td><td class="dim">24 mo</td><td class="num pos">+12.4%</td><td class="num">1.12</td><td class="num dim">n/a</td><td class="num">72.1</td></tr>
+          <tr><td><span style="display:inline-block;width:10px;height:10px;background:#f87171;border-radius:50%"></span> News fade</td><td>News spike fade</td><td><span class="chip mani">MAN</span></td><td class="dim">24 mo</td><td class="num neg">−5.8%</td><td class="num">−0.22</td><td class="num">0.218</td><td class="num">48.2</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 8: Portfolio -->
+<h3>8 · Portfolio</h3>
+<div class="screen">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:3000/portfolio</div></div>
+  <div class="body">
+    <div class="nav"><div class="logo">PMARKETS</div><ul>
+      <li>Dashboard</li><li>Markets</li><li>Strategies</li><li>Paper Trades</li><li>Backtest</li><li>Compare</li><li class="active">Portfolio</li><li>Data ingestion</li>
+    </ul></div>
+    <div class="main">
+      <h4>Portfolio analytics</h4>
+      <div class="sub">Historical performance of your paper account</div>
+      <div class="tiles">
+        <div class="tile"><div class="k">All-time P&amp;L</div><div class="v pos">+$2,418</div><div class="d">since 2024-01-03</div></div>
+        <div class="tile"><div class="k">Max drawdown</div><div class="v">−12.4%</div><div class="d">2024-09-14 peak</div></div>
+        <div class="tile"><div class="k">Sortino</div><div class="v">2.41</div><div class="d">downside-adjusted</div></div>
+        <div class="tile"><div class="k">Avg trade</div><div class="v">+$5.96</div><div class="d">406 trades</div></div>
+      </div>
+      <div class="grid cols-2">
+        <div>
+          <div class="chart" style="height:180px">
+            <svg viewbox="0 0 400 180" preserveAspectRatio="none">
+              <polyline fill="none" stroke="#7dd3fc" stroke-width="1.5" points="0,150 40,142 80,134 120,128 160,118 200,126 240,108 280,92 320,80 360,68 400,52" />
+            </svg>
+          </div>
+          <div class="dim" style="font-size:11px">Equity curve</div>
+        </div>
+        <div>
+          <div class="chart" style="height:180px;padding:10px 14px">
+            <div class="sparkbar">
+              <span style="height:70%;background:linear-gradient(180deg,#34d399,#059669)"></span>
+              <span style="height:40%;background:linear-gradient(180deg,#34d399,#059669)"></span>
+              <span style="height:25%;background:linear-gradient(180deg,#fbbf24,#d97706)"></span>
+              <span style="height:5%;background:linear-gradient(180deg,#f87171,#b91c1c)"></span>
+              <span style="height:2%;background:linear-gradient(180deg,#f87171,#b91c1c)"></span>
+            </div>
+          </div>
+          <div class="dim" style="font-size:11px">P&amp;L attribution · Kelly · Arb · Momentum · News · MM</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Screen 9: Data ingestion -->
+<h3>9 · Data ingestion</h3>
+<div class="screen">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">localhost:3000/ingest</div></div>
+  <div class="body">
+    <div class="nav"><div class="logo">PMARKETS</div><ul>
+      <li>Dashboard</li><li>Markets</li><li>Strategies</li><li>Paper Trades</li><li>Backtest</li><li>Compare</li><li>Portfolio</li><li class="active">Data ingestion</li>
+    </ul></div>
+    <div class="main">
+      <h4>Platform adapters</h4>
+      <div class="sub">Historical + live market data feeds · stored locally</div>
+      <table>
+        <thead><tr><th>Platform</th><th>Status</th><th>Last sync</th><th class="num">Markets</th><th class="num">Rows</th><th>Action</th></tr></thead>
+        <tbody>
+          <tr><td><span class="chip kalshi">KAL</span> Kalshi</td><td><span class="pill on">HEALTHY</span></td><td class="mono dim">14:04:02</td><td class="num">842</td><td class="num">4.2M</td><td><span class="pill">Sync now</span></td></tr>
+          <tr><td><span class="chip poly">POLY</span> Polymarket</td><td><span class="pill on">HEALTHY</span></td><td class="mono dim">14:03:48</td><td class="num">1,911</td><td class="num">11.8M</td><td><span class="pill">Sync now</span></td></tr>
+          <tr><td><span class="chip mani">MAN</span> Manifold</td><td><span class="pill on">HEALTHY</span></td><td class="mono dim">14:02:55</td><td class="num">1,203</td><td class="num">6.1M</td><td><span class="pill">Sync now</span></td></tr>
+          <tr><td><span class="chip predit">PRE</span> PredictIt</td><td><span class="pill warn">RATE LIMITED</span></td><td class="mono dim">13:41:10</td><td class="num">262</td><td class="num">0.8M</td><td><span class="pill">Retry</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- TECH DIRECTION (proposed, user can change at Step 11) -->
+<h2><span class="num">§6</span>Proposed tech direction <span class="dim" style="font-size:13px;font-weight:400">(you'll confirm at HACF Step 11)</span></h2>
+<div class="grid cols-2">
+  <div class="card">
+    <h3 style="margin-top:0">Frontend</h3>
+    <p><b style="color:var(--fg)">Next.js + TypeScript + Tailwind</b> for the web UI. Next.js because it runs locally with one command, has built-in API routes (so frontend and backend can share a process), and renders quickly enough for a data-dense trading UI. Tailwind keeps styling consistent.</p>
+    <p><b style="color:var(--fg)">Recharts or ECharts</b> for P&amp;L curves, price history, comparison overlays.</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Backend + data</h3>
+    <p><b style="color:var(--fg)">Python FastAPI</b> for the adapters, strategy engine, backtester. Python because the quant ecosystem (pandas, numpy, scipy) is unmatched for backtesting. FastAPI because async is native, OpenAPI docs are automatic.</p>
+    <p><b style="color:var(--fg)">SQLite → Postgres</b>: start with SQLite for zero-config local dev, upgrade to Postgres if data volume demands it. Schema: markets, prices, trades, fills, portfolio snapshots.</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Strategy plugin interface</h3>
+    <p>Each strategy is a Python class with two methods: <code>decide(market_state) → orders</code> and <code>on_fill(fill) → None</code>. Dropping a new file into <code>strategies/</code> registers it. This makes the 5 built-ins extensible with a 6th, 7th, etc.</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">Backtest engine</h3>
+    <p>Event-driven replay: reconstruct order book state at each historical tick, feed to strategy, simulate fill with realistic slippage. Same code path as live paper trading — swap the data source. This guarantees backtest results match what live trading would have done.</p>
+  </div>
+</div>
+
+<!-- OPEN QUESTIONS -->
+<h2><span class="num">§7</span>Decisions I'm proposing on your behalf</h2>
+<p>Things you said <i>"leave to me"</i>. Flag any you want to override.</p>
+<div class="card" style="padding:0">
+<table>
+  <thead><tr><th>Topic</th><th>Proposed default</th><th>Alternative</th></tr></thead>
+  <tbody>
+    <tr><td>Auth</td><td>None — local-only</td><td>Local password if machine is shared</td></tr>
+    <tr><td>Starting bankroll</td><td>$10,000 default, user-editable</td><td>Per-strategy separate bankrolls</td></tr>
+    <tr><td>Data refresh</td><td>Live adapters poll every 30s; historical synced on-demand</td><td>Websocket subscriptions where platforms support them</td></tr>
+    <tr><td>Manual trades</td><td>Enabled (on Market detail screen)</td><td>Strategies-only; no manual paper trades</td></tr>
+    <tr><td>Slippage model</td><td>Mid-price ± 1¢, or fill at top-of-book if size crosses spread</td><td>Full order-book walk</td></tr>
+    <tr><td>Closing momentum window</td><td>Last 6h before market close</td><td>User-tunable per strategy</td></tr>
+    <tr><td>News-fade trigger</td><td>10% price move in 15min window</td><td>Attached news API (separate project)</td></tr>
+    <tr><td>Market-maker spread</td><td>2¢ default around mid</td><td>Dynamic based on volatility</td></tr>
+    <tr><td>Portfolio export</td><td>CSV + JSON download</td><td>None</td></tr>
+    <tr><td>Theme</td><td>Dark (finance convention)</td><td>Light mode toggle</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- APPROVAL FOOTER -->
+<h2><span class="num">§8</span>Approve or request changes</h2>
+<div class="cta" style="display:block;padding:20px">
+  <p style="margin:0 0 10px;color:var(--fg)"><b>Approve the entire proposal</b> by replying <code style="color:var(--accent-2)">approve</code> in chat. HACF will advance to Step 7 (combine stated intent), then to disambiguation, terminal states, tech stack confirmation, research, rules extraction, boundary declaration, design system selection, and wireframe generation.</p>
+  <p style="margin:0 0 10px;color:var(--fg-dim)"><b>Request changes</b> by listing what to change. Examples:</p>
+  <ul style="color:var(--fg-dim);margin:0 0 10px 20px">
+    <li>"Add a Settings screen for API keys and bankroll"</li>
+    <li>"Drop the Market Maker strategy — I only want 4"</li>
+    <li>"Remove PredictIt — it's not worth supporting"</li>
+    <li>"The backtest should let me upload my own probability forecasts"</li>
+    <li>"Use Svelte instead of Next.js"</li>
+  </ul>
+  <p style="margin:0;color:var(--fg-mute);font-size:12px">I'll revise and regenerate this page until you approve.</p>
+</div>
+
+<footer>
+  <div>Prediction Markets Paper Trader · HACF Phase 1 · Step 6 proposal · generated 2026-04-16</div>
+  <div class="legend">
+    <span><span class="chip kalshi">KAL</span>Kalshi</span>
+    <span><span class="chip poly">POLY</span>Polymarket</span>
+    <span><span class="chip mani">MAN</span>Manifold Markets</span>
+    <span><span class="chip predit">PRE</span>PredictIt</span>
+  </div>
+</footer>
+
+</div>
+</body>
+</html>
