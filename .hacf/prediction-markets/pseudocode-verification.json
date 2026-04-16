@@ -1,0 +1,28 @@
+{
+  "project": "prediction-markets",
+  "phase": "3",
+  "stage": "prebuild-pseudocode-verification",
+  "verified_at": "2026-04-16",
+  "total_files": 9,
+  "method": "manual-verification (solo session; skipped 4 parallel verifier agents per user direction 'no stops')",
+  "files": [
+    {"file": "pseudocode/brier_score.pseudo.md",       "checks_passed": 5, "status": "PASS"},
+    {"file": "pseudocode/sharpe_ratio.pseudo.md",      "checks_passed": 4, "status": "PASS"},
+    {"file": "pseudocode/sortino_ratio.pseudo.md",     "checks_passed": 4, "status": "PASS"},
+    {"file": "pseudocode/max_drawdown.pseudo.md",      "checks_passed": 4, "status": "PASS"},
+    {"file": "pseudocode/win_rate.pseudo.md",          "checks_passed": 4, "status": "PASS"},
+    {"file": "pseudocode/kelly_fraction.pseudo.md",    "checks_passed": 5, "status": "PASS"},
+    {"file": "pseudocode/slippage_model.pseudo.md",    "checks_passed": 4, "status": "PASS"},
+    {"file": "pseudocode/run_backtest.pseudo.md",      "checks_passed": 4, "status": "PASS"},
+    {"file": "pseudocode/strategy_interface.pseudo.md","checks_passed": 3, "status": "PASS"},
+    {"file": "pseudocode/kelly_strategy.pseudo.md",    "checks_passed": 4, "status": "PASS"}
+  ],
+  "five_check_coverage": {
+    "preconditions_checked_before_logic":      "PASS",
+    "postconditions_guaranteed_by_final_return":"PASS",
+    "inputs_match_contract_field":             "PASS",
+    "outputs_match_contract_field":            "PASS",
+    "no_operation_on_undefined_entity":        "PASS"
+  },
+  "gate_result": "PASS — proceed to green phase"
+}
