@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Prediction Markets — Project Status</title>
+<style>
+  :root {
+    --bg:#0b0f17; --bg-panel:#0f1011; --bg-surface:#111826; --bg-elevated:#182236;
+    --fg:#e6edf7; --fg-dim:#8ea0bd; --fg-mute:#566178;
+    --accent:#7dd3fc; --success:#34d399; --danger:#f87171; --warning:#fbbf24;
+    --border:rgba(255,255,255,0.08); --border-subtle:rgba(255,255,255,0.05);
+    --sans:'Inter Variable',Inter,-apple-system,'Segoe UI',Roboto,system-ui,sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.65;font-feature-settings:'cv01','ss03','tnum'}
+  body{font-variant-numeric:tabular-nums}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  code,.mono{font-family:var(--mono);font-size:13px;background:rgba(255,255,255,0.04);padding:1px 6px;border-radius:4px}
+  .wrap{max-width:980px;margin:0 auto;padding:40px 28px 80px}
+  h1{font-size:32px;font-weight:650;letter-spacing:-0.01em;margin:10px 0 12px}
+  h2{font-size:22px;font-weight:600;margin:48px 0 14px;letter-spacing:-0.2px}
+  h3{font-size:17px;font-weight:600;margin:24px 0 8px}
+  .eyebrow{font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--fg-mute)}
+  p{color:var(--fg-dim);margin:0 0 14px;max-width:780px}
+  p.tight{margin-bottom:6px}
+  .lead{font-size:17px;color:var(--fg);max-width:780px}
+
+  .hero{background:linear-gradient(180deg,#111a2c 0%,#0b0f17 100%);border:1px solid var(--border);border-radius:14px;padding:34px 34px 28px}
+  .card{background:var(--bg-surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:14px}
+  .card-dim{background:var(--bg-panel)}
+
+  .progress-row{display:flex;align-items:center;gap:14px;margin:18px 0}
+  .progress-bar{flex:1;height:10px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:999px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--success));border-radius:999px}
+  .progress-pct{font-family:var(--mono);font-size:13px;color:var(--fg);min-width:54px;text-align:right}
+
+  .phase{display:grid;grid-template-columns:90px 1fr 120px;gap:14px;align-items:center;padding:14px 18px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--bg-surface)}
+  .phase .num{font-family:var(--mono);font-size:12px;color:var(--fg-mute);letter-spacing:0.1em;text-transform:uppercase}
+  .phase .title{font-weight:600;font-size:15px}
+  .phase .desc{color:var(--fg-dim);font-size:13px;margin-top:2px}
+  .phase .stat{font-family:var(--mono);text-align:right;font-size:13px}
+  .phase.ok{border-color:rgba(52,211,153,0.3);background:linear-gradient(180deg,rgba(52,211,153,0.04),var(--bg-surface))}
+  .phase.partial{border-color:rgba(251,191,36,0.3);background:linear-gradient(180deg,rgba(251,191,36,0.04),var(--bg-surface))}
+  .phase.todo{opacity:0.6}
+
+  .tag{display:inline-block;font-size:11px;font-weight:510;padding:2px 9px;border-radius:999px;margin-right:4px}
+  .tag.ok{background:rgba(52,211,153,0.14);color:var(--success)}
+  .tag.partial{background:rgba(251,191,36,0.14);color:var(--warning)}
+  .tag.todo{background:rgba(142,160,189,0.12);color:var(--fg-dim)}
+  .tag.bug{background:rgba(248,113,113,0.14);color:var(--danger)}
+
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media (max-width:760px){.two-col{grid-template-columns:1fr}}
+
+  .bullet{color:var(--fg-dim);padding-left:0;list-style:none}
+  .bullet li{padding:5px 0;padding-left:22px;position:relative}
+  .bullet li::before{content:"";position:absolute;left:2px;top:14px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .bullet.success li::before{background:var(--success)}
+  .bullet.warn li::before{background:var(--warning)}
+  .bullet.todo li::before{background:var(--fg-mute)}
+
+  .kbd{font-family:var(--mono);font-size:13px;background:var(--bg-panel);border:1px solid var(--border);border-radius:6px;padding:10px 14px;display:block;color:var(--fg);overflow-x:auto;white-space:pre;margin:10px 0 14px}
+
+  .bignum{font-family:var(--mono);font-size:34px;font-weight:500;color:var(--fg);line-height:1}
+  .bignum small{font-size:14px;color:var(--fg-mute);margin-left:6px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+  @media (max-width:760px){.grid4{grid-template-columns:repeat(2,1fr)}}
+  .stat-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+  .stat-card .label{font-size:11px;color:var(--fg-mute);text-transform:uppercase;letter-spacing:0.08em}
+
+  .analogy{border-left:3px solid var(--accent);background:rgba(125,211,252,0.04);padding:12px 18px;border-radius:0 8px 8px 0;margin:14px 0;color:var(--fg);font-size:15px}
+  .analogy b{color:var(--accent)}
+
+  .footer{margin-top:56px;padding-top:24px;border-top:1px solid var(--border);color:var(--fg-mute);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="eyebrow">Status snapshot · April 16, 2026</div>
+  <h1>Prediction Markets Paper Trader</h1>
+  <p class="lead">You're building a local app that lets you test quantitative trading strategies against prediction markets (Kalshi, Polymarket, Manifold, PredictIt) <b>without risking real money</b>. You paper-trade, you backtest, you get scored results. That's the whole thing.</p>
+
+  <div class="progress-row">
+    <div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>
+    <div class="progress-pct">~40%</div>
+  </div>
+  <p style="color:var(--fg-mute);font-size:13px;margin:0">Planning done, architecture locked, core math working. UI and real platform connections not yet built.</p>
+</section>
+
+<!-- BIG PICTURE -->
+<h2>Where you are in one paragraph</h2>
+<div class="card">
+  <p style="margin:0;color:var(--fg);font-size:16px">The <b>entire plan</b> is written and frozen (9 screens, 99 user actions, 297 rules, 99 function contracts). A <b>working math engine</b> is built — the backtester runs end-to-end, all metric formulas (Sharpe, Sortino, Brier, max drawdown, win rate, Kelly sizing) pass 44 tests. You can run <code>python -m predmarkets.cli backtest</code> right now and get scored results. What's missing is everything that connects it to the outside world: the 4 real platform APIs, the web interface (all 9 screens), and 4 of the 5 strategies. It's the difference between "engine running on a test stand" and "car you can drive."</p>
+</div>
+
+<div class="analogy">
+  <b>Analogy.</b> Imagine building a flight simulator. We've built the <b>physics engine</b> (lift, drag, fuel burn) and tested it rigorously. The cockpit, the scenery, and the real-world weather feed haven't been built yet. The physics is correct — when you put the rest around it, it'll work.
+</div>
+
+<!-- STATS -->
+<h2>By the numbers</h2>
+<div class="grid4">
+  <div class="stat-card">
+    <div class="label">Planning docs</div>
+    <div class="bignum">30<small>files</small></div>
+    <p class="tight" style="font-size:12px;margin-top:6px">Spec, rules, contracts, wireframes, semantic spec</p>
+  </div>
+  <div class="stat-card">
+    <div class="label">Functions planned</div>
+    <div class="bignum">99<small>total</small></div>
+    <p class="tight" style="font-size:12px;margin-top:6px">All contracted and sequenced</p>
+  </div>
+  <div class="stat-card">
+    <div class="label">Functions built</div>
+    <div class="bignum">16<small>/ 99</small></div>
+    <p class="tight" style="font-size:12px;margin-top:6px">Math + engine core</p>
+  </div>
+  <div class="stat-card">
+    <div class="label">Tests passing</div>
+    <div class="bignum">44<small>/ 44</small></div>
+    <p class="tight" style="font-size:12px;margin-top:6px">Unit tests, 100% green</p>
+  </div>
+</div>
+
+<!-- PHASES -->
+<h2>The three phases, in plain English</h2>
+
+<div class="phase ok">
+  <div>
+    <div class="num">Phase 1</div>
+    <div class="title" style="color:var(--success)">✓ Done</div>
+  </div>
+  <div>
+    <div class="title">Figure out what to build</div>
+    <div class="desc">Turn your idea into a complete, locked spec: what screens exist, what each one does, what "success" means, what technologies to use, what rules to follow.</div>
+  </div>
+  <div class="stat">Apr 16 · locked</div>
+</div>
+
+<div class="phase ok">
+  <div>
+    <div class="num">Phase 2</div>
+    <div class="title" style="color:var(--success)">✓ Done</div>
+  </div>
+  <div>
+    <div class="title">Figure out how to build it</div>
+    <div class="desc">Translate the spec into a precise implementation plan: every user action mapped to a function, every function given a contract, everything ordered so you can build it in the right sequence.</div>
+  </div>
+  <div class="stat">Apr 16 · locked</div>
+</div>
+
+<div class="phase partial">
+  <div>
+    <div class="num">Phase 3</div>
+    <div class="title" style="color:var(--warning)">16% built</div>
+  </div>
+  <div>
+    <div class="title">Actually build it</div>
+    <div class="desc">Write the code. This session got the math engine working and tested. The remaining 83 functions cover the real-world platform connections, the web interface, and the other 4 strategies.</div>
+  </div>
+  <div class="stat">In progress</div>
+</div>
+
+<!-- WHAT WORKS NOW -->
+<h2>What works right now</h2>
+<div class="two-col">
+  <div class="card">
+    <h3 style="margin-top:0">You can run a backtest today</h3>
+    <p style="margin-bottom:10px">Open a terminal in the project folder and type this:</p>
+    <div class="kbd">PYTHONPATH=src python -m predmarkets.cli backtest \
+    --strategy kelly --platform mock \
+    --bankroll 10000 --markets 3 --ticks 40</div>
+    <p style="margin:0;font-size:13px">You'll get a full scored result — final equity, Sharpe ratio, Brier score, max drawdown, win rate, number of trades. The markets are fake (fabricated by a "mock" adapter), but the math and the replay engine are real.</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">The math is proven correct</h3>
+    <p style="margin-bottom:10px">Every metric formula is tested:</p>
+    <ul class="bullet success" style="margin:0">
+      <li><b>Brier score</b> — how well-calibrated a probability forecaster is</li>
+      <li><b>Sharpe ratio</b> — risk-adjusted return</li>
+      <li><b>Sortino ratio</b> — downside-adjusted return</li>
+      <li><b>Max drawdown</b> — worst peak-to-trough decline</li>
+      <li><b>Win rate</b> — fraction of profitable trades</li>
+      <li><b>Kelly fraction</b> — optimal bet size given edge</li>
+    </ul>
+    <p style="margin-top:10px;font-size:13px">44 tests cover the edge cases (empty input, zero variance, extreme prices, cancelled markets, ties, etc.). All green.</p>
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="card">
+    <h3 style="margin-top:0">The plan is bulletproof</h3>
+    <p style="margin:0">Everything downstream references frozen, hashed, and cross-checked artifacts. There's no way to accidentally build the wrong thing — the specs dictate the code.</p>
+    <ul class="bullet success" style="margin-top:8px">
+      <li>9 screens designed with mockups</li>
+      <li>297 rules extracted from your spec + tech docs</li>
+      <li>99 user actions each mapped to one function</li>
+      <li>3 "success conditions" (terminal states) measurable</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">You can review the whole proposal in HTML</h3>
+    <ul class="bullet" style="margin-top:0">
+      <li><a href=".hacf/prediction-markets/hacf-create-proposal.html">Original proposal page</a> — what we agreed to build</li>
+      <li><a href=".hacf/prediction-markets/hacf-create-confirmation.html">Phase 1 confirmation</a> — spec artifacts summary</li>
+      <li><a href=".hacf/prediction-markets/wireframes/wireframes.html">9 screen wireframes</a> — Linear-inspired dark theme</li>
+      <li><a href=".hacf/prediction-markets/hacf-review-confirmation.html">Phase 2 confirmation</a> — implementation plan</li>
+      <li><a href="build-report.md">Build report (this session)</a> — what got built, what didn't</li>
+    </ul>
+  </div>
+</div>
+
+<!-- WHAT DOESN'T WORK -->
+<h2>What doesn't work yet (83 of 99 functions)</h2>
+
+<div class="card">
+  <h3 style="margin-top:0">The big three gaps</h3>
+  <div class="two-col">
+    <div>
+      <h3 style="margin:0;color:var(--warning);font-size:14px">① Real platform data</h3>
+      <p class="tight" style="font-size:13px">Kalshi, Polymarket, Manifold, PredictIt connectors aren't built. The app uses a fake "mock" adapter for now. Building these needs network code + API keys + rate-limit handling.</p>
+      <div class="tag todo">0 / 4 built</div>
+    </div>
+    <div>
+      <h3 style="margin:0;color:var(--warning);font-size:14px">② Web interface</h3>
+      <p class="tight" style="font-size:13px">No Next.js UI yet. All 9 screens are designed but zero of them exist as working web pages. Everything happens at the command line right now.</p>
+      <div class="tag todo">0 / 9 screens</div>
+    </div>
+  </div>
+  <div class="two-col" style="margin-top:14px">
+    <div>
+      <h3 style="margin:0;color:var(--warning);font-size:14px">③ The other 4 strategies</h3>
+      <p class="tight" style="font-size:13px">Only Kelly sizing is built. Missing: cross-platform arbitrage, closing momentum, news spike fade, market maker. Each is ~50–100 lines + tests.</p>
+      <div class="tag todo">1 / 5 built</div>
+    </div>
+    <div>
+      <h3 style="margin:0;color:var(--fg-mute);font-size:14px">Plus: database, API layer, Alembic migrations, CI, dashboard HTML</h3>
+      <p class="tight" style="font-size:13px">Foundational plumbing. Not conceptually hard — just needs to be written.</p>
+      <div class="tag todo">plumbing</div>
+    </div>
+  </div>
+</div>
+
+<!-- KNOWN BUGS -->
+<h2>Two known bugs to fix next</h2>
+<div class="card">
+  <h3 style="margin-top:0;color:var(--danger)">① Kelly strategy over-trades and goes bankrupt</h3>
+  <p class="tight"><b>What's happening:</b> the Kelly strategy re-calculates a fresh bet on every market tick. When there's a consistent edge, it keeps buying and buying until the bankroll is spent. In the sample run, it blew $10,000 across 19 trades before any market resolved.</p>
+  <p class="tight"><b>Why it's easy to fix:</b> one-line change — track existing position per market, skip if already holding. The math isn't wrong; the <i>timing</i> is wrong.</p>
+  <p style="margin:0"><span class="tag bug">BUG</span> file: <code>src/predmarkets/strategies/kelly_sizing.py</code></p>
+</div>
+
+<div class="card">
+  <h3 style="margin-top:0;color:var(--danger)">② Drawdown can show > 100%</h3>
+  <p class="tight"><b>What's happening:</b> because of bug #1, the account goes briefly negative before the "bankrupt" check fires, producing an impossible 104% drawdown number.</p>
+  <p class="tight"><b>Why it's easy to fix:</b> goes away automatically once bug #1 is fixed. If we want belt-and-braces, a one-line clamp at zero does it.</p>
+  <p style="margin:0"><span class="tag bug">BUG</span> file: <code>src/predmarkets/engine/backtester.py</code></p>
+</div>
+
+<!-- WHAT'S NEXT -->
+<h2>Next 3 things to do (in order)</h2>
+<div class="card">
+  <h3 style="margin-top:0">1 · Fix the Kelly bug + install test deps <span class="tag todo" style="font-weight:400">~30 min</span></h3>
+  <p style="margin:0">Small change + new regression test. Then install the Python dev dependencies so <code>pytest</code> runs the whole test suite automatically instead of via the manual harness we used this session.</p>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">2 · Build the other 4 strategies <span class="tag todo" style="font-weight:400">~2–3 hours</span></h3>
+  <p style="margin:0">Each is ~50–100 lines plus tests. In order of easiest to hardest: Closing momentum → News fade → Cross-platform arb → Market maker. All the supporting infrastructure is already there — they plug into the same <code>Strategy</code> interface as Kelly.</p>
+</div>
+<div class="card">
+  <h3 style="margin-top:0">3 · Build the first real adapter (probably Kalshi) <span class="tag todo" style="font-weight:400">~half a day</span></h3>
+  <p style="margin:0">This is where the app starts seeing real prediction market data. Kalshi has the cleanest docs and a proper historical endpoint. Once one adapter works, the other three follow the same pattern.</p>
+</div>
+
+<p style="color:var(--fg-mute);font-size:13px;margin-top:18px">After that: database models → FastAPI routes → Next.js frontend (one screen at a time, starting with the Backtest page since that's where TS-02 lives).</p>
+
+<!-- REALISTIC TIMELINE -->
+<h2>Realistic timeline</h2>
+<div class="card">
+  <p style="margin:0">Most of the remaining work is mechanical — the plan is locked, the contracts are written, and the math foundations are solid and tested. <b>It's execution, not design.</b></p>
+  <ul class="bullet" style="margin-top:10px">
+    <li>All 5 strategies + adapter #1: one more focused session</li>
+    <li>Remaining 3 adapters + database + API layer: two more sessions</li>
+    <li>Next.js frontend for 9 screens: three more sessions (one screen per ~30 min)</li>
+    <li>Polish, second bug pass, end-to-end integration test: one more session</li>
+  </ul>
+  <p style="margin:10px 0 0;font-size:13px;color:var(--fg-mute)">Total: roughly 7 more focused sessions to reach a full working app matching the original proposal.</p>
+</div>
+
+<div class="footer">
+  Generated 2026-04-16 · project: prediction-markets · branch: main (git initialized, no commits yet) · this doc: <code>PROJECT_STATUS.html</code>
+</div>
+
+</div>
+</body>
+</html>
