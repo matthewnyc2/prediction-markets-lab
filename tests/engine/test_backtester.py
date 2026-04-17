@@ -1,9 +1,12 @@
 """Smoke test for Backtester — proves TS-02 (backtest produces scored results)."""
 
+from dataclasses import dataclass, field
+
 from predmarkets.adapters.mock_adapter import MockAdapter
 from predmarkets.engine.backtester import Backtester
+from predmarkets.engine.order import Order
 from predmarkets.strategies.kelly_sizing import KellySizing
-from predmarkets.strategies.base import MarketView
+from predmarkets.strategies.base import MarketState, MarketView, Strategy
 
 
 def informed_oracle(market: MarketView) -> float:
@@ -43,5 +46,43 @@ def test_backtest_with_no_strategy_bets_is_stable():
     result = Backtester(bankroll=5000.0).run(events, strategy)
 
     assert result.final_equity == 5000.0
+    assert len(result.trade_list) == 0
+    assert not result.bankrupt
+
+
+@dataclass(slots=True)
+class OverspendStrategy(Strategy):
+    strategy_id: str = "overspend"
+    display_name: str = "Overspend"
+    fill_count: int = 0
+    submitted_sizes: list[int] = field(default_factory=list)
+
+    def decide(self, market_state: MarketState) -> list[Order]:
+        market = market_state.markets[0]
+        order = Order(
+            platform=market.platform,
+            market_id=market.market_id,
+            side="yes",
+            order_side="buy",
+            size=10_000,
+            strategy_id=self.strategy_id,
+        )
+        self.submitted_sizes.append(order.size)
+        return [order]
+
+    def on_fill(self, fill) -> None:  # noqa: ANN001
+        self.fill_count += 1
+
+
+def test_backtest_rejects_orders_that_exceed_bankroll() -> None:
+    adapter = MockAdapter(seed=1)
+    events = adapter.stream_events(n_markets=1, ticks_per_market=5)
+    strategy = OverspendStrategy()
+
+    result = Backtester(bankroll=100.0).run(events, strategy)
+
+    assert strategy.submitted_sizes
+    assert strategy.fill_count == 0
+    assert result.final_equity == 100.0
     assert len(result.trade_list) == 0
     assert not result.bankrupt

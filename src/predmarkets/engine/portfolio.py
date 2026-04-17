@@ -47,8 +47,10 @@ class Portfolio:
             unrealised += (mark - pos.avg_entry) * pos.size
         return self.cash + unrealised
 
-    def apply_fill(self, fill: PaperFill) -> None:
+    def apply_fill(self, fill: PaperFill) -> bool:
         """Credit/debit cash and update the position ledger (PR-001)."""
+        if fill.cost > self.cash + 1e-9:
+            return False
         self.all_fills.append(fill)
         key = (fill.platform, fill.market_id, fill.side)
         self.cash -= fill.cost
@@ -62,12 +64,13 @@ class Portfolio:
                 avg_entry=fill.fill_price,
                 entry_ts=fill.timestamp,
             )
-            return
+            return True
         new_size = existing.size + fill.size
         existing.avg_entry = (
             (existing.avg_entry * existing.size + fill.fill_price * fill.size) / new_size
         )
         existing.size = new_size
+        return True
 
     def settle_resolution(
         self, platform: str, market_id: str, outcome: Literal["yes", "no", "cancelled"]

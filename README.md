@@ -13,7 +13,7 @@
 
 ## What this is
 
-A portfolio project demonstrating end-to-end product engineering — from spec to tested engine to browser demo. It paper-trades **synthetic prediction markets** (Kalshi / Polymarket / Manifold / PredictIt in scope for future real-data adapters) and lets you test five built-in quantitative strategies or author your own.
+A portfolio project demonstrating end-to-end product engineering — from spec to tested engine to browser demo. The Python package currently backtests synthetic markets via the mock adapter, while the browser demo replays cached real Polymarket history. You can test built-in quantitative strategies or author your own.
 
 ### The engine
 
@@ -24,7 +24,7 @@ A portfolio project demonstrating end-to-end product engineering — from spec t
 - Deterministic PRNG for reproducible results
 - **53 unit tests**, 100% passing
 
-### The five strategies
+### Browser demo strategies
 
 | Strategy | Theory |
 |---|---|
@@ -33,6 +33,17 @@ A portfolio project demonstrating end-to-end product engineering — from spec t
 | **Contrarian underdog** | Buys YES on longshots priced below a threshold — tests whether underdogs are systematically underpriced |
 | **Favorite-longshot fade** | Fades heavily-favored markets — tests the well-documented overpricing of favorites |
 | **Buy-and-hold baseline** | Naive reference: just buys YES at open. Everything else should beat this. |
+| **Buy-NO baseline** | Inverse baseline: buys NO at open to test the default short bias |
+| **Mean-reversion bounce** | Buys after sharp drops — tests whether fear overshoots and snaps back |
+| **Ride confirmed favorites** | Buys heavy favorites late — tests whether near-resolution favorites are correctly priced |
+
+### Python package reference strategies
+
+| Strategy | Status |
+|---|---|
+| **Kelly sizing** | Implemented under `src/predmarkets/strategies/kelly_sizing.py` |
+| **Closing momentum** | Implemented under `src/predmarkets/strategies/closing_momentum.py` |
+| **Contrarian underdog** | Implemented under `src/predmarkets/strategies/contrarian_underdog.py` |
 
 ---
 
@@ -60,7 +71,7 @@ tests/                    pytest — mirrors src/ 1:1
 pseudocode/               Pre-build pseudocode for every critical-path function
 ```
 
-The browser JS is a **line-for-line port** of the Python engine. Same seed → identical results.
+The browser JS mirrors the Python engine's portfolio, slippage, and metric semantics. For strategies implemented in both stacks, the same event stream should produce the same result.
 
 ---
 
@@ -142,7 +153,7 @@ Built spec-first through a four-phase pipeline:
 1. **Create** — stated intent, disambiguated vocabulary, terminal states, tech stack, wireframes, design system
 2. **Review** — 297 rules extracted, 99 function contracts, backward state chain, chain-correctness proof
 3. **Build** — Python engine + 53 unit tests, TDD for every metric
-4. **Pivot** — browser port, JS engine mirroring Python line-for-line, deterministic cross-port results
+4. **Pivot** — browser port, JS engine mirroring the Python engine semantics for instant in-browser replay
 
 All spec artifacts live in `.hacf/prediction-markets/` and are hash-locked.
 
@@ -150,7 +161,7 @@ All spec artifacts live in `.hacf/prediction-markets/` and are hash-locked.
 
 ## Honest caveats
 
-- **Markets are synthetic.** The current adapter generates deterministic random-walks. Real-platform adapters (Kalshi, Polymarket, Manifold, PredictIt) are designed but not built.
+- **The Python package uses synthetic markets today.** `run_backtest(..., platform="mock")` replays deterministic random-walks. The browser demo separately ships cached real Polymarket history under `docs/data/`.
 - **Backtest overfitting is real.** Good in-sample backtest ≠ live alpha. Use this as decision support, not decisions.
 - **Slippage is simplified.** `mid ± 1¢` with tier-based book walking. Real markets are harsher.
 - **No real-money trading.** By construction — no code path writes to any trading API.

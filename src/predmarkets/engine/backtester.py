@@ -56,8 +56,8 @@ class Backtester:
             state = self._build_state(event)
             for order in strategy.decide(state):
                 fill = self._execute(event, order, order.size)
-                portfolio.apply_fill(fill)
-                strategy.on_fill(fill)
+                if portfolio.apply_fill(fill):
+                    strategy.on_fill(fill)
             if event.event_type == "resolution":
                 portfolio.settle_resolution(event.platform, event.market_id, event.resolution or "cancelled")
             equity_curve.append((event.timestamp, self._mark_equity(portfolio, latest)))

@@ -158,6 +158,12 @@ function renderStrategyDeck() {
   }
 }
 
+function renderStrategyCountCopy() {
+  const count = String(CATALOGUE.length);
+  setText("strategy-count", count);
+  setText("leaderboard-strategy-count", count);
+}
+
 function selectStrategy(id) {
   state.strategyId = id;
   state.params = {};
@@ -535,6 +541,7 @@ function runLeaderboard() {
 
 // ---------- Boot ----------
 async function boot() {
+  renderStrategyCountCopy();
   renderStrategyDeck();
   for (const c of CATALOGUE) if (c.slider) state.params[c.slider.key] = c.slider.default;
   renderSliderSlot();

@@ -15,6 +15,10 @@ function mkOrder(platform, marketId, side, size, strategyId) {
   return { platform, marketId, side, orderSide: "buy", size, strategyId };
 }
 
+// Estimate fill price for a buy order (mid + 1¢ slippage, matching engine.js).
+// Using this for sizing ensures actual spend ≈ budget even for cheap markets.
+function fillEst(price) { return Math.min(0.99, price + 0.01); }
+
 // Dollars available for ONE new bet right now.  Uses live cash (what's
 // settled in the account) × bet fraction.  fallbackCapital is only used
 // when no engine state is present (unit tests that call decide() directly).
@@ -46,7 +50,7 @@ export function kellySizing({ pOracle, kellyFractionMultiplier = 0.25, assignedC
           if (fStar <= 0 || price <= 0) return null;
           // Kelly fraction of currently-available cash.  No phantom equity.
           const bet = Math.max(0, kellyFractionMultiplier * fStar * cash);
-          const size = Math.floor(bet / price);
+          const size = Math.floor(bet / fillEst(price));
           if (size < 1) return null;
           return mkOrder(m.platform, m.marketId, side, size, "kelly-sizing");
         };
