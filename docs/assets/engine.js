@@ -144,7 +144,7 @@ export function manifoldDatasetToEvents(payload, { shuffleSeed = 0, nMarkets = 0
       marketId: m.marketId,
       marketTitle: m.marketTitle,
       yesPrice: m.resolution === "yes" ? 1 : 0,
-      bookTopSize: 1000,
+      bookTopSize: 10_000_000,
       eventType: "resolution",
       resolution: m.resolution,
       closeInHours: 0,
