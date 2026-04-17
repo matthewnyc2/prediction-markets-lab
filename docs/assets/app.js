@@ -1,24 +1,20 @@
 // app.js — UI glue between the engine and the DOM.
+// Data: 120 resolved binary markets fetched from api.manifold.markets.
 
-import { generateMockEvents, runBacktest } from "./engine.js";
+import { loadManifoldDataset, manifoldDatasetToEvents, runBacktest } from "./engine.js";
 import {
-  kellySizing,
-  closingMomentum,
-  contrarianUnderdog,
-  favoriteLongshot,
-  buyAndHold,
+  kellySizing, closingMomentum, contrarianUnderdog, favoriteLongshot, buyAndHold,
 } from "./strategies.js";
 
 // ---------- Strategy catalogue ----------
 const CATALOGUE = {
   "kelly-sizing": {
     factory: (opts) => kellySizing({
-      pOracle: (m) => m.yesPrice < 0.5 ? Math.min(0.95, m.yesPrice + 0.15)
-                                        : Math.max(0.05, m.yesPrice - 0.15),
+      pOracle: (m) => m.yesPrice < 0.5 ? Math.min(0.95, m.yesPrice + 0.15) : Math.max(0.05, m.yesPrice - 0.15),
       assignedCapital: opts.bankroll,
       kellyFractionMultiplier: 0.25,
     }),
-    theory: "Kelly sizing bets proportional to edge. Assumes you can estimate a better probability than the market. Quarter-Kelly reduces variance.",
+    theory: "Kelly sizing bets proportional to edge. Oracle here is \"price + 0.15 mean-reversion\" — a crude but honest guess. Quarter-Kelly reduces variance.",
     sliders: [],
   },
   "closing-momentum": {
@@ -28,7 +24,7 @@ const CATALOGUE = {
       momentumThreshold: 0.05,
       windowHours: 6,
     }),
-    theory: "In the final hours before close, markets that have moved 5%+ from their window-open price tend to keep moving. Enters once per market.",
+    theory: "In the final 6 hours before close, markets that have moved 5%+ from their window-open price tend to keep moving. Enters once per market.",
     sliders: [{ key: "betFraction", label: "Bet fraction", min: 0.01, max: 0.20, step: 0.01, default: 0.05, format: (v) => `${(v*100).toFixed(0)}%` }],
   },
   "contrarian-underdog": {
@@ -51,7 +47,7 @@ const CATALOGUE = {
       minYesPrice: opts.threshold,
       windowHours: 3,
     }),
-    theory: "Fades heavily-favored markets by buying NO when YES ≥ threshold. Tests the academic finding that favorites are systematically overpriced.",
+    theory: "Fades heavily-favored markets by buying NO when YES ≥ threshold. Tests the academic finding that favorites are overpriced.",
     sliders: [
       { key: "threshold", label: "Min YES price", min: 0.55, max: 0.95, step: 0.01, default: 0.70, format: (v) => v.toFixed(2) },
       { key: "betFraction", label: "Bet fraction", min: 0.01, max: 0.20, step: 0.01, default: 0.05, format: (v) => `${(v*100).toFixed(0)}%` },
@@ -67,12 +63,13 @@ const CATALOGUE = {
 // ---------- State ----------
 const state = {
   strategyId: "closing-momentum",
-  seed: 42,
-  nMarkets: 20,
-  ticksPerMarket: 40,
+  shuffleSeed: 1,
+  nMarkets: 120,
   bankroll: 10_000,
   params: {},
   chart: null,
+  dataset: null,        // raw payload from manifold.json
+  titleByKey: new Map(),
 };
 
 // ---------- Chart ----------
@@ -84,60 +81,41 @@ function renderChart(result) {
     type: "line",
     data: {
       datasets: [{
-        label: "Equity",
-        data,
-        borderColor: "#7dd3fc",
-        backgroundColor: "rgba(125, 211, 252, 0.08)",
-        borderWidth: 1.75,
-        tension: 0.15,
-        pointRadius: 0,
-        fill: true,
+        label: "Equity", data,
+        borderColor: "#7dd3fc", backgroundColor: "rgba(125, 211, 252, 0.08)",
+        borderWidth: 1.75, tension: 0.15, pointRadius: 0, fill: true,
       }, {
         label: "Starting bankroll",
         data: data.map(d => ({ x: d.x, y: state.bankroll })),
-        borderColor: "rgba(255,255,255,0.20)",
-        borderWidth: 1,
-        borderDash: [4, 4],
-        pointRadius: 0,
-        fill: false,
+        borderColor: "rgba(255,255,255,0.20)", borderWidth: 1, borderDash: [4, 4],
+        pointRadius: 0, fill: false,
       }],
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: { duration: 200 },
+      responsive: true, maintainAspectRatio: false, animation: { duration: 200 },
       plugins: {
         legend: { labels: { color: "#8ea0bd", font: { size: 11 } } },
         tooltip: {
-          backgroundColor: "#182236",
-          borderColor: "rgba(255,255,255,0.08)",
-          borderWidth: 1,
-          titleColor: "#e6edf7",
-          bodyColor: "#d0d6e0",
-          displayColors: false,
+          backgroundColor: "#182236", borderColor: "rgba(255,255,255,0.08)", borderWidth: 1,
+          titleColor: "#e6edf7", bodyColor: "#d0d6e0", displayColors: false,
           callbacks: {
-            title: (items) => `Tick ${items[0].parsed.x}`,
+            title: (items) => `Event ${items[0].parsed.x}`,
             label: (item) => `Equity: $${item.parsed.y.toFixed(2)}`,
           },
         },
       },
       scales: {
-        x: {
-          type: "linear",
-          grid: { color: "rgba(255,255,255,0.05)" },
-          ticks: { color: "#566178", font: { size: 11 } },
-          title: { display: true, text: "Event tick", color: "#566178", font: { size: 11 } },
-        },
-        y: {
-          grid: { color: "rgba(255,255,255,0.05)" },
-          ticks: { color: "#566178", font: { size: 11 }, callback: (v) => `$${v.toLocaleString()}` },
-        },
+        x: { type: "linear", grid: { color: "rgba(255,255,255,0.05)" },
+             ticks: { color: "#566178", font: { size: 11 } },
+             title: { display: true, text: "Event tick across all markets", color: "#566178", font: { size: 11 } } },
+        y: { grid: { color: "rgba(255,255,255,0.05)" },
+             ticks: { color: "#566178", font: { size: 11 }, callback: (v) => `$${v.toLocaleString()}` } },
       },
     },
   });
 }
 
-// ---------- Metrics ----------
+// ---------- Formatters ----------
 function fmt(value, { kind = "currency", prec = 2 } = {}) {
   if (value == null) return "—";
   if (kind === "currency") return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -160,23 +138,6 @@ function setTile(id, value, deltaText, deltaClass) {
   }
 }
 
-function renderResult(result) {
-  const pnl = result.finalEquity - result.startingBankroll;
-  const pnlPct = pnl / result.startingBankroll;
-  const pnlClass = pnl >= 0 ? "pos" : "neg";
-  setTile("tile-pnl", fmt(pnl, { kind: "signed-dollar" }), fmt(pnlPct, { kind: "signed-pct" }), pnlClass);
-  setTile("tile-equity", fmt(result.finalEquity, { kind: "currency" }), `from $${result.startingBankroll.toLocaleString()}`, "dim");
-  setTile("tile-sharpe", fmt(result.sharpe, { kind: "decimal", prec: 2 }), result.sharpe == null ? "insufficient data" : result.sharpe > 1 ? "good" : result.sharpe > 0 ? "marginal" : "poor", resultClass(result.sharpe, 0, 1));
-  setTile("tile-brier", fmt(result.brier, { kind: "decimal", prec: 3 }), result.brier == null ? "no forecasts" : result.brier < 0.20 ? "well-calibrated" : result.brier < 0.25 ? "near coin-flip" : "overconfident", resultClass(result.brier, 0.25, 0.20, true));
-  setTile("tile-drawdown", fmt(result.drawdown, { kind: "pct", prec: 1 }), result.drawdown < 0.1 ? "mild" : result.drawdown < 0.25 ? "moderate" : "severe", result.drawdown < 0.15 ? "pos" : result.drawdown < 0.30 ? "warn" : "neg");
-  setTile("tile-winrate", fmt(result.winRate, { kind: "pct", prec: 1 }), result.winRate == null ? "no closed trades" : `${result.closedPositions.length} closed`, "dim");
-  setTile("tile-trades", String(result.tradeList.length), `${result.closedPositions.length} closed`, "dim");
-  setTile("tile-bankrupt", result.bankrupt ? "yes" : "no", result.bankrupt ? "equity hit zero" : "solvent", result.bankrupt ? "neg" : "pos");
-
-  renderChart(result);
-  renderTradeTable(result);
-}
-
 function resultClass(value, badBelow, goodAbove, lowIsGood = false) {
   if (value == null) return "dim";
   if (lowIsGood) {
@@ -189,15 +150,41 @@ function resultClass(value, badBelow, goodAbove, lowIsGood = false) {
   return "warn";
 }
 
+function renderResult(result) {
+  const pnl = result.finalEquity - result.startingBankroll;
+  const pnlPct = pnl / result.startingBankroll;
+  const pnlClass = pnl >= 0 ? "pos" : "neg";
+  setTile("tile-pnl", fmt(pnl, { kind: "signed-dollar" }), fmt(pnlPct, { kind: "signed-pct" }), pnlClass);
+  setTile("tile-equity", fmt(result.finalEquity, { kind: "currency" }), `from $${result.startingBankroll.toLocaleString()}`, "dim");
+  setTile("tile-sharpe", fmt(result.sharpe, { kind: "decimal", prec: 2 }),
+    result.sharpe == null ? "insufficient data" : result.sharpe > 1 ? "good" : result.sharpe > 0 ? "marginal" : "poor",
+    resultClass(result.sharpe, 0, 1));
+  setTile("tile-brier", fmt(result.brier, { kind: "decimal", prec: 3 }),
+    result.brier == null ? "no forecasts" : result.brier < 0.20 ? "well-calibrated" : result.brier < 0.25 ? "near coin-flip" : "overconfident",
+    resultClass(result.brier, 0.25, 0.20, true));
+  setTile("tile-drawdown", fmt(result.drawdown, { kind: "pct", prec: 1 }),
+    result.drawdown < 0.1 ? "mild" : result.drawdown < 0.25 ? "moderate" : "severe",
+    result.drawdown < 0.15 ? "pos" : result.drawdown < 0.30 ? "warn" : "neg");
+  setTile("tile-winrate", fmt(result.winRate, { kind: "pct", prec: 1 }),
+    result.winRate == null ? "no closed trades" : `${result.closedPositions.length} closed`, "dim");
+  setTile("tile-trades", String(result.tradeList.length), `${result.closedPositions.length} closed`, "dim");
+  setTile("tile-bankrupt", result.bankrupt ? "yes" : "no",
+    result.bankrupt ? "equity hit zero" : "solvent", result.bankrupt ? "neg" : "pos");
+
+  renderChart(result);
+  renderTradeTable(result);
+}
+
 function renderTradeTable(result) {
   const tbody = document.getElementById("trade-tbody");
   tbody.innerHTML = "";
-  const rows = result.tradeList.slice(0, 50);
+  const rows = result.tradeList.slice(0, 100);
   for (const f of rows) {
     const tr = document.createElement("tr");
+    const title = state.titleByKey.get(`${f.platform}|${f.marketId}`) || f.marketId;
     tr.innerHTML = `
       <td class="mono dim">${f.timestamp}</td>
-      <td>${f.marketId}</td>
+      <td class="market-cell" title="${escapeHtml(title)}">${escapeHtml(title.slice(0, 60))}${title.length > 60 ? "…" : ""}</td>
       <td><span class="side-pill ${f.side}">${f.orderSide.toUpperCase()} ${f.side.toUpperCase()}</span></td>
       <td class="num mono">${f.size}</td>
       <td class="num mono">${f.fillPrice.toFixed(3)}</td>
@@ -212,8 +199,13 @@ function renderTradeTable(result) {
   }
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
 // ---------- Run ----------
 function run() {
+  if (!state.dataset) return;  // not yet loaded
   const cfg = CATALOGUE[state.strategyId];
   document.getElementById("theory-text").textContent = cfg.theory;
 
@@ -223,17 +215,66 @@ function run() {
     threshold: state.params.threshold ?? 0.30,
   });
 
-  const events = generateMockEvents({
-    seed: state.seed,
-    nMarkets: state.nMarkets,
-    ticksPerMarket: state.ticksPerMarket,
-    bookTopSize: 400,
+  const { events, titleByKey, selectedMarkets } = manifoldDatasetToEvents(state.dataset, {
+    shuffleSeed: state.shuffleSeed, nMarkets: state.nMarkets,
   });
+  state.titleByKey = titleByKey;
 
   const result = runBacktest({ strategy, events, bankroll: state.bankroll });
   renderResult(result);
+
   document.getElementById("run-count").textContent =
-    `${state.nMarkets} synthetic markets × ${state.ticksPerMarket} ticks · seed ${state.seed}`;
+    `${selectedMarkets.length} real Manifold markets · ${events.length} price ticks · shuffle seed ${state.shuffleSeed}`;
+}
+
+// ---------- Leaderboard (all 5 strategies side-by-side) ----------
+function runAllStrategies() {
+  if (!state.dataset) return;
+  const { events } = manifoldDatasetToEvents(state.dataset, { shuffleSeed: 1, nMarkets: 120 });
+  const results = [];
+  for (const [id, cfg] of Object.entries(CATALOGUE)) {
+    const strategy = cfg.factory({
+      bankroll: 10_000,
+      betFraction: (cfg.sliders.find(s => s.key === "betFraction") || { default: 0.05 }).default,
+      threshold: (cfg.sliders.find(s => s.key === "threshold") || { default: 0.30 }).default,
+    });
+    const r = runBacktest({ strategy, events, bankroll: 10_000 });
+    results.push({
+      id, name: strategy.displayName,
+      finalEquity: r.finalEquity,
+      pnl: r.finalEquity - 10_000,
+      trades: r.tradeList.length,
+      sharpe: r.sharpe,
+      drawdown: r.drawdown,
+      winRate: r.winRate,
+      bankrupt: r.bankrupt,
+    });
+  }
+  results.sort((a, b) => b.pnl - a.pnl);
+  renderLeaderboard(results);
+}
+
+function renderLeaderboard(rows) {
+  const tbody = document.getElementById("leaderboard-tbody");
+  if (!tbody) return;
+  tbody.innerHTML = "";
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const tr = document.createElement("tr");
+    const pnlCls = r.pnl >= 0 ? "pos" : "neg";
+    const rank = i + 1;
+    tr.innerHTML = `
+      <td class="num mono">${rank}</td>
+      <td><b>${r.name}</b></td>
+      <td class="num mono ${pnlCls}">${fmt(r.pnl, { kind: "signed-dollar" })}</td>
+      <td class="num mono ${pnlCls}">${fmt(r.pnl / 10_000, { kind: "signed-pct" })}</td>
+      <td class="num mono">${r.sharpe == null ? "—" : r.sharpe.toFixed(2)}</td>
+      <td class="num mono">${(r.drawdown * 100).toFixed(1)}%</td>
+      <td class="num mono">${r.trades}</td>
+      <td class="num mono">${r.winRate == null ? "—" : (r.winRate * 100).toFixed(1) + "%"}</td>
+      <td>${r.bankrupt ? '<span class="side-pill no">BANKRUPT</span>' : '<span class="dim">—</span>'}</td>`;
+    tbody.appendChild(tr);
+  }
 }
 
 // ---------- UI wiring ----------
@@ -289,29 +330,51 @@ function buildRunControls() {
     run();
   });
   document.getElementById("seed-input").addEventListener("change", (e) => {
-    state.seed = parseInt(e.target.value || "42", 10);
+    state.shuffleSeed = Math.max(1, parseInt(e.target.value || "1", 10));
+    e.target.value = state.shuffleSeed;
     run();
   });
   document.getElementById("markets-input").addEventListener("change", (e) => {
-    state.nMarkets = Math.max(1, Math.min(100, parseInt(e.target.value || "20", 10)));
+    state.nMarkets = Math.max(1, Math.min(120, parseInt(e.target.value || "120", 10)));
     e.target.value = state.nMarkets;
     run();
   });
   document.getElementById("reseed-button").addEventListener("click", () => {
-    state.seed = Math.floor(Math.random() * 9999);
-    document.getElementById("seed-input").value = state.seed;
+    state.shuffleSeed = 1 + Math.floor(Math.random() * 9999);
+    document.getElementById("seed-input").value = state.shuffleSeed;
     run();
   });
   document.getElementById("rerun-button").addEventListener("click", run);
 }
 
 // ---------- Boot ----------
-function boot() {
+async function boot() {
   for (const s of (CATALOGUE[state.strategyId].sliders || [])) state.params[s.key] = s.default;
   buildStrategyTabs();
   buildSliders();
   buildRunControls();
+
+  try {
+    state.dataset = await loadManifoldDataset();
+  } catch (err) {
+    document.getElementById("theory-text").textContent =
+      "Failed to load real market dataset — check browser console. (Are you serving docs/ from a web server, not file://?)";
+    console.error(err);
+    return;
+  }
+
+  // Summary stamp
+  const fetchedAt = new Date(state.dataset.fetched_at_ms).toISOString().slice(0, 10);
+  const datasetInfo = document.getElementById("dataset-info");
+  if (datasetInfo) {
+    datasetInfo.innerHTML = `
+      <b>${state.dataset.market_count}</b> resolved binary markets ·
+      fetched ${fetchedAt} from <a href="https://api.manifold.markets/v0" target="_blank" rel="noopener">api.manifold.markets</a>
+    `;
+  }
+
   run();
+  runAllStrategies();
 }
 
 if (document.readyState === "loading") {
