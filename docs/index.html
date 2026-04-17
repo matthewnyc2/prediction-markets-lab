@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Prediction Markets Lab · Strategy Backtester</title>
-  <meta name="description" content="A browser-based prediction-market backtester. Test quantitative trading strategies against synthetic markets — Kelly sizing, closing momentum, contrarian underdog, favorite-longshot fade. Production-grade engine ported from Python to JavaScript." />
-  <meta property="og:title" content="Prediction Markets Lab — Strategy Backtester" />
-  <meta property="og:description" content="Test quant strategies against prediction markets. Live in-browser backtester." />
+  <title>Prediction Markets Lab · Strategy Backtester on Real Manifold Data</title>
+  <meta name="description" content="A browser-based prediction-market backtester running against 120 real resolved Manifold markets. Test quantitative trading strategies — Kelly, closing momentum, contrarian underdog, favorite-longshot fade — with real bet-reconstructed price histories." />
+  <meta property="og:title" content="Prediction Markets Lab — Strategy Backtester on Real Manifold Data" />
+  <meta property="og:description" content="Test quant strategies against 120 real resolved Manifold prediction markets. Live in-browser backtester." />
   <meta property="og:type" content="website" />
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="assets/style.css" />
@@ -20,6 +20,7 @@
     <div class="brand">PREDICTION MARKETS LAB</div>
     <nav class="header-links">
       <a href="#try-it">Try it</a>
+      <a href="#leaderboard">Leaderboard</a>
       <a href="#methodology">Methodology</a>
       <a href="#caveats">Caveats</a>
       <a href="https://github.com/matthewnyc2/prediction-markets-lab" target="_blank" rel="noopener">GitHub ↗</a>
@@ -28,18 +29,22 @@
 
   <!-- Hero -->
   <section class="hero">
-    <div class="eyebrow">Portfolio project · 2026</div>
-    <h1>A prediction-market strategy backtester you can actually run.</h1>
+    <div class="eyebrow">Portfolio project · 2026 · real data</div>
+    <h1>Test quant strategies against real prediction markets.</h1>
     <p class="lead">
-      Describe a trading theory, test it, get scored results. Five built-in strategies, a full event-driven
-      replay engine, and institutional-style metrics (Sharpe, Sortino, Brier, drawdown, win rate) — all running
-      in your browser. Backed by a test-driven Python core and a spec-locked design methodology.
+      120 resolved binary markets pulled from Manifold — complete with full bet history, reconstructed
+      price series, and actual YES/NO resolutions. Pick a strategy, run it, see real PnL.
+      The engine, metrics, and tests are production-quality Python, ported line-for-line to JavaScript
+      so it runs in your browser with no server.
     </p>
     <div class="stats">
-      <span><b>5</b> built-in strategies</span><span class="sep">·</span>
-      <span><b>6</b> pure metric formulas</span><span class="sep">·</span>
-      <span><b>53</b> unit tests in the Python source</span><span class="sep">·</span>
-      <span><b>~700</b> lines of engine</span>
+      <span id="dataset-info">Loading real dataset from <code>data/manifold.json</code>…</span>
+    </div>
+    <div class="stats" style="margin-top:10px">
+      <span><b>5</b> strategies</span><span class="sep">·</span>
+      <span><b>6</b> metric formulas</span><span class="sep">·</span>
+      <span><b>53</b> Python unit tests</span><span class="sep">·</span>
+      <span><b>1.26 MB</b> real bet data</span>
     </div>
   </section>
 
@@ -47,13 +52,13 @@
   <section id="try-it">
     <div class="section-head">
       <h2>Run a backtest</h2>
-      <span class="sub">Pick a strategy · tweak parameters · watch the equity curve in real time.</span>
+      <span class="sub">Against 120 real resolved Manifold markets. Same math the Python source runs — ported to JS for the browser.</span>
     </div>
 
     <div class="app">
       <div class="app-header">
-        <span class="label">Engine status: <span style="color:var(--success)">live · deterministic</span></span>
-        <span class="run-count" id="run-count">—</span>
+        <span class="label">Engine status: <span style="color:var(--success)">live · real Manifold data</span></span>
+        <span class="run-count" id="run-count">loading…</span>
       </div>
 
       <div class="strategy-tabs" id="strategy-tabs"></div>
@@ -62,7 +67,7 @@
         <!-- Sidebar controls -->
         <aside class="sidebar">
           <h3>The theory</h3>
-          <div class="theory-text" id="theory-text"></div>
+          <div class="theory-text" id="theory-text">Loading…</div>
 
           <div class="control-group">
             <label for="bankroll-input">Starting bankroll (USD)</label>
@@ -70,21 +75,26 @@
           </div>
 
           <div class="control-group">
-            <label for="markets-input">Synthetic markets</label>
-            <input class="input" type="number" id="markets-input" value="20" min="1" max="100" step="1" />
+            <label for="markets-input">Markets to include (of 120)</label>
+            <input class="input" type="number" id="markets-input" value="120" min="1" max="120" step="1" />
           </div>
 
           <div class="control-group">
-            <label>Random seed</label>
+            <label>Shuffle seed</label>
             <div class="control-input-row">
-              <input class="input" type="number" id="seed-input" value="42" step="1" />
-              <button class="btn" id="reseed-button" title="Pick a fresh random seed">🎲</button>
+              <input class="input" type="number" id="seed-input" value="1" step="1" min="1" />
+              <button class="btn" id="reseed-button" title="Random shuffle seed for market order">🎲</button>
             </div>
           </div>
 
           <div id="strategy-sliders"></div>
 
           <button class="btn primary" id="rerun-button" style="width:100%; margin-top:8px">Re-run backtest</button>
+
+          <p style="font-size:11px;color:var(--fg-mute);margin-top:20px;line-height:1.5">
+            Each market is traded independently. The engine replays every bet tick in chronological order,
+            settles on resolution, and reports the aggregate PnL.
+          </p>
         </aside>
 
         <!-- Main results -->
@@ -138,7 +148,7 @@
 
           <div class="trade-section">
             <div class="trade-head">
-              <h4>Trades executed</h4>
+              <h4>Trades executed · real Manifold markets</h4>
               <span class="count" id="trade-count">—</span>
             </div>
             <div class="trade-table-scroll">
@@ -158,6 +168,39 @@
     </div>
   </section>
 
+  <!-- Leaderboard -->
+  <section id="leaderboard">
+    <div class="section-head">
+      <h2>Strategy leaderboard · all 120 markets · $10K bankroll</h2>
+      <span class="sub">Every strategy run with defaults against the full dataset. Real numbers. No cherry-picking.</span>
+    </div>
+    <div class="app" style="padding:0">
+      <table>
+        <thead>
+          <tr>
+            <th class="num">Rank</th>
+            <th>Strategy</th>
+            <th class="num">PnL ($)</th>
+            <th class="num">PnL (%)</th>
+            <th class="num">Sharpe</th>
+            <th class="num">Max DD</th>
+            <th class="num">Trades</th>
+            <th class="num">Win %</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-tbody">
+          <tr><td colspan="9" class="dim" style="text-align:center;padding:20px">Computing…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:13px;color:var(--fg-mute);margin-top:14px">
+      These numbers are what you'd see trading your strategy blindly across Manifold's entire resolved-binary population.
+      They are <b>not</b> proof your strategy will work on a different dataset, a different platform, or going forward —
+      see the caveats section below.
+    </p>
+  </section>
+
   <!-- Explainer -->
   <section>
     <div class="section-head">
@@ -171,7 +214,7 @@
       </div>
       <div class="explainer-card">
         <h3>Brier score</h3>
-        <p>How well-calibrated your bets' implied forecasts are. 0 = perfect, 0.25 = coin-flip, 1 = always confidently wrong. Lower is better. Missing if no positions closed.</p>
+        <p>How well-calibrated your bets' implied forecasts are. 0 = perfect, 0.25 = coin-flip, 1 = always confidently wrong. Lower is better.</p>
       </div>
       <div class="explainer-card">
         <h3>Max drawdown</h3>
@@ -179,7 +222,7 @@
       </div>
       <div class="explainer-card">
         <h3>Win rate</h3>
-        <p>Fraction of closed positions that made money. High win rate with losing PnL = small wins, big losses. Low win rate with winning PnL = rare but huge wins.</p>
+        <p>Fraction of closed positions that made money. High win rate with losing PnL = small wins, big losses.</p>
       </div>
       <div class="explainer-card">
         <h3>Kelly fraction</h3>
@@ -196,37 +239,37 @@
   <section id="methodology">
     <div class="section-head">
       <h2>How this was built</h2>
-      <span class="sub">Spec-first, test-driven, then ported to the browser.</span>
+      <span class="sub">Spec-first, test-driven, real-data-backed.</span>
     </div>
     <ul class="method-list">
       <li class="method-item">
-        <div class="step">PHASE 1 · DESIGN</div>
-        <h3>Spec locked before any code</h3>
-        <p>Wrote a complete narrative spec, disambiguated 25 entities, declared 3 observable success conditions, picked the stack, selected a design system, generated wireframes. All frozen.</p>
+        <div class="step">DATA</div>
+        <h3>Real Manifold bets, reconstructed into price series</h3>
+        <p>Python script (<code>scripts/fetch_manifold.py</code>) hits <code>api.manifold.markets/v0</code>, collects resolved binary markets with ≥5 unique bettors and ≥50 mana volume, pulls the full bet history, and rebuilds the price-over-time from each bet's <code>probBefore</code>/<code>probAfter</code> fields.</p>
       </li>
       <li class="method-item">
-        <div class="step">PHASE 2 · REVIEW</div>
-        <h3>297 rules, 99 contracts, 1 proof</h3>
-        <p>Extracted 297 rules from the design, mapped 99 user interactions to function contracts, derived a backward state chain, and verified chain correctness via cycle detection + reachability proofs.</p>
+        <div class="step">ENGINE</div>
+        <h3>Event-driven backtester + 6 pure metrics</h3>
+        <p>Same code path for backtesting and live paper-trading. 53 unit tests cover every metric edge case. Slippage model walks the order book on oversized bets. No dependencies on network, filesystem, or clock in the hot path.</p>
       </li>
       <li class="method-item">
-        <div class="step">PHASE 3 · BUILD</div>
-        <h3>Python engine + 53 unit tests</h3>
-        <p>Event-driven backtest engine, pluggable strategy ABC, pure-function metrics. Every formula tested against edge cases (empty input, zero variance, cancelled markets, extreme prices).</p>
+        <div class="step">PORT</div>
+        <h3>Python → JavaScript, line-for-line</h3>
+        <p>The browser engine is a faithful port of the Python source: same PRNG, same slippage model, same metric formulas. A given seed + dataset produces identical results in both runtimes.</p>
       </li>
       <li class="method-item">
-        <div class="step">PIVOT</div>
-        <h3>Shipped a browser port</h3>
-        <p>The Python engine was ported line-for-line to JavaScript, so the backtester runs client-side with no server. Same logic, same metrics, same deterministic seed → identical results.</p>
+        <div class="step">UI</div>
+        <h3>Zero-build static site, Chart.js, dark-mode-native</h3>
+        <p>Design tokens from a Linear-inspired system. Entire app is 3 JS files + 1 CSS + 1 HTML + 1 JSON dataset. Deployed via GitHub Pages directly from <code>/docs</code>.</p>
       </li>
     </ul>
     <div class="chip-row" style="margin-top:20px">
       <span class="chip">Python 3.12</span>
-      <span class="chip">TypeScript-style JS</span>
-      <span class="chip">pytest (53 tests)</span>
-      <span class="chip">NumPy / SciPy (Python)</span>
+      <span class="chip">pytest · 53 tests</span>
+      <span class="chip">urllib (stdlib)</span>
+      <span class="chip">vanilla JS ES modules</span>
       <span class="chip">Chart.js</span>
-      <span class="chip">Zero build step</span>
+      <span class="chip">Manifold API</span>
       <span class="chip">GitHub Pages</span>
     </div>
   </section>
@@ -237,18 +280,18 @@
       <h2>Honest caveats</h2>
       <p style="color:var(--fg);margin-bottom:8px">This is a portfolio demo, not a get-rich device. What you should know:</p>
       <ul>
-        <li><b>Markets are synthetic.</b> The mock adapter generates deterministic random-walks that resolve according to a configurable true probability. They have the right <i>shape</i> (prices in [0, 1], drift, noise, resolution) but are not real Kalshi/Polymarket/Manifold data.</li>
-        <li><b>Backtest overfitting is real.</b> A green backtest does not mean a strategy will work live. Over 50 years of quant finance has shown that most in-sample winners decay out-of-sample.</li>
-        <li><b>Slippage is simplified.</b> The model is mid ± 1¢ with tier-based book walking. Real markets are harsher (fees, adverse selection, latency).</li>
-        <li><b>No real-money trading.</b> The engine has no write path to any trading API — by construction. This project cannot place a real trade, no matter what.</li>
-        <li><b>Use for decision support, not decisions.</b> The tool forces quant-thinking discipline on gut-feel intuitions. That's genuinely valuable. It does not replace out-of-sample validation or statistical rigor.</li>
+        <li><b>Manifold uses play-money (mana).</b> The platform is real, the markets are real, the bets are real — but the currency is virtual. Incentives differ from real-money platforms like Kalshi and Polymarket.</li>
+        <li><b>Backtest overfitting is real.</b> A green backtest here does not prove your strategy will work elsewhere. Out-of-sample validation, walk-forward testing, and statistical significance matter.</li>
+        <li><b>Slippage is simplified.</b> Real CFMM slippage on Manifold depends on liquidity pool size; this engine uses mid ± 1¢ with tier-based walking as a first-order approximation.</li>
+        <li><b>Dataset skew.</b> These 120 markets are a sample of recently-resolved markets with modest volume filters. Results would change on a different slice.</li>
+        <li><b>No real-money trading.</b> The engine has no write path to any trading API — by construction.</li>
       </ul>
     </div>
   </section>
 
   <footer>
     <div>Prediction Markets Lab · built 2026 · <a href="https://github.com/matthewnyc2/prediction-markets-lab" target="_blank" rel="noopener">Source on GitHub ↗</a></div>
-    <div>Python core → JS port · deterministic · 100% client-side</div>
+    <div>Real data · deterministic replay · 100% client-side</div>
   </footer>
 
 </div>
