@@ -104,7 +104,63 @@ export function slippageFillPrice(mid, size, orderSide, bookTopSize) {
   return Math.max(0, Math.min(1, fill));
 }
 
-// ---------- Mock adapter: deterministic synthetic price history ----------
+// ---------- Real adapter: load resolved Manifold markets from a JSON dataset ----------
+// Dataset produced by scripts/fetch_manifold.py (pulls real bets from api.manifold.markets).
+export async function loadManifoldDataset(url = "data/manifold.json") {
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`failed to load ${url}: ${resp.status}`);
+  return await resp.json();
+}
+
+export function manifoldDatasetToEvents(payload, { shuffleSeed = 0, nMarkets = 0 } = {}) {
+  const allMarkets = Array.isArray(payload.markets) ? payload.markets.slice() : [];
+  const markets = shuffleSeed > 0 ? deterministicShuffle(allMarkets, shuffleSeed) : allMarkets;
+  const selected = nMarkets > 0 ? markets.slice(0, nMarkets) : markets;
+  const events = [];
+  const titleByKey = new Map();
+  let t = 0;
+  for (const m of selected) {
+    titleByKey.set(`${m.platform}|${m.marketId}`, m.marketTitle);
+    const ticks = Array.isArray(m.ticks) ? m.ticks : [];
+    for (const tick of ticks) {
+      events.push({
+        t: t++,
+        platform: m.platform,
+        marketId: m.marketId,
+        marketTitle: m.marketTitle,
+        yesPrice: Math.max(0.02, Math.min(0.98, tick.yesPrice)),
+        bookTopSize: 1000,  // Manifold CFMM — plenty of depth for retail bet sizes
+        eventType: "tick",
+        closeInHours: Math.max(0.1, tick.closeInHours ?? 24),
+        resolution: "",
+      });
+    }
+    events.push({
+      t: t++,
+      platform: m.platform,
+      marketId: m.marketId,
+      marketTitle: m.marketTitle,
+      yesPrice: m.resolution === "yes" ? 1 : 0,
+      bookTopSize: 1000,
+      eventType: "resolution",
+      resolution: m.resolution,
+      closeInHours: 0,
+    });
+  }
+  return { events, titleByKey, selectedMarkets: selected };
+}
+
+function deterministicShuffle(arr, seed) {
+  const rng = makeRng(seed);
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ---------- Mock adapter (kept only for engine testing / fallback) ----------
 export function generateMockEvents(opts = {}) {
   const {
     seed = 1,
