@@ -142,7 +142,6 @@ function _datasetToEvents(payload, { startMs = 0, endMs = 0, nMarkets = 0, shuff
     const ticks = Array.isArray(m.ticks) ? m.ticks : [];
     for (const tick of ticks) {
       events.push({
-        t: t++,
         wallTimeMs: tick.t || 0,
         platform: m.platform,
         marketId: m.marketId,
@@ -155,11 +154,11 @@ function _datasetToEvents(payload, { startMs = 0, endMs = 0, nMarkets = 0, shuff
         eventType: "tick",
         closeInHours: Math.max(0.1, tick.closeInHours ?? 24),
         resolution: "",
+        __phase: 0,  // sort tie-break: ticks before resolutions at same timestamp
       });
     }
     const resolutionMs = m.resolutionTime || (ticks.length ? ticks[ticks.length - 1].t : 0);
     events.push({
-      t: t++,
       wallTimeMs: resolutionMs,
       platform: m.platform,
       marketId: m.marketId,
@@ -169,8 +168,14 @@ function _datasetToEvents(payload, { startMs = 0, endMs = 0, nMarkets = 0, shuff
       eventType: "resolution",
       resolution: m.resolution,
       closeInHours: 0,
+      __phase: 1,
     });
   }
+  // Critical: process in true calendar order across ALL markets. Without this,
+  // the engine runs market-A-entirely then market-B-entirely, so equity at any
+  // calendar date reflects a mix of processed-before and unprocessed-yet events.
+  events.sort((a, b) => (a.wallTimeMs - b.wallTimeMs) || (a.__phase - b.__phase));
+  for (let i = 0; i < events.length; i++) events[i].t = i;
   return { events, titleByKey, urlByKey, selectedMarkets: selected };
 }
 

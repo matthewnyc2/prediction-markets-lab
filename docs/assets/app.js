@@ -191,42 +191,48 @@ function renderSliderSlot() {
 }
 
 // ---------- Chart ----------
-// Downsample the equity curve to one point per day so we plot ~800 points
-// instead of ~66,000. Takes the LAST equity value within each UTC day bucket
-// so end-of-day balance is what's rendered.
-function downsampleDaily(curve) {
+// Day-by-day balance: one point per calendar day. X axis is the day number
+// (Day 1, Day 2, ...). Y axis is the end-of-day account balance. If the user
+// has $10,000 on day 1 and loses $500 by day 2, the chart shows $10,000 →
+// $9,500. The tooltip shows the real calendar date alongside the day number.
+function bucketByDay(curve) {
   const useTime = curve.length > 0 && (curve[0].wallTimeMs || 0) > 1_000_000_000_000;
-  if (!useTime) return curve.map((p, i) => ({ x: i, y: p.equity }));
+  if (!useTime) return { data: curve.map((p, i) => ({ x: i + 1, y: p.equity })), dates: [] };
   const DAY = 86_400_000;
   const buckets = new Map();
   for (const p of curve) {
-    const day = Math.floor(p.wallTimeMs / DAY);
-    buckets.set(day, p.equity); // later writes overwrite → end-of-day value
+    const dayKey = Math.floor(p.wallTimeMs / DAY);
+    buckets.set(dayKey, p.equity);  // engine processes events chronologically,
+                                    // so the last write for a day is end-of-day
   }
-  return Array.from(buckets.keys()).sort((a, b) => a - b)
-    .map(day => ({ x: day * DAY, y: buckets.get(day) }));
+  const sortedDays = Array.from(buckets.keys()).sort((a, b) => a - b);
+  const data = sortedDays.map((dayKey, i) => ({ x: i + 1, y: buckets.get(dayKey) }));
+  const dates = sortedDays.map(dayKey => new Date(dayKey * DAY).toISOString().slice(0, 10));
+  return { data, dates };
 }
 
-function renderChart(result) {
+function renderChart(result, startingBankroll) {
   const canvas = $("equity-chart");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  const data = downsampleDaily(result.equityCurve);
-  const useTime = data.length > 0 && data[0].x > 1_000_000_000_000;
+  const { data, dates } = bucketByDay(result.equityCurve);
+  // Prepend a Day 0 point at the starting bankroll so the line clearly starts
+  // at the number in the user's head ($10,000) and moves from there.
+  if (data.length > 0) data.unshift({ x: 0, y: startingBankroll });
   if (state.chart) state.chart.destroy();
   state.chart = new window.Chart(ctx, {
     type: "line",
     data: {
       datasets: [
         {
-          label: "Account value",
+          label: "Account balance",
           data,
           borderColor: "#1652f0", backgroundColor: "rgba(22, 82, 240, 0.10)",
-          borderWidth: 2, tension: 0.2, pointRadius: 0, fill: true,
+          borderWidth: 2, tension: 0.15, pointRadius: 0, fill: true,
         },
         {
           label: "Starting bankroll",
-          data: data.map(d => ({ x: d.x, y: state.bankroll })),
+          data: data.map(d => ({ x: d.x, y: startingBankroll })),
           borderColor: "rgba(0,0,0,0.30)", borderWidth: 1.2, borderDash: [5, 5],
           pointRadius: 0, fill: false,
         },
@@ -239,9 +245,12 @@ function renderChart(result) {
                   labels: { boxWidth: 14, font: { size: 11 }, color: "#4e5a73" } },
         tooltip: {
           callbacks: {
-            title: (items) => useTime
-              ? new Date(items[0].parsed.x).toISOString().slice(0, 10)
-              : `Event ${items[0].parsed.x}`,
+            title: (items) => {
+              const d = items[0].parsed.x;
+              if (d === 0) return "Day 0 — starting bankroll";
+              const calendar = dates[d - 1];
+              return calendar ? `Day ${d} (${calendar})` : `Day ${d}`;
+            },
             label: (item) => `$${item.parsed.y.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
           },
         },
@@ -249,17 +258,17 @@ function renderChart(result) {
       scales: {
         x: {
           type: "linear",
-          min: data.length ? data[0].x : undefined,
+          min: 0,
           max: data.length ? data[data.length - 1].x : undefined,
           ticks: {
             font: { size: 11 },
-            callback: (v) => useTime ? new Date(v).toISOString().slice(0, 10) : v,
-            maxTicksLimit: 7,
-            autoSkip: true,
+            stepSize: Math.max(1, Math.ceil((data.length ? data[data.length - 1].x : 1) / 8)),
+            callback: (v) => `Day ${v}`,
+            autoSkip: false,
           },
           title: {
             display: true,
-            text: useTime ? "Date (market resolution time)" : "Event sequence",
+            text: "Trading day",
             font: { size: 11, weight: "500" },
             color: "#4e5a73",
           },
@@ -268,7 +277,7 @@ function renderChart(result) {
           ticks: { font: { size: 11 }, callback: (v) => "$" + v.toLocaleString() },
           title: {
             display: true,
-            text: "Your account balance (USD)",
+            text: "How much money you have",
             font: { size: 11, weight: "500" },
             color: "#4e5a73",
           },
@@ -410,7 +419,7 @@ function renderResult(result) {
   setText("q-fills", String(result.tradeList.length));
   setText("q-bankrupt", result.bankrupt ? "YES" : "NO");
 
-  renderChart(result);
+  renderChart(result, result.startingBankroll);
   renderExamples(result);
 }
 
