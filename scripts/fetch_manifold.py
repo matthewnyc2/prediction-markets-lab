@@ -21,6 +21,18 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
+
+def safe_print(s: str) -> None:
+    try:
+        print(s, flush=True)
+    except UnicodeEncodeError:
+        print(s.encode("ascii", "replace").decode("ascii"), flush=True)
+
 BASE = "https://api.manifold.markets"
 HEADERS = {"User-Agent": "prediction-markets-lab/0.1 (+https://github.com/matthewnyc2/prediction-markets-lab)"}
 TARGET_MARKETS = 120
