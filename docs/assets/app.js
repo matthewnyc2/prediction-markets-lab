@@ -1,6 +1,6 @@
 // app.js — Portfolio UI glue. Hooks engine.js + strategies.js to the current HTML layout.
 
-import { loadManifoldDataset, manifoldDatasetToEvents, runBacktest } from "./engine.js";
+import { loadDataset, datasetToEvents, runBacktest } from "./engine.js";
 import {
   kellySizing, closingMomentum, contrarianUnderdog, favoriteLongshot, buyAndHold,
 } from "./strategies.js";
@@ -10,11 +10,11 @@ const CATALOGUE = [
   {
     id: "closing-momentum",
     name: "Closing momentum",
-    blurb: "Ride 5%+ moves in the final hours before close. Enters each market once.",
-    theory: "In the final 6 hours before close, markets that have moved 5%+ from their window-open price tend to keep moving. Enters once per market.",
+    blurb: "Ride 5%+ moves in the final 3 days before close. Enters each market once.",
+    theory: "In the final 72 hours before close, markets that have moved 5%+ from their window-open price tend to keep moving. Enters once per market.",
     factory: (opts) => closingMomentum({
       assignedCapital: opts.bankroll, betFraction: opts.betFraction,
-      momentumThreshold: 0.05, windowHours: 6,
+      momentumThreshold: 0.05, windowHours: 72,
     }),
     slider: { key: "betFraction", label: "Bet fraction", min: 0.01, max: 0.10, step: 0.01, default: 0.03,
               format: (v) => `${(v*100).toFixed(0)}%` },
@@ -23,10 +23,10 @@ const CATALOGUE = [
     id: "contrarian-underdog",
     name: "Contrarian underdog",
     blurb: "Buy YES on longshots priced below threshold. Tests whether underdogs are underpriced.",
-    theory: "Buys YES on markets priced below the threshold in the last 3 hours. Pays 3x+ when underdogs hit.",
+    theory: "Buys YES on markets priced below the threshold in the last 4 days before close. Pays 3x+ when underdogs hit.",
     factory: (opts) => contrarianUnderdog({
       assignedCapital: opts.bankroll, betFraction: opts.betFraction,
-      maxYesPrice: opts.threshold, windowHours: 3,
+      maxYesPrice: opts.threshold, windowHours: 96,
     }),
     slider: { key: "threshold", label: "Max YES price", min: 0.05, max: 0.50, step: 0.01, default: 0.30,
               format: (v) => v.toFixed(2) },
@@ -35,10 +35,10 @@ const CATALOGUE = [
     id: "favorite-longshot",
     name: "Favorite-longshot fade",
     blurb: "Fade heavy favorites by buying NO. Tests overpricing of locks.",
-    theory: "Fades heavily-favored markets by buying NO when YES ≥ threshold. Tests the academic finding that favorites are overpriced.",
+    theory: "Fades heavily-favored markets by buying NO when YES ≥ threshold in the last 4 days. Tests the academic finding that favorites are overpriced.",
     factory: (opts) => favoriteLongshot({
       assignedCapital: opts.bankroll, betFraction: opts.betFraction,
-      minYesPrice: opts.threshold, windowHours: 3,
+      minYesPrice: opts.threshold, windowHours: 96,
     }),
     slider: { key: "threshold", label: "Min YES price", min: 0.55, max: 0.95, step: 0.01, default: 0.70,
               format: (v) => v.toFixed(2) },
@@ -70,7 +70,7 @@ const BY_ID = Object.fromEntries(CATALOGUE.map(c => [c.id, c]));
 const state = {
   strategyId: "closing-momentum",
   shuffleSeed: 1,
-  nMarkets: 120,
+  nMarkets: 200,
   bankroll: 10_000,
   params: {},
   chart: null,
@@ -268,7 +268,7 @@ function renderResult(result) {
   setText("chart-sub", `${result.tradeList.length} trades · starting ${fmtMoney(result.startingBankroll)}`);
 
   // Run summary
-  setText("run-summary", `${cfg.name} — ${result.tradeList.length} bets placed across ${new Set(result.tradeList.map(f => f.marketId)).size} real Manifold markets.`);
+  setText("run-summary", `${cfg.name} — ${result.tradeList.length} bets placed across ${new Set(result.tradeList.map(f => f.marketId)).size} real Polymarket markets.`);
 
   // Technical metrics (details drawer)
   setText("q-sharpe", result.sharpe == null ? "—" : result.sharpe.toFixed(2));
@@ -293,7 +293,7 @@ function runPrimary() {
     betFraction: state.params.betFraction ?? 0.03,
     threshold: state.params.threshold ?? 0.30,
   });
-  const { events, titleByKey } = manifoldDatasetToEvents(state.dataset, {
+  const { events, titleByKey } = datasetToEvents(state.dataset, {
     shuffleSeed: state.shuffleSeed, nMarkets: state.nMarkets,
   });
   state.titleByKey = titleByKey;
@@ -304,7 +304,7 @@ function runPrimary() {
 // ---------- Leaderboard ----------
 function runLeaderboard() {
   if (!state.dataset) return;
-  const { events } = manifoldDatasetToEvents(state.dataset, { shuffleSeed: 1, nMarkets: 120 });
+  const { events } = datasetToEvents(state.dataset, { shuffleSeed: 1, nMarkets: 200 });
   const rows = [];
   for (const cfg of CATALOGUE) {
     const strategy = cfg.factory({
@@ -354,7 +354,7 @@ async function boot() {
     runPrimary();
   });
   wire("markets-input", "change", (e) => {
-    state.nMarkets = Math.max(1, Math.min(120, parseInt(e.target.value || "120", 10)));
+    state.nMarkets = Math.max(1, Math.min(200, parseInt(e.target.value || "200", 10)));
     e.target.value = state.nMarkets;
     runPrimary();
   });
@@ -366,7 +366,7 @@ async function boot() {
   wire("rerun-btn", "click", runPrimary);
 
   try {
-    state.dataset = await loadManifoldDataset();
+    state.dataset = await loadDataset("data/polymarket.json");
   } catch (err) {
     setText("run-summary", "Failed to load real dataset. Serve docs/ from a web server (not file://).");
     console.error(err);

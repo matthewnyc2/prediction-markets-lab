@@ -161,19 +161,11 @@ def to_tick_list(history: list[dict], resolution_ms: int) -> list[dict]:
 
 
 def build_market_record(m: dict, history: list[dict]) -> dict:
-    resolution_time_iso = m.get("endDate") or m.get("closedTime") or m.get("updatedAt")
-    try:
-        resolution_ms = int(time.mktime(time.strptime(
-            resolution_time_iso.replace("Z", "+0000"),
-            "%Y-%m-%dT%H:%M:%S%z" if "+" in resolution_time_iso or "-" in resolution_time_iso[-6:]
-            else "%Y-%m-%dT%H:%M:%SZ",
-        )) * 1000) if resolution_time_iso else 0
-    except (ValueError, AttributeError):
-        resolution_ms = int(time.time() * 1000)
-
-    if not resolution_ms and history:
-        resolution_ms = int(history[-1]["t"]) * 1000
-
+    # The last price tick is when trading actually stopped — use it as the
+    # effective resolution time. Polymarket's `endDate` is often the UMA oracle
+    # deadline (months or years in the future), not the event date, so it's
+    # useless for computing "hours-to-close".
+    resolution_ms = int(history[-1]["t"]) * 1000 if history else 0
     ticks = to_tick_list(history, resolution_ms) if resolution_ms else []
     try:
         volume = float(m.get("volume") or 0)
