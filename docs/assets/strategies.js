@@ -1,14 +1,13 @@
 // strategies.js — Browser port of src/predmarkets/strategies/*.py
 // Same public shape: each strategy has {strategyId, displayName, decide, onFill}
 //
-// SIZING INVARIANTS (every strategy must obey these):
-//   1. Bets are sized off state.accountValue (current mark-to-market equity),
-//      NOT a fixed reference from the strategy's open.  That way winnings
-//      compound and losses shrink future bet size.
-//   2. Each bet is clamped to state.cash (available settled cash).  The
-//      strategy cannot spend money it doesn't have.  The margin check in
-//      engine.applyFill rejects over-drafts defensively, but the strategy
-//      should never even try to place one.
+// SIZING INVARIANT: bets are sized off state.cash — the money actually
+// sitting in the account right now.  Capital tied up in unsettled bets is
+// NOT available for new bets.  If a $300 bet hasn't resolved yet, that $300
+// is gone from cash until it does, and future bets only see what's left.
+//
+// This is the real money model: you can only bet money you currently hold.
+// No mark-to-market phantom buying power, no margin.
 
 import { kellyFraction } from "./engine.js";
 
@@ -16,13 +15,12 @@ function mkOrder(platform, marketId, side, size, strategyId) {
   return { platform, marketId, side, orderSide: "buy", size, strategyId };
 }
 
-// How much dollars this strategy is willing to risk on ONE bet right now.
-// Uses current account value × bet fraction, then clamps to available cash.
+// Dollars available for ONE new bet right now.  Uses live cash (what's
+// settled in the account) × bet fraction.  fallbackCapital is only used
+// when no engine state is present (unit tests that call decide() directly).
 function sizeOne(state, fallbackCapital, betFraction) {
-  const capital = state.accountValue != null ? state.accountValue : fallbackCapital;
-  const cash = state.cash != null ? state.cash : capital;
-  const want = betFraction * capital;
-  return Math.max(0, Math.min(cash, want));
+  const cash = state.cash != null ? state.cash : fallbackCapital;
+  return Math.max(0, betFraction * cash);
 }
 
 // ---------- Kelly sizing ----------
@@ -36,7 +34,6 @@ export function kellySizing({ pOracle, kellyFractionMultiplier = 0.25, assignedC
     decide(state) {
       const orders = [];
       const cash = state.cash != null ? state.cash : assignedCapital;
-      const capital = state.accountValue != null ? state.accountValue : assignedCapital;
       for (const m of state.markets) {
         const key = `${m.platform}|${m.marketId}`;
         if (entered.has(key)) continue;
@@ -47,8 +44,8 @@ export function kellySizing({ pOracle, kellyFractionMultiplier = 0.25, assignedC
           const price = side === "yes" ? m.yesPrice : m.noPrice;
           const fStar = kellyFraction(p, m.yesPrice, side);
           if (fStar <= 0 || price <= 0) return null;
-          const want = kellyFractionMultiplier * fStar * capital;
-          const bet = Math.max(0, Math.min(cash, want));
+          // Kelly fraction of currently-available cash.  No phantom equity.
+          const bet = Math.max(0, kellyFractionMultiplier * fStar * cash);
           const size = Math.floor(bet / price);
           if (size < 1) return null;
           return mkOrder(m.platform, m.marketId, side, size, "kelly-sizing");
