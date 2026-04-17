@@ -158,9 +158,13 @@ section { margin-top: 72px; }
   border-radius: var(--r);
   max-height: 520px; overflow-y: auto; overflow-x: auto;
 }
-.bets-table { min-width: 1180px; }
+.bets-table { min-width: 1480px; }
 .bets-table .bet-pct.pos { color: var(--green); font-weight: 600; }
 .bets-table .bet-pct.neg { color: var(--red); font-weight: 600; }
+.bets-table .bet-pnl.pos { color: var(--green); font-weight: 600; }
+.bets-table .bet-pnl.neg { color: var(--red); font-weight: 600; }
+.bets-table td.num { padding-right: 16px; }
+.bets-table thead th.num { padding-right: 16px; }
 .bets-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .bets-table thead th {
   position: sticky; top: 0; background: var(--bg-card);

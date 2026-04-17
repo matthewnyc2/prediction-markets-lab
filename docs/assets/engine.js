@@ -374,7 +374,11 @@ export function runBacktest({ strategy, events, bankroll }) {
       if (applied) strategy.onFill(fill);
     }
     if (event.eventType === "resolution") {
-      settleResolution(portfolio, event.platform, event.marketId, event.resolution || "cancelled", event.wallTimeMs);
+      const closed = settleResolution(portfolio, event.platform, event.marketId, event.resolution || "cancelled", event.wallTimeMs);
+      // Snapshot total account value at the moment this position settled so
+      // the bets table can show account trajectory bet-by-bet.
+      const nowEquity = markEquity(portfolio, latest);
+      for (const pos of closed) pos.accountAfter = nowEquity;
     }
     equityCurve.push({ t: event.t, wallTimeMs: event.wallTimeMs || 0, equity: markEquity(portfolio, latest) });
   }

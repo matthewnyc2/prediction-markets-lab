@@ -219,16 +219,30 @@ function renderChart(result, startingBankroll) {
   // Prepend a Day 0 point at the starting bankroll so the line clearly starts
   // at the number in the user's head ($10,000) and moves from there.
   if (data.length > 0) data.unshift({ x: 0, y: startingBankroll });
+  // Color each dot by direction vs. the previous day's balance:
+  // green = money up, red = money down, gray = unchanged or Day 0.
+  const GREEN = "#16a34a", RED = "#dc2626", GRAY = "#94a3b8";
+  const pointColors = data.map((d, i) => {
+    if (i === 0) return GRAY;
+    const prev = data[i - 1].y;
+    if (d.y > prev) return GREEN;
+    if (d.y < prev) return RED;
+    return GRAY;
+  });
+
   if (state.chart) state.chart.destroy();
   state.chart = new window.Chart(ctx, {
     type: "line",
     data: {
       datasets: [
         {
-          label: "Account balance",
+          label: "Daily balance",
           data,
-          borderColor: "#1652f0", backgroundColor: "rgba(22, 82, 240, 0.10)",
-          borderWidth: 2, tension: 0.15, pointRadius: 0, fill: true,
+          showLine: false,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+          pointBackgroundColor: pointColors,
+          pointBorderColor: pointColors,
         },
         {
           label: "Starting bankroll",
@@ -308,14 +322,19 @@ function renderExamples(result) {
   const wins = sorted.filter(p => p.realisedPnl > 0).length;
   const losses = sorted.filter(p => p.realisedPnl <= 0).length;
 
+  const bankroll = result.startingBankroll || 10000;
   const rows = sorted.map(pos => {
     const key = `${pos.platform}|${pos.marketId}`;
     const title = state.titleByKey.get(key) || pos.marketId;
     const url = state.urlByKey.get(key);
     const pnl = pos.realisedPnl;
     const cost = pos.avgEntry * pos.size;
+    const payout = cost + pnl;             // what the position returned at settle
+    const exitPrice = pos.size > 0 ? payout / pos.size : 0;
     const pct = cost > 0 ? pnl / cost : 0;
+    const totalChange = pos.accountAfter != null ? pos.accountAfter - bankroll : null;
     const cls = pnl >= 0 ? "pos" : "neg";
+    const totalCls = totalChange == null ? "" : (totalChange >= 0 ? "pos" : "neg");
     const side = pos.side.toUpperCase();
     const titleCell = url
       ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" title="${escapeHtml(title)}">${escapeHtml(title.length > 90 ? title.slice(0, 90) + "…" : title)} ↗</a>`
@@ -326,11 +345,15 @@ function renderExamples(result) {
         <td class="bet-date mono">${fmtDateTime(pos.entryTimeMs)}</td>
         <td class="bet-side"><span class="side-${pos.side}">${side}</span></td>
         <td class="bet-size num">${pos.size.toLocaleString()}</td>
-        <td class="bet-entry num">${pos.avgEntry.toFixed(3)}</td>
+        <td class="bet-entry num">$${pos.avgEntry.toFixed(3)}</td>
         <td class="bet-cost num">${fmtMoney(cost)}</td>
         <td class="bet-date mono">${fmtDateTime(pos.resolutionTimeMs)}</td>
+        <td class="bet-exit num">$${exitPrice.toFixed(3)}</td>
+        <td class="bet-payout num">${fmtMoney(payout)}</td>
         <td class="bet-pnl num ${cls}">${fmtMoney(pnl, { sign: true })}</td>
         <td class="bet-pct num ${cls}">${fmtPct(pct, { sign: true })}</td>
+        <td class="bet-account num mono">${pos.accountAfter != null ? fmtMoney(pos.accountAfter) : "—"}</td>
+        <td class="bet-pct num ${totalCls} mono">${totalChange == null ? "—" : fmtMoney(totalChange, { sign: true })}</td>
       </tr>`;
   }).join("");
 
@@ -349,11 +372,15 @@ function renderExamples(result) {
             <th>Entered</th>
             <th>Side</th>
             <th class="num">Shares</th>
-            <th class="num">Entry $</th>
-            <th class="num">Cost</th>
+            <th class="num">Price paid</th>
+            <th class="num">Paid ($)</th>
             <th>Resolved</th>
+            <th class="num">Exit price</th>
+            <th class="num">Received ($)</th>
             <th class="num">P&L</th>
             <th class="num">Return</th>
+            <th class="num">Account after</th>
+            <th class="num">Total change</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
