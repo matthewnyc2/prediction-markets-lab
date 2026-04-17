@@ -37,10 +37,21 @@ def load_user_strategies(directory: str | Path) -> dict[str, type[Strategy]]:
         for _, cls in inspect.getmembers(module, inspect.isclass):
             if cls is Strategy or not issubclass(cls, Strategy):
                 continue
-            sid = getattr(cls, "strategy_id", "") or ""
+            sid = _resolve_strategy_id(cls)
             if sid and sid not in found:
                 found[sid] = cls
     return found
+
+
+def _resolve_strategy_id(cls: type) -> str:
+    """Read strategy_id whether defined as class attr or dataclass field default."""
+    fields = getattr(cls, "__dataclass_fields__", None)
+    if fields and "strategy_id" in fields:
+        default = fields["strategy_id"].default
+        if isinstance(default, str):
+            return default
+    attr = getattr(cls, "strategy_id", "")
+    return attr if isinstance(attr, str) else ""
 
 
 def _load_module(path: Path, module_name: str) -> object:
