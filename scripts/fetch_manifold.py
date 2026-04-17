@@ -137,9 +137,9 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "manifold.json"
 
-    print(f"scanning resolved binary markets from {BASE} ...")
+    safe_print(f"scanning resolved binary markets from {BASE} ...")
     candidates = scan_resolved_binary_markets()
-    print(f"found {len(candidates)} candidate markets; pulling bet history ...")
+    safe_print(f"found {len(candidates)} candidate markets; pulling bet history ...")
 
     keepers: list[dict] = []
     for i, m in enumerate(candidates):
@@ -180,7 +180,7 @@ def main() -> int:
     }
     out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     size_kb = out_path.stat().st_size / 1024
-    print(f"\nwrote {out_path}  ({size_kb:.1f} KB · {len(keepers)} markets)")
+    safe_print(f"\nwrote {out_path}  ({size_kb:.1f} KB · {len(keepers)} markets)")
     return 0
 
 
