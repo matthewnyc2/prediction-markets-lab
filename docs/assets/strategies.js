@@ -1,11 +1,28 @@
 // strategies.js — Browser port of src/predmarkets/strategies/*.py
 // Same public shape: each strategy has {strategyId, displayName, decide, onFill}
+//
+// SIZING INVARIANTS (every strategy must obey these):
+//   1. Bets are sized off state.accountValue (current mark-to-market equity),
+//      NOT a fixed reference from the strategy's open.  That way winnings
+//      compound and losses shrink future bet size.
+//   2. Each bet is clamped to state.cash (available settled cash).  The
+//      strategy cannot spend money it doesn't have.  The margin check in
+//      engine.applyFill rejects over-drafts defensively, but the strategy
+//      should never even try to place one.
 
 import { kellyFraction } from "./engine.js";
 
-// ---------- helpers ----------
 function mkOrder(platform, marketId, side, size, strategyId) {
   return { platform, marketId, side, orderSide: "buy", size, strategyId };
+}
+
+// How much dollars this strategy is willing to risk on ONE bet right now.
+// Uses current account value × bet fraction, then clamps to available cash.
+function sizeOne(state, fallbackCapital, betFraction) {
+  const capital = state.accountValue != null ? state.accountValue : fallbackCapital;
+  const cash = state.cash != null ? state.cash : capital;
+  const want = betFraction * capital;
+  return Math.max(0, Math.min(cash, want));
 }
 
 // ---------- Kelly sizing ----------
@@ -18,6 +35,8 @@ export function kellySizing({ pOracle, kellyFractionMultiplier = 0.25, assignedC
     description: "Sizes bets proportional to edge vs an oracle probability. Quarter-Kelly by default to cap variance.",
     decide(state) {
       const orders = [];
+      const cash = state.cash != null ? state.cash : assignedCapital;
+      const capital = state.accountValue != null ? state.accountValue : assignedCapital;
       for (const m of state.markets) {
         const key = `${m.platform}|${m.marketId}`;
         if (entered.has(key)) continue;
@@ -28,7 +47,8 @@ export function kellySizing({ pOracle, kellyFractionMultiplier = 0.25, assignedC
           const price = side === "yes" ? m.yesPrice : m.noPrice;
           const fStar = kellyFraction(p, m.yesPrice, side);
           if (fStar <= 0 || price <= 0) return null;
-          const bet = kellyFractionMultiplier * fStar * assignedCapital;
+          const want = kellyFractionMultiplier * fStar * capital;
+          const bet = Math.max(0, Math.min(cash, want));
           const size = Math.floor(bet / price);
           if (size < 1) return null;
           return mkOrder(m.platform, m.marketId, side, size, "kelly-sizing");
@@ -70,7 +90,7 @@ export function closingMomentum({ windowHours = 6.0, momentumThreshold = 0.05, b
         if (!side) continue;
         const price = side === "yes" ? m.yesPrice : m.noPrice;
         if (price <= 0) continue;
-        const bet = betFraction * assignedCapital;
+        const bet = sizeOne(state, assignedCapital, betFraction);
         const size = Math.floor(bet / price);
         if (size < 1) continue;
         orders.push(mkOrder(m.platform, m.marketId, side, size, "closing-momentum"));
@@ -99,7 +119,7 @@ export function contrarianUnderdog({ maxYesPrice = 0.30, windowHours = 3.0, betF
         if (entered.has(key)) continue;
         if (m.closeInHours > windowHours || m.closeInHours <= 0) continue;
         if (m.yesPrice > maxYesPrice) continue;
-        const bet = betFraction * assignedCapital;
+        const bet = sizeOne(state, assignedCapital, betFraction);
         const size = Math.floor(bet / m.yesPrice);
         if (size < 1) continue;
         orders.push(mkOrder(m.platform, m.marketId, "yes", size, "contrarian-underdog"));
@@ -128,7 +148,7 @@ export function favoriteLongshot({ minYesPrice = 0.70, windowHours = 3.0, betFra
         if (entered.has(key)) continue;
         if (m.closeInHours > windowHours || m.closeInHours <= 0) continue;
         if (m.yesPrice < minYesPrice) continue;
-        const bet = betFraction * assignedCapital;
+        const bet = sizeOne(state, assignedCapital, betFraction);
         const size = Math.floor(bet / m.noPrice);
         if (size < 1) continue;
         orders.push(mkOrder(m.platform, m.marketId, "no", size, "favorite-longshot"));
@@ -156,7 +176,7 @@ export function sellAndHold({ assignedCapital = 10_000, betFraction = 0.05 } = {
         const key = `${m.platform}|${m.marketId}`;
         if (entered.has(key)) continue;
         if (m.noPrice <= 0) continue;
-        const bet = betFraction * assignedCapital;
+        const bet = sizeOne(state, assignedCapital, betFraction);
         const size = Math.floor(bet / m.noPrice);
         if (size < 1) continue;
         orders.push(mkOrder(m.platform, m.marketId, "no", size, "sell-and-hold"));
@@ -173,7 +193,7 @@ export function sellAndHold({ assignedCapital = 10_000, betFraction = 0.05 } = {
 // ---------- Mean reversion: buy YES after a sharp drop ----------
 export function meanReversion({ dropThreshold = 0.15, lookbackHours = 48, betFraction = 0.03, assignedCapital = 10_000, maxEntryPrice = 0.85 } = {}) {
   const entered = new Set();
-  const priceHistory = new Map(); // key -> [{t, yesPrice}]
+  const priceHistory = new Map();
   const fills = [];
   return {
     strategyId: "mean-reversion",
@@ -187,7 +207,6 @@ export function meanReversion({ dropThreshold = 0.15, lookbackHours = 48, betFra
         if (m.yesPrice > maxEntryPrice) continue;
         const hist = priceHistory.get(key) || [];
         hist.push({ t: state.t, yesPrice: m.yesPrice });
-        // keep only points inside the lookback window (using tick count as proxy for time — each tick ~= bar width)
         const windowTicks = Math.max(1, Math.round(lookbackHours / 12));
         if (hist.length > windowTicks + 1) hist.shift();
         priceHistory.set(key, hist);
@@ -195,7 +214,7 @@ export function meanReversion({ dropThreshold = 0.15, lookbackHours = 48, betFra
         const peak = Math.max(...hist.map(p => p.yesPrice));
         const drop = (peak - m.yesPrice) / peak;
         if (drop < dropThreshold) continue;
-        const bet = betFraction * assignedCapital;
+        const bet = sizeOne(state, assignedCapital, betFraction);
         const size = Math.floor(bet / m.yesPrice);
         if (size < 1) continue;
         orders.push(mkOrder(m.platform, m.marketId, "yes", size, "mean-reversion"));
@@ -225,7 +244,7 @@ export function confirmedFavorite({ minYesPrice = 0.85, windowHours = 96, betFra
         if (m.closeInHours > windowHours || m.closeInHours <= 0) continue;
         if (m.yesPrice < minYesPrice) continue;
         if (m.yesPrice >= 1) continue;
-        const bet = betFraction * assignedCapital;
+        const bet = sizeOne(state, assignedCapital, betFraction);
         const size = Math.floor(bet / m.yesPrice);
         if (size < 1) continue;
         orders.push(mkOrder(m.platform, m.marketId, "yes", size, "confirmed-favorite"));
@@ -252,7 +271,7 @@ export function buyAndHold({ assignedCapital = 10_000, betFraction = 0.05 } = {}
       for (const m of state.markets) {
         const key = `${m.platform}|${m.marketId}`;
         if (entered.has(key)) continue;
-        const bet = betFraction * assignedCapital;
+        const bet = sizeOne(state, assignedCapital, betFraction);
         const size = Math.floor(bet / m.yesPrice);
         if (size < 1) continue;
         orders.push(mkOrder(m.platform, m.marketId, "yes", size, "buy-and-hold"));

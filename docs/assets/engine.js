@@ -345,6 +345,9 @@ export function runBacktest({ strategy, events, bankroll }) {
 
     const state = {
       t: event.t,
+      accountValue: equityNow,          // live mark-to-market equity so strategies
+      cash: portfolio.cash,             // can size off current balance, not a
+                                        // fixed reference from the open
       markets: [{
         platform: event.platform,
         marketId: event.marketId,

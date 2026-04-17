@@ -325,8 +325,10 @@ function renderExamples(result) {
     host.innerHTML = `<div class="dim" style="padding:16px">This strategy didn't enter any markets in this run.</div>`;
     return;
   }
-  // Sort most-profitable first so the winners lead.
-  const sorted = closed.slice().sort((a, b) => b.realisedPnl - a.realisedPnl);
+  // Sort chronologically by resolution time so each row's Account-after and
+  // Total-change walk forward through the run; otherwise the account balance
+  // numbers jump around non-monotonically and look broken.
+  const sorted = closed.slice().sort((a, b) => (a.resolutionTimeMs || 0) - (b.resolutionTimeMs || 0));
   const wins = sorted.filter(p => p.realisedPnl > 0).length;
   const losses = sorted.filter(p => p.realisedPnl <= 0).length;
 
