@@ -1,4 +1,4 @@
-// app.js — Portfolio UI glue. Hooks engine.js + strategies.js to the new layout.
+// app.js — Portfolio UI glue. Hooks engine.js + strategies.js to the current HTML layout.
 
 import { loadManifoldDataset, manifoldDatasetToEvents, runBacktest } from "./engine.js";
 import {
@@ -80,6 +80,7 @@ const state = {
 
 // ---------- Utility ----------
 const $ = (id) => document.getElementById(id);
+const setText = (id, v) => { const el = $(id); if (el) el.textContent = v; };
 const escapeHtml = (s) => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
 function fmtMoney(v, { sign = false } = {}) {
   if (v == null) return "—";
@@ -97,10 +98,12 @@ function fmtPct(v, { sign = false, digits = 1 } = {}) {
 // ---------- Strategy deck ----------
 function renderStrategyDeck() {
   const deck = $("strategy-deck");
+  if (!deck) return;
   deck.innerHTML = "";
   for (const cfg of CATALOGUE) {
     const btn = document.createElement("button");
     btn.className = "strat-card" + (cfg.id === state.strategyId ? " active" : "");
+    btn.dataset.strategy = cfg.id;
     btn.innerHTML = `<div class="name">${escapeHtml(cfg.name)}</div><div class="desc">${escapeHtml(cfg.blurb)}</div>`;
     btn.addEventListener("click", () => selectStrategy(cfg.id));
     deck.appendChild(btn);
@@ -120,6 +123,7 @@ function selectStrategy(id) {
 // ---------- Slider slot ----------
 function renderSliderSlot() {
   const slot = $("slider-slot");
+  if (!slot) return;
   const cfg = BY_ID[state.strategyId];
   if (!cfg.slider) {
     slot.innerHTML = `<label>&nbsp;</label><div class="dim" style="font-size:12px;padding:10px 0">No tunable parameter</div>`;
@@ -140,7 +144,9 @@ function renderSliderSlot() {
 
 // ---------- Chart ----------
 function renderChart(result) {
-  const ctx = $("equity-chart").getContext("2d");
+  const canvas = $("equity-chart");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
   const data = result.equityCurve.map((p, i) => ({ x: i, y: p.equity }));
   if (state.chart) state.chart.destroy();
   state.chart = new window.Chart(ctx, {
@@ -149,13 +155,13 @@ function renderChart(result) {
       datasets: [
         {
           label: "Equity", data,
-          borderColor: "#7dd3fc", backgroundColor: "rgba(125, 211, 252, 0.09)",
+          borderColor: "#1652f0", backgroundColor: "rgba(22, 82, 240, 0.10)",
           borderWidth: 2, tension: 0.2, pointRadius: 0, fill: true,
         },
         {
           label: "Starting bankroll",
           data: data.map(d => ({ x: d.x, y: state.bankroll })),
-          borderColor: "rgba(255,255,255,0.20)", borderWidth: 1.2, borderDash: [5, 5],
+          borderColor: "rgba(0,0,0,0.22)", borderWidth: 1.2, borderDash: [5, 5],
           pointRadius: 0, fill: false,
         },
       ],
@@ -165,8 +171,6 @@ function renderChart(result) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: "#161d2e", borderColor: "rgba(255,255,255,0.10)", borderWidth: 1,
-          titleColor: "#f2f5fb", bodyColor: "#c6cfe0", displayColors: false, padding: 10,
           callbacks: {
             title: (items) => `Event ${items[0].parsed.x}`,
             label: (item) => `$${item.parsed.y.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
@@ -174,107 +178,108 @@ function renderChart(result) {
         },
       },
       scales: {
-        x: { type: "linear", grid: { color: "rgba(255,255,255,0.04)" },
-             ticks: { color: "#4e5a73", font: { size: 11 } },
-             title: { display: false } },
-        y: { grid: { color: "rgba(255,255,255,0.04)" },
-             ticks: { color: "#4e5a73", font: { size: 11 }, callback: (v) => "$" + v.toLocaleString() } },
+        x: { type: "linear", ticks: { font: { size: 11 } }, title: { display: false } },
+        y: { ticks: { font: { size: 11 }, callback: (v) => "$" + v.toLocaleString() } },
       },
     },
   });
 }
 
-// ---------- Metric rendering ----------
-function metricClass(value, badBelow, goodAbove, lowIsGood = false) {
-  if (value == null) return "";
-  if (lowIsGood) return value <= goodAbove ? "pos" : value >= badBelow ? "neg" : "warn";
-  return value >= goodAbove ? "pos" : value <= badBelow ? "neg" : "warn";
+// ---------- Examples ----------
+function renderExamples(result) {
+  const host = $("examples");
+  if (!host) return;
+  const closed = result.closedPositions.filter(p => !p.wasCancelled);
+  if (closed.length === 0) {
+    host.innerHTML = `<div class="dim" style="padding:16px">This strategy didn't enter any markets in this run.</div>`;
+    return;
+  }
+  // Pick most-profitable, most-losing, and a middle bet.
+  const sorted = closed.slice().sort((a, b) => b.realisedPnl - a.realisedPnl);
+  const picks = [sorted[0]];
+  if (sorted.length > 1) picks.push(sorted[sorted.length - 1]);
+  if (sorted.length > 2) picks.push(sorted[Math.floor(sorted.length / 2)]);
+
+  host.innerHTML = "";
+  for (const pos of picks) {
+    const title = state.titleByKey.get(`${pos.platform}|${pos.marketId}`) || pos.marketId;
+    const pnl = pos.realisedPnl;
+    const cls = pnl >= 0 ? "pos" : "neg";
+    const side = pos.side.toUpperCase();
+    const card = document.createElement("div");
+    card.className = "example-card";
+    card.innerHTML = `
+      <div class="ex-title">${escapeHtml(title.length > 80 ? title.slice(0, 80) + "…" : title)}</div>
+      <div class="ex-line"><span class="k">Bet</span><span class="v">${side} · ${pos.size.toLocaleString()} shares at ${pos.avgEntry.toFixed(3)}</span></div>
+      <div class="ex-line"><span class="k">Outcome</span><span class="v ${cls}">${fmtMoney(pnl, { sign: true })}</span></div>`;
+    host.appendChild(card);
+  }
 }
 
-function setMetric(id, value, hint, cls) {
-  const v = $(id);
-  v.textContent = value;
-  v.className = "val " + (cls || "");
-  const h = $(id + "-hint");
-  if (h) h.textContent = hint || h.textContent;
-}
-
+// ---------- Result rendering ----------
 function renderResult(result) {
   const pnl = result.finalEquity - result.startingBankroll;
   const pnlPct = pnl / result.startingBankroll;
   const cfg = BY_ID[state.strategyId];
 
-  // Primary PnL
+  // Big PnL + percentage pill
   const pnlBig = $("pnl-big");
-  pnlBig.textContent = fmtMoney(pnl, { sign: true });
-  pnlBig.className = "pnl-big " + (pnl >= 0 ? "pos" : "neg");
+  if (pnlBig) {
+    pnlBig.textContent = fmtMoney(pnl, { sign: true });
+    pnlBig.className = "pnl " + (pnl >= 0 ? "pos" : "neg");
+  }
+  const pct = $("pnl-pct");
+  if (pct) {
+    pct.textContent = fmtPct(pnlPct, { sign: true });
+    pct.className = "pct-pill " + (pnl >= 0 ? "pos" : "neg");
+  }
 
-  // Caption
-  const capt = $("pnl-caption");
-  const pctClass = pnl >= 0 ? "pos" : "neg";
-  const outcome = result.bankrupt
-    ? "Strategy went bankrupt — spent entire bankroll during the run."
-    : pnl > 500 ? "Solidly profitable across the dataset."
-    : pnl > 0 ? "Barely positive. Wins covered losses but no meaningful edge."
-    : pnl > -1000 ? "Small loss — roughly at the coin-flip level after fees."
-    : "Significant loss. Slippage and wrong-side bets dominated.";
-  capt.innerHTML = `<span class="pct ${pctClass}">${fmtPct(pnlPct, { sign: true })}</span>${outcome}`;
+  // Verdict sentence
+  const verdict = result.bankrupt
+    ? "Strategy went bankrupt — spent the entire bankroll before the run ended."
+    : pnl > 500 ? "Solidly profitable across this dataset."
+    : pnl > 0 ? "Barely positive — wins covered losses but no meaningful edge."
+    : pnl > -1000 ? "Small loss — roughly coin-flip after slippage."
+    : "Significant loss — slippage and wrong-side bets dominated.";
+  setText("verdict", verdict);
 
-  // Summary box
-  $("active-strategy-name").textContent = cfg.name.toUpperCase();
-  $("theory-text").textContent = cfg.theory;
+  // Preface
+  setText("result-strategy", cfg.name);
+  setText("result-markets", String(result.equityCurve.length ? new Set(result.tradeList.map(f => f.marketId)).size : 0));
 
-  // Metric strip
-  setMetric("m-sharpe",
-    result.sharpe == null ? "—" : result.sharpe.toFixed(2),
-    result.sharpe == null ? "insufficient data" : result.sharpe > 1 ? "good" : result.sharpe > 0 ? "marginal" : "poor",
-    metricClass(result.sharpe, 0, 1));
-  setMetric("m-drawdown",
-    fmtPct(result.drawdown, { digits: 1 }),
-    result.drawdown < 0.10 ? "mild" : result.drawdown < 0.25 ? "moderate" : "severe",
-    result.drawdown < 0.15 ? "pos" : result.drawdown < 0.30 ? "warn" : "neg");
-  setMetric("m-winrate",
-    result.winRate == null ? "—" : fmtPct(result.winRate),
-    `${result.closedPositions.length} positions closed`, "");
-  setMetric("m-brier",
-    result.brier == null ? "—" : result.brier.toFixed(3),
-    result.brier == null ? "no forecasts" : result.brier < 0.20 ? "well-calibrated" : result.brier < 0.25 ? "near coin-flip" : "overconfident",
-    metricClass(result.brier, 0.25, 0.20, true));
-  setMetric("m-trades",
-    String(result.tradeList.length), "total fills", "");
-  setMetric("m-bankrupt",
-    result.bankrupt ? "YES" : "NO",
-    result.bankrupt ? "equity hit zero" : "solvent through the run",
-    result.bankrupt ? "neg" : "pos");
+  // Before / after
+  setText("ba-start", fmtMoney(result.startingBankroll));
+  setText("ba-end", fmtMoney(result.finalEquity));
+
+  // Fact cards
+  const closedEligible = result.closedPositions.filter(p => !p.wasCancelled);
+  const wins = closedEligible.filter(p => p.realisedPnl > 0).length;
+  setText("f-bets", String(result.tradeList.length));
+  setText("f-bets-sub", `across ${new Set(result.tradeList.map(f => f.marketId)).size} markets`);
+  setText("f-wins", String(wins));
+  setText("f-wins-sub", result.winRate == null ? "no closed bets" : `${(result.winRate * 100).toFixed(0)}% win rate`);
+  // Worst = lowest equity point reached
+  const minEquity = result.equityCurve.reduce((m, p) => Math.min(m, p.equity), result.startingBankroll);
+  setText("f-worst", fmtMoney(minEquity));
+
+  // Chart subheading
+  setText("chart-sub", `${result.tradeList.length} trades · starting ${fmtMoney(result.startingBankroll)}`);
+
+  // Run summary
+  setText("run-summary", `${cfg.name} — ${result.tradeList.length} bets placed across ${new Set(result.tradeList.map(f => f.marketId)).size} real Manifold markets.`);
+
+  // Technical metrics (details drawer)
+  setText("q-sharpe", result.sharpe == null ? "—" : result.sharpe.toFixed(2));
+  setText("q-sortino", result.sortino == null ? "—" : result.sortino.toFixed(2));
+  setText("q-brier", result.brier == null ? "—" : result.brier.toFixed(3));
+  setText("q-drawdown", fmtPct(result.drawdown, { digits: 1 }));
+  setText("q-winrate", result.winRate == null ? "—" : fmtPct(result.winRate));
+  setText("q-closed", String(closedEligible.length));
+  setText("q-fills", String(result.tradeList.length));
+  setText("q-bankrupt", result.bankrupt ? "YES" : "NO");
 
   renderChart(result);
-  renderTrades(result);
-  $("chart-subhead").textContent = `${result.tradeList.length} trades · starting $${result.startingBankroll.toLocaleString()}`;
-}
-
-// ---------- Trades drawer ----------
-function renderTrades(result) {
-  const tbody = $("trade-tbody");
-  tbody.innerHTML = "";
-  const rows = result.tradeList.slice(0, 100);
-  for (const f of rows) {
-    const title = state.titleByKey.get(`${f.platform}|${f.marketId}`) || f.marketId;
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="mono dim">${f.timestamp}</td>
-      <td title="${escapeHtml(title)}">${escapeHtml(title.length > 56 ? title.slice(0, 56) + "…" : title)}</td>
-      <td><span class="side-pill ${f.side}">${f.orderSide} ${f.side}</span></td>
-      <td class="num">${f.size.toLocaleString()}</td>
-      <td class="num">${f.fillPrice.toFixed(3)}</td>
-      <td class="num">${(f.fillPrice * f.size).toLocaleString(undefined, { maximumFractionDigits: 0 })}</td>`;
-    tbody.appendChild(tr);
-  }
-  if (result.tradeList.length > rows.length) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="6" class="dim" style="text-align:center">… and ${result.tradeList.length - rows.length} more</td>`;
-    tbody.appendChild(tr);
-  }
-  $("trade-count").textContent = `${result.tradeList.length} trade${result.tradeList.length === 1 ? "" : "s"}`;
+  renderExamples(result);
 }
 
 // ---------- Primary run ----------
@@ -286,13 +291,12 @@ function runPrimary() {
     betFraction: state.params.betFraction ?? 0.03,
     threshold: state.params.threshold ?? 0.30,
   });
-  const { events, titleByKey, selectedMarkets } = manifoldDatasetToEvents(state.dataset, {
+  const { events, titleByKey } = manifoldDatasetToEvents(state.dataset, {
     shuffleSeed: state.shuffleSeed, nMarkets: state.nMarkets,
   });
   state.titleByKey = titleByKey;
   const result = runBacktest({ strategy, events, bankroll: state.bankroll });
   renderResult(result);
-  $("run-count").textContent = `${selectedMarkets.length} real Manifold markets · ${events.length.toLocaleString()} price ticks`;
 }
 
 // ---------- Leaderboard ----------
@@ -311,72 +315,64 @@ function runLeaderboard() {
       id: cfg.id, name: cfg.name, blurb: cfg.blurb,
       pnl: r.finalEquity - 10_000,
       pnlPct: (r.finalEquity - 10_000) / 10_000,
-      sharpe: r.sharpe, dd: r.drawdown, trades: r.tradeList.length,
       bankrupt: r.bankrupt,
     });
   }
   rows.sort((a, b) => b.pnl - a.pnl);
-  const wrap = $("leaderboard-rows");
+  const wrap = $("lb-rows");
+  if (!wrap) return;
   wrap.innerHTML = "";
   rows.forEach((r, i) => {
     const pnlCls = r.pnl >= 0 ? "pos" : "neg";
     const rank = i + 1;
-    const rankCls = rank === 1 ? "rank gold" : "rank";
-    const div = document.createElement("div");
-    div.className = "lb-row";
-    div.innerHTML = `
-      <div class="${rankCls}">${rank}</div>
+    const row = document.createElement("div");
+    row.className = "lb-row";
+    row.innerHTML = `
+      <div class="rk">${rank}</div>
       <div class="nm">${escapeHtml(r.name)}<span class="d">${escapeHtml(r.blurb)}</span></div>
-      <div class="v ${pnlCls}">${fmtMoney(r.pnl, { sign: true })}</div>
-      <div class="v ${pnlCls} hide-sm">${fmtPct(r.pnlPct, { sign: true })}</div>
-      <div class="v hide-sm">${r.sharpe == null ? "—" : r.sharpe.toFixed(2)}</div>
-      <div class="v hide-sm">${fmtPct(r.dd)}</div>
-      <div class="v hide-sm">${r.trades}</div>
-      <div class="status">${r.bankrupt ? '<span class="pill bad">BANKRUPT</span>' : (r.pnl >= 0 ? '<span class="pill ok">SOLVENT</span>' : '<span class="pill bad">LOSS</span>')}</div>`;
-    wrap.appendChild(div);
+      <div class="v ${pnlCls}" style="text-align:right">${fmtMoney(r.pnl, { sign: true })} <span class="dim" style="font-size:12px">(${fmtPct(r.pnlPct, { sign: true })})</span></div>
+      <div class="status hide-sm">${r.bankrupt ? '<span class="pill bad">BANKRUPT</span>' : (r.pnl >= 0 ? '<span class="pill ok">PROFIT</span>' : '<span class="pill bad">LOSS</span>')}</div>`;
+    wrap.appendChild(row);
   });
 }
 
 // ---------- Boot ----------
 async function boot() {
   renderStrategyDeck();
-  // Init params with defaults
   for (const c of CATALOGUE) if (c.slider) state.params[c.slider.key] = c.slider.default;
   renderSliderSlot();
 
-  // Wire controls
-  $("bankroll-input").addEventListener("change", (e) => {
+  const wire = (id, event, handler) => {
+    const el = $(id);
+    if (el) el.addEventListener(event, handler);
+  };
+  wire("bankroll-input", "change", (e) => {
     state.bankroll = Math.max(100, Math.floor(parseFloat(e.target.value) || 10_000));
     e.target.value = state.bankroll;
     runPrimary();
   });
-  $("markets-input").addEventListener("change", (e) => {
+  wire("markets-input", "change", (e) => {
     state.nMarkets = Math.max(1, Math.min(120, parseInt(e.target.value || "120", 10)));
     e.target.value = state.nMarkets;
     runPrimary();
   });
-  $("seed-input").addEventListener("change", (e) => {
+  wire("seed-input", "change", (e) => {
     state.shuffleSeed = Math.max(1, parseInt(e.target.value || "1", 10));
     e.target.value = state.shuffleSeed;
     runPrimary();
   });
-  $("rerun-button").addEventListener("click", runPrimary);
-
-  // Trades drawer
-  const tw = $("trades-wrap");
-  $("trades-toggle").addEventListener("click", () => tw.classList.toggle("open"));
+  wire("rerun-btn", "click", runPrimary);
 
   try {
     state.dataset = await loadManifoldDataset();
   } catch (err) {
-    $("theory-text").textContent =
-      "Failed to load real dataset. Serve docs/ from a web server (not file://).";
+    setText("run-summary", "Failed to load real dataset. Serve docs/ from a web server (not file://).");
     console.error(err);
     return;
   }
 
   const fetched = new Date(state.dataset.fetched_at_ms).toISOString().slice(0, 10);
-  $("hero-dataset-info").textContent = fetched;
+  setText("dataset-date", fetched);
 
   runPrimary();
   runLeaderboard();
