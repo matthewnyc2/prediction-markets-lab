@@ -142,6 +142,103 @@ export function favoriteLongshot({ minYesPrice = 0.70, windowHours = 3.0, betFra
   };
 }
 
+// ---------- Inverse baseline: buy NO on everything ----------
+export function sellAndHold({ assignedCapital = 10_000, betFraction = 0.05 } = {}) {
+  const entered = new Set();
+  const fills = [];
+  return {
+    strategyId: "sell-and-hold",
+    displayName: "Buy NO at open",
+    description: "Inverse baseline: buys NO on every new market at its opening price. On Polymarket where most 'will X win?' markets resolve NO, this is the short-bias default.",
+    decide(state) {
+      const orders = [];
+      for (const m of state.markets) {
+        const key = `${m.platform}|${m.marketId}`;
+        if (entered.has(key)) continue;
+        if (m.noPrice <= 0) continue;
+        const bet = betFraction * assignedCapital;
+        const size = Math.floor(bet / m.noPrice);
+        if (size < 1) continue;
+        orders.push(mkOrder(m.platform, m.marketId, "no", size, "sell-and-hold"));
+      }
+      return orders;
+    },
+    onFill(fill) {
+      fills.push(fill);
+      entered.add(`${fill.platform}|${fill.marketId}`);
+    },
+  };
+}
+
+// ---------- Mean reversion: buy YES after a sharp drop ----------
+export function meanReversion({ dropThreshold = 0.15, lookbackHours = 48, betFraction = 0.03, assignedCapital = 10_000, maxEntryPrice = 0.85 } = {}) {
+  const entered = new Set();
+  const priceHistory = new Map(); // key -> [{t, yesPrice}]
+  const fills = [];
+  return {
+    strategyId: "mean-reversion",
+    displayName: "Mean-reversion bounce",
+    description: "Buys YES after the price drops by the threshold in the lookback window. Bets that sharp drops overshoot and bounce back.",
+    decide(state) {
+      const orders = [];
+      for (const m of state.markets) {
+        const key = `${m.platform}|${m.marketId}`;
+        if (entered.has(key)) continue;
+        if (m.yesPrice > maxEntryPrice) continue;
+        const hist = priceHistory.get(key) || [];
+        hist.push({ t: state.t, yesPrice: m.yesPrice });
+        // keep only points inside the lookback window (using tick count as proxy for time — each tick ~= bar width)
+        const windowTicks = Math.max(1, Math.round(lookbackHours / 12));
+        if (hist.length > windowTicks + 1) hist.shift();
+        priceHistory.set(key, hist);
+        if (hist.length < 2) continue;
+        const peak = Math.max(...hist.map(p => p.yesPrice));
+        const drop = (peak - m.yesPrice) / peak;
+        if (drop < dropThreshold) continue;
+        const bet = betFraction * assignedCapital;
+        const size = Math.floor(bet / m.yesPrice);
+        if (size < 1) continue;
+        orders.push(mkOrder(m.platform, m.marketId, "yes", size, "mean-reversion"));
+      }
+      return orders;
+    },
+    onFill(fill) {
+      fills.push(fill);
+      entered.add(`${fill.platform}|${fill.marketId}`);
+    },
+  };
+}
+
+// ---------- Confirmed favorite: trust high-priced favorites near close ----------
+export function confirmedFavorite({ minYesPrice = 0.85, windowHours = 96, betFraction = 0.03, assignedCapital = 10_000 } = {}) {
+  const entered = new Set();
+  const fills = [];
+  return {
+    strategyId: "confirmed-favorite",
+    displayName: "Ride confirmed favorites",
+    description: "Buys YES on heavy favorites (≥ threshold) in the final window before close. Tests whether late-stage high prices correctly predict YES resolution.",
+    decide(state) {
+      const orders = [];
+      for (const m of state.markets) {
+        const key = `${m.platform}|${m.marketId}`;
+        if (entered.has(key)) continue;
+        if (m.closeInHours > windowHours || m.closeInHours <= 0) continue;
+        if (m.yesPrice < minYesPrice) continue;
+        if (m.yesPrice >= 1) continue;
+        const bet = betFraction * assignedCapital;
+        const size = Math.floor(bet / m.yesPrice);
+        if (size < 1) continue;
+        orders.push(mkOrder(m.platform, m.marketId, "yes", size, "confirmed-favorite"));
+      }
+      return orders;
+    },
+    onFill(fill) {
+      fills.push(fill);
+      entered.add(`${fill.platform}|${fill.marketId}`);
+    },
+  };
+}
+
 // ---------- Passive baseline (for comparison) ----------
 export function buyAndHold({ assignedCapital = 10_000, betFraction = 0.05 } = {}) {
   const entered = new Set();

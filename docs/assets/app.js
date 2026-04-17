@@ -3,6 +3,7 @@
 import { loadDataset, datasetToEvents, runBacktest } from "./engine.js";
 import {
   kellySizing, closingMomentum, contrarianUnderdog, favoriteLongshot, buyAndHold,
+  sellAndHold, meanReversion, confirmedFavorite,
 } from "./strategies.js";
 
 // ---------- Strategy catalogue ----------
@@ -62,6 +63,39 @@ const CATALOGUE = [
     factory: (opts) => buyAndHold({ assignedCapital: opts.bankroll, betFraction: opts.betFraction }),
     slider: { key: "betFraction", label: "Bet fraction", min: 0.01, max: 0.10, step: 0.01, default: 0.03,
               format: (v) => `${(v*100).toFixed(0)}%` },
+  },
+  {
+    id: "sell-and-hold",
+    name: "Buy NO at open",
+    blurb: "Inverse baseline — buys NO on every market. On Polymarket where most 'will X win?' markets resolve NO, this is the short-bias default.",
+    theory: "Buys NO on every market at opening price. Tests whether the high NO-resolution rate of prediction markets overwhelms price efficiency.",
+    factory: (opts) => sellAndHold({ assignedCapital: opts.bankroll, betFraction: opts.betFraction }),
+    slider: { key: "betFraction", label: "Bet fraction", min: 0.01, max: 0.10, step: 0.01, default: 0.03,
+              format: (v) => `${(v*100).toFixed(0)}%` },
+  },
+  {
+    id: "mean-reversion",
+    name: "Mean-reversion bounce",
+    blurb: "Buys YES after a price drops sharply — tests whether fear overshoots.",
+    theory: "Tracks each market's recent high-water mark. Buys YES if price drops by the threshold from that high within the lookback window. Tests whether real-money panics create oversold bounces.",
+    factory: (opts) => meanReversion({
+      assignedCapital: opts.bankroll, betFraction: opts.betFraction,
+      dropThreshold: opts.threshold, lookbackHours: 48, maxEntryPrice: 0.85,
+    }),
+    slider: { key: "threshold", label: "Drop threshold", min: 0.05, max: 0.40, step: 0.01, default: 0.15,
+              format: (v) => `${(v*100).toFixed(0)}%` },
+  },
+  {
+    id: "confirmed-favorite",
+    name: "Ride confirmed favorites",
+    blurb: "Buys YES on heavy favorites in the final days. Tests the 'favorites are correctly priced' thesis from the long side.",
+    theory: "Buys YES on markets priced ≥ threshold in the final window before close. Near resolution, strong favorites should usually win — if markets are efficient, these bets earn the small edge of a correctly-priced near-certain event.",
+    factory: (opts) => confirmedFavorite({
+      assignedCapital: opts.bankroll, betFraction: opts.betFraction,
+      minYesPrice: opts.threshold, windowHours: 96,
+    }),
+    slider: { key: "threshold", label: "Min YES price", min: 0.75, max: 0.98, step: 0.01, default: 0.90,
+              format: (v) => v.toFixed(2) },
   },
 ];
 const BY_ID = Object.fromEntries(CATALOGUE.map(c => [c.id, c]));
