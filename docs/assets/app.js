@@ -143,6 +143,18 @@ function fmtPct(v, { sign = false, digits = 1 } = {}) {
   return (v >= 0 ? "+" : "") + s;
 }
 
+function marketKey(platform, marketId) {
+  return `${platform}|${marketId}`;
+}
+
+function positionKey(pos) {
+  return `${pos.platform}|${pos.marketId}|${pos.side}`;
+}
+
+function uniqueMarketCount(fills) {
+  return new Set((fills || []).map(f => marketKey(f.platform, f.marketId))).size;
+}
+
 // ---------- Strategy deck ----------
 function renderStrategyDeck() {
   const deck = $("strategy-deck");
@@ -323,72 +335,153 @@ function fmtDateTime(ms) {
   return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
 }
 
+export function buildTradeTableModel(result, titleByKey = new Map(), urlByKey = new Map()) {
+  const bankroll = result.startingBankroll || 10_000;
+  const rowsByKey = new Map();
+
+  for (const fill of result.tradeList || []) {
+    const key = `${fill.platform}|${fill.marketId}|${fill.side}`;
+    const existing = rowsByKey.get(key);
+    if (!existing) {
+      rowsByKey.set(key, {
+        key,
+        platform: fill.platform,
+        marketId: fill.marketId,
+        side: fill.side,
+        size: fill.size,
+        avgEntry: fill.fillPrice,
+        entryTimeMs: fill.wallTimeMs || 0,
+        entryOrder: fill.timestamp ?? 0,
+        resolved: false,
+        resolutionTimeMs: 0,
+        payout: null,
+        realisedPnl: null,
+        returnPct: null,
+        cashBeforeEntry: null,
+        cashAfterEntry: null,
+        cashAfterResolution: null,
+      });
+      continue;
+    }
+    const nextSize = existing.size + fill.size;
+    existing.avgEntry = ((existing.avgEntry * existing.size) + (fill.fillPrice * fill.size)) / nextSize;
+    existing.size = nextSize;
+    existing.entryTimeMs = Math.min(existing.entryTimeMs || fill.wallTimeMs || 0, fill.wallTimeMs || 0);
+    existing.entryOrder = Math.min(existing.entryOrder, fill.timestamp ?? existing.entryOrder);
+  }
+
+  for (const pos of result.closedPositions || []) {
+    if (pos.wasCancelled) continue;
+    const key = positionKey(pos);
+    const existing = rowsByKey.get(key) || {
+      key,
+      platform: pos.platform,
+      marketId: pos.marketId,
+      side: pos.side,
+      size: pos.size,
+      avgEntry: pos.avgEntry,
+      entryTimeMs: pos.entryTimeMs || 0,
+      entryOrder: Number.MAX_SAFE_INTEGER,
+    };
+    const payout = (pos.avgEntry * pos.size) + pos.realisedPnl;
+    rowsByKey.set(key, {
+      ...existing,
+      size: pos.size,
+      avgEntry: pos.avgEntry,
+      entryTimeMs: pos.entryTimeMs || existing.entryTimeMs || 0,
+      resolved: true,
+      resolutionTimeMs: pos.resolutionTimeMs || 0,
+      payout,
+      realisedPnl: pos.realisedPnl,
+      returnPct: (pos.avgEntry * pos.size) > 0 ? pos.realisedPnl / (pos.avgEntry * pos.size) : null,
+      accountAfter: pos.accountAfter ?? null,
+    });
+  }
+
+  const rows = Array.from(rowsByKey.values())
+    .map(row => {
+      const key = marketKey(row.platform, row.marketId);
+      return {
+        ...row,
+        marketTitle: titleByKey.get(key) || row.marketId,
+        marketUrl: urlByKey.get(key),
+        cost: row.avgEntry * row.size,
+      };
+    })
+    .sort((a, b) => (a.entryTimeMs - b.entryTimeMs) || (a.entryOrder - b.entryOrder));
+
+  const events = [];
+  for (const row of rows) {
+    events.push({ type: "entry", time: row.entryTimeMs, order: row.entryOrder, row });
+    if (row.resolved) {
+      events.push({ type: "resolution", time: row.resolutionTimeMs, order: row.entryOrder, row });
+    }
+  }
+  events.sort((a, b) => (a.time - b.time) || ((a.type === "entry" ? 0 : 1) - (b.type === "entry" ? 0 : 1)) || (a.order - b.order));
+
+  let cash = bankroll;
+  for (const event of events) {
+    if (event.type === "entry") {
+      event.row.cashBeforeEntry = cash;
+      cash -= event.row.cost;
+      event.row.cashAfterEntry = cash;
+      continue;
+    }
+    cash += event.row.payout ?? 0;
+    event.row.cashAfterResolution = cash;
+  }
+
+  return {
+    rows,
+    wins: rows.filter(row => row.resolved && (row.realisedPnl ?? 0) > 0).length,
+    losses: rows.filter(row => row.resolved && (row.realisedPnl ?? 0) < 0).length,
+    pushes: rows.filter(row => row.resolved && (row.realisedPnl ?? 0) === 0).length,
+    openCount: rows.filter(row => !row.resolved).length,
+  };
+}
+
 function renderExamples(result) {
   const host = $("examples");
   if (!host) return;
-  const closed = result.closedPositions.filter(p => !p.wasCancelled);
-  if (closed.length === 0) {
+  if ((result.tradeList || []).length === 0) {
     host.innerHTML = `<div class="dim" style="padding:16px">This strategy didn't enter any markets in this run.</div>`;
     return;
   }
-  // Sort chronologically by resolution time so each row's running-balance
-  // walks forward through the run.
-  const sorted = closed.slice().sort((a, b) => (a.resolutionTimeMs || 0) - (b.resolutionTimeMs || 0));
-  // Compute a CLEAN running balance = starting bankroll + cumulative
-  // realised P&L up to and including this row. Unlike the engine's
-  // mark-to-market snapshot, this only moves when a bet actually settles —
-  // no phantom jumps from other open positions' prices moving.
-  let running = result.startingBankroll || 10000;
-  const runningAfter = new Map();
-  for (const pos of sorted) {
-    running += pos.realisedPnl;
-    runningAfter.set(pos, running);
-  }
-  const wins = sorted.filter(p => p.realisedPnl > 0).length;
-  const losses = sorted.filter(p => p.realisedPnl <= 0).length;
 
-  const bankroll = result.startingBankroll || 10000;
-  const rows = sorted.map(pos => {
-    const key = `${pos.platform}|${pos.marketId}`;
-    const title = state.titleByKey.get(key) || pos.marketId;
-    const url = state.urlByKey.get(key);
-    const pnl = pos.realisedPnl;
-    const cost = pos.avgEntry * pos.size;
-    const payout = cost + pnl;             // what the position returned at settle
-    const exitPrice = pos.size > 0 ? payout / pos.size : 0;
-    const pct = cost > 0 ? pnl / cost : 0;
-    const acctAfter = runningAfter.get(pos);
-    const totalChange = acctAfter != null ? acctAfter - bankroll : null;
-    const cls = pnl >= 0 ? "pos" : "neg";
-    const totalCls = totalChange == null ? "" : (totalChange >= 0 ? "pos" : "neg");
-    const side = pos.side.toUpperCase();
-    const titleCell = url
-      ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" title="${escapeHtml(title)}">${escapeHtml(title.length > 90 ? title.slice(0, 90) + "…" : title)} ↗</a>`
-      : `<span title="${escapeHtml(title)}">${escapeHtml(title.length > 90 ? title.slice(0, 90) + "…" : title)}</span>`;
+  const { rows, wins, losses, pushes, openCount } = buildTradeTableModel(result, state.titleByKey, state.urlByKey);
+  const renderedRows = rows.map(row => {
+    const side = row.side.toUpperCase();
+    const pnlCls = row.realisedPnl == null ? "" : (row.realisedPnl >= 0 ? "pos" : "neg");
+    const titleText = row.marketTitle.length > 90 ? row.marketTitle.slice(0, 90) + "…" : row.marketTitle;
+    const titleCell = row.marketUrl
+      ? `<a href="${escapeHtml(row.marketUrl)}" target="_blank" rel="noopener" title="${escapeHtml(row.marketTitle)}">${escapeHtml(titleText)} ↗</a>`
+      : `<span title="${escapeHtml(row.marketTitle)}">${escapeHtml(titleText)}</span>`;
     return `
-      <tr>
+      <tr${row.resolved ? "" : ' class="is-open"'}>
         <td class="bet-title">${titleCell}</td>
-        <td class="bet-date mono">${fmtDateTime(pos.entryTimeMs)}</td>
-        <td class="bet-side"><span class="side-${pos.side}">${side}</span></td>
-        <td class="bet-size num">${pos.size.toLocaleString()}</td>
-        <td class="bet-entry num">$${pos.avgEntry.toFixed(3)}</td>
-        <td class="bet-cost num">${fmtMoney(cost)}</td>
-        <td class="bet-date mono">${fmtDateTime(pos.resolutionTimeMs)}</td>
-        <td class="bet-exit num">$${exitPrice.toFixed(3)}</td>
-        <td class="bet-payout num">${fmtMoney(payout)}</td>
-        <td class="bet-pnl num ${cls}">${fmtMoney(pnl, { sign: true })}</td>
-        <td class="bet-pct num ${cls}">${fmtPct(pct, { sign: true })}</td>
-        <td class="bet-account num mono">${acctAfter != null ? fmtMoney(acctAfter) : "—"}</td>
-        <td class="bet-pct num ${totalCls} mono">${totalChange == null ? "—" : fmtMoney(totalChange, { sign: true })}</td>
+        <td class="bet-date mono">${fmtDateTime(row.entryTimeMs)}</td>
+        <td class="bet-account num mono">${row.cashBeforeEntry == null ? "—" : fmtMoney(row.cashBeforeEntry)}</td>
+        <td class="bet-side"><span class="side-${row.side}">${side}</span></td>
+        <td class="bet-size num">${row.size.toLocaleString()}</td>
+        <td class="bet-entry num">$${row.avgEntry.toFixed(3)}</td>
+        <td class="bet-cost num">${fmtMoney(row.cost)}</td>
+        <td class="bet-date mono${row.resolved ? "" : " bet-open"}">${row.resolved ? fmtDateTime(row.resolutionTimeMs) : "Open when run ended"}</td>
+        <td class="bet-exit num">${row.payout == null ? "—" : `$${(row.payout / row.size).toFixed(3)}`}</td>
+        <td class="bet-payout num">${row.payout == null ? "—" : fmtMoney(row.payout)}</td>
+        <td class="bet-pnl num ${pnlCls}">${row.realisedPnl == null ? "—" : fmtMoney(row.realisedPnl, { sign: true })}</td>
+        <td class="bet-pct num ${pnlCls}">${row.returnPct == null ? "—" : fmtPct(row.returnPct, { sign: true })}</td>
+        <td class="bet-account num mono">${row.cashAfterResolution == null ? "—" : fmtMoney(row.cashAfterResolution)}</td>
       </tr>`;
   }).join("");
 
   host.innerHTML = `
     <div class="bets-summary">
-      <b>${closed.length}</b> bets total ·
+      <b>${rows.length}</b> bets total ·
       <span class="pos"><b>${wins}</b> won</span> ·
       <span class="neg"><b>${losses}</b> lost</span>
-      <span class="dim" style="margin-left:auto;font-size:12px">click any market title to open the live Polymarket page ↗</span>
+      ${pushes ? `· <span class="dim"><b>${pushes}</b> pushed</span>` : ""}
+      ${openCount ? `· <span class="dim"><b>${openCount}</b> still open when the run ended</span>` : ""}
+      <span class="dim" style="margin-left:auto;font-size:12px">cash before each row is the actual bankroll available when that trade was entered</span>
     </div>
     <div class="bets-scroll">
       <table class="bets-table">
@@ -396,6 +489,7 @@ function renderExamples(result) {
           <tr>
             <th>Market</th>
             <th>Entered</th>
+            <th class="num">Cash before</th>
             <th>Side</th>
             <th class="num">Shares</th>
             <th class="num">Price paid</th>
@@ -405,11 +499,10 @@ function renderExamples(result) {
             <th class="num">Received ($)</th>
             <th class="num">P&L</th>
             <th class="num">Return</th>
-            <th class="num">Account after</th>
-            <th class="num">Total change</th>
+            <th class="num">Cash after settle</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${renderedRows}</tbody>
       </table>
     </div>`;
 }
@@ -445,7 +538,7 @@ function renderResult(result) {
 
   // Preface
   setText("result-strategy", cfg.name);
-  setText("result-markets", String(result.equityCurve.length ? new Set(result.tradeList.map(f => f.marketId)).size : 0));
+  setText("result-markets", String(result.equityCurve.length ? uniqueMarketCount(result.tradeList) : 0));
 
   // Before / after
   setText("ba-start", fmtMoney(result.startingBankroll));
@@ -455,7 +548,7 @@ function renderResult(result) {
   const closedEligible = result.closedPositions.filter(p => !p.wasCancelled);
   const wins = closedEligible.filter(p => p.realisedPnl > 0).length;
   setText("f-bets", String(result.tradeList.length));
-  setText("f-bets-sub", `across ${new Set(result.tradeList.map(f => f.marketId)).size} markets`);
+  setText("f-bets-sub", `across ${uniqueMarketCount(result.tradeList)} markets`);
   setText("f-wins", String(wins));
   setText("f-wins-sub", result.winRate == null ? "no closed bets" : `${(result.winRate * 100).toFixed(0)}% win rate`);
   // Worst = lowest equity point reached
@@ -466,7 +559,7 @@ function renderResult(result) {
   setText("chart-sub", `${result.tradeList.length} trades · starting ${fmtMoney(result.startingBankroll)}`);
 
   // Run summary
-  setText("run-summary", `${cfg.name} — ${result.tradeList.length} bets placed across ${new Set(result.tradeList.map(f => f.marketId)).size} real Polymarket markets.`);
+  setText("run-summary", `${cfg.name} — ${result.tradeList.length} bets placed across ${uniqueMarketCount(result.tradeList)} real Polymarket markets.`);
 
   // Technical metrics (details drawer)
   setText("q-sharpe", result.sharpe == null ? "—" : result.sharpe.toFixed(2));
