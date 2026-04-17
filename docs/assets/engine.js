@@ -337,6 +337,7 @@ export function runBacktest({ strategy, events, bankroll }) {
     equityCurve.push({ t: event.t, equity: markEquity(portfolio, latest) });
   }
 
+  for (const p of equityCurve) if (p.equity < 0) p.equity = 0;  // clamp negatives (bankruptcy tail)
   const equityValues = equityCurve.map(p => p.equity);
   const dailyReturns = [];
   for (let i = 1; i < equityValues.length; i++) {
