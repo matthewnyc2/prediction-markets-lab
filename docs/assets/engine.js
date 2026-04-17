@@ -381,7 +381,10 @@ export function runBacktest({ strategy, events, bankroll }) {
       // Snapshot total account value at the moment this position settled so
       // the bets table can show account trajectory bet-by-bet.
       const nowEquity = markEquity(portfolio, latest);
-      for (const pos of closed) pos.accountAfter = nowEquity;
+      for (const pos of closed) {
+        pos.accountAfter = nowEquity;
+        pos.cashAfter = portfolio.cash;
+      }
     }
     equityCurve.push({ t: event.t, wallTimeMs: event.wallTimeMs || 0, equity: markEquity(portfolio, latest) });
   }

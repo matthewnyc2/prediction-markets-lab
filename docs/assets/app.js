@@ -328,16 +328,7 @@ function renderExamples(result) {
   // Sort chronologically by resolution time so each row's running-balance
   // walks forward through the run.
   const sorted = closed.slice().sort((a, b) => (a.resolutionTimeMs || 0) - (b.resolutionTimeMs || 0));
-  // Compute a CLEAN running balance = starting bankroll + cumulative
-  // realised P&L up to and including this row. Unlike the engine's
-  // mark-to-market snapshot, this only moves when a bet actually settles —
-  // no phantom jumps from other open positions' prices moving.
-  let running = result.startingBankroll || 10000;
-  const runningAfter = new Map();
-  for (const pos of sorted) {
-    running += pos.realisedPnl;
-    runningAfter.set(pos, running);
-  }
+
   const wins = sorted.filter(p => p.realisedPnl > 0).length;
   const losses = sorted.filter(p => p.realisedPnl <= 0).length;
 
@@ -351,7 +342,8 @@ function renderExamples(result) {
     const payout = cost + pnl;             // what the position returned at settle
     const exitPrice = pos.size > 0 ? payout / pos.size : 0;
     const pct = cost > 0 ? pnl / cost : 0;
-    const acctAfter = runningAfter.get(pos);
+    const acctAfter = pos.accountAfter;
+    const cashAfter = pos.cashAfter;
     const totalChange = acctAfter != null ? acctAfter - bankroll : null;
     const cls = pnl >= 0 ? "pos" : "neg";
     const totalCls = totalChange == null ? "" : (totalChange >= 0 ? "pos" : "neg");
@@ -373,6 +365,7 @@ function renderExamples(result) {
         <td class="bet-pnl num ${cls}">${fmtMoney(pnl, { sign: true })}</td>
         <td class="bet-pct num ${cls}">${fmtPct(pct, { sign: true })}</td>
         <td class="bet-account num mono">${acctAfter != null ? fmtMoney(acctAfter) : "—"}</td>
+        <td class="bet-account num mono">${cashAfter != null ? fmtMoney(cashAfter) : "—"}</td>
         <td class="bet-pct num ${totalCls} mono">${totalChange == null ? "—" : fmtMoney(totalChange, { sign: true })}</td>
       </tr>`;
   }).join("");
@@ -399,7 +392,8 @@ function renderExamples(result) {
             <th class="num">Received ($)</th>
             <th class="num">P&L</th>
             <th class="num">Return</th>
-            <th class="num">Account after</th>
+            <th class="num">Account value</th>
+            <th class="num">Available cash</th>
             <th class="num">Total change</th>
           </tr>
         </thead>

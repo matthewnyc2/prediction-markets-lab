@@ -20,6 +20,8 @@ class PositionRecord:
     closed: bool = False
     realised_pnl: float = 0.0
     was_cancelled: bool = False
+    account_after: float | None = None
+    cash_after: float | None = None
 
 
 @dataclass(slots=True)

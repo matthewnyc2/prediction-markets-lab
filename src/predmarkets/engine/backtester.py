@@ -59,7 +59,11 @@ class Backtester:
                 portfolio.apply_fill(fill)
                 strategy.on_fill(fill)
             if event.event_type == "resolution":
-                portfolio.settle_resolution(event.platform, event.market_id, event.resolution or "cancelled")
+                closed_positions = portfolio.settle_resolution(event.platform, event.market_id, event.resolution or "cancelled")
+                now_equity = self._mark_equity(portfolio, latest)
+                for pos in closed_positions:
+                    pos.account_after = now_equity
+                    pos.cash_after = portfolio.cash
             equity_curve.append((event.timestamp, self._mark_equity(portfolio, latest)))
 
         return self._finalize(portfolio, equity_curve, bankrupt)
