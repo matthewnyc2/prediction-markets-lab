@@ -1,6 +1,6 @@
-"""Strategy plugin interface and built-in strategies."""
+"""Strategy plugin interface and built-in strategies.
 
-from predmarkets.strategies.base import MarketState, MarketView, Strategy
-from predmarkets.strategies.kelly_sizing import KellySizing
-
-__all__ = ["KellySizing", "MarketState", "MarketView", "Strategy"]
+Import specific modules directly to avoid circular imports with engine:
+    from predmarkets.strategies.base import Strategy, MarketState, MarketView
+    from predmarkets.strategies.kelly_sizing import KellySizing
+"""
