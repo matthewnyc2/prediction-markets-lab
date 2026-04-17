@@ -191,17 +191,28 @@ function renderSliderSlot() {
 }
 
 // ---------- Chart ----------
+// Downsample the equity curve to one point per day so we plot ~800 points
+// instead of ~66,000. Takes the LAST equity value within each UTC day bucket
+// so end-of-day balance is what's rendered.
+function downsampleDaily(curve) {
+  const useTime = curve.length > 0 && (curve[0].wallTimeMs || 0) > 1_000_000_000_000;
+  if (!useTime) return curve.map((p, i) => ({ x: i, y: p.equity }));
+  const DAY = 86_400_000;
+  const buckets = new Map();
+  for (const p of curve) {
+    const day = Math.floor(p.wallTimeMs / DAY);
+    buckets.set(day, p.equity); // later writes overwrite → end-of-day value
+  }
+  return Array.from(buckets.keys()).sort((a, b) => a - b)
+    .map(day => ({ x: day * DAY, y: buckets.get(day) }));
+}
+
 function renderChart(result) {
   const canvas = $("equity-chart");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  // Use real calendar dates on the x axis. Each equity-curve point carries the
-  // wall-clock ms of the underlying event; fall back to the index if missing.
-  const data = result.equityCurve.map((p, i) => ({
-    x: p.wallTimeMs || i,
-    y: p.equity,
-  }));
-  const useTime = data.length > 0 && data[0].x > 1_000_000_000_000;  // ms-since-epoch?
+  const data = downsampleDaily(result.equityCurve);
+  const useTime = data.length > 0 && data[0].x > 1_000_000_000_000;
   if (state.chart) state.chart.destroy();
   state.chart = new window.Chart(ctx, {
     type: "line",
@@ -238,10 +249,13 @@ function renderChart(result) {
       scales: {
         x: {
           type: "linear",
+          min: data.length ? data[0].x : undefined,
+          max: data.length ? data[data.length - 1].x : undefined,
           ticks: {
             font: { size: 11 },
             callback: (v) => useTime ? new Date(v).toISOString().slice(0, 10) : v,
             maxTicksLimit: 7,
+            autoSkip: true,
           },
           title: {
             display: true,
