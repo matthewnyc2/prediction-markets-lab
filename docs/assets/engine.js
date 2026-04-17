@@ -104,15 +104,22 @@ export function slippageFillPrice(mid, size, orderSide, bookTopSize) {
   return Math.max(0, Math.min(1, fill));
 }
 
-// ---------- Real adapter: load resolved Manifold markets from a JSON dataset ----------
-// Dataset produced by scripts/fetch_manifold.py (pulls real bets from api.manifold.markets).
-export async function loadManifoldDataset(url = "data/manifold.json") {
+// ---------- Real adapter: load resolved markets from a JSON dataset ----------
+// Payload shape is platform-agnostic. scripts/fetch_manifold.py and
+// scripts/fetch_polymarket.py both produce this shape.
+export async function loadDataset(url) {
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`failed to load ${url}: ${resp.status}`);
   return await resp.json();
 }
+// Back-compat alias — older callers passed no argument and got Manifold.
+export const loadManifoldDataset = (url = "data/manifold.json") => loadDataset(url);
 
-export function manifoldDatasetToEvents(payload, { shuffleSeed = 0, nMarkets = 0 } = {}) {
+export function datasetToEvents(payload, opts) { return _datasetToEvents(payload, opts || {}); }
+// Back-compat alias.
+export const manifoldDatasetToEvents = datasetToEvents;
+
+function _datasetToEvents(payload, { shuffleSeed = 0, nMarkets = 0 } = {}) {
   const allMarkets = Array.isArray(payload.markets) ? payload.markets.slice() : [];
   const markets = shuffleSeed > 0 ? deterministicShuffle(allMarkets, shuffleSeed) : allMarkets;
   const selected = nMarkets > 0 ? markets.slice(0, nMarkets) : markets;
