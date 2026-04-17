@@ -45,11 +45,11 @@ const CATALOGUE = [
   },
   {
     id: "kelly-sizing",
-    name: "Kelly sizing",
-    blurb: "Quarter-Kelly bets with an oracle that pushes price toward 50%.",
-    theory: "Kelly sizing bets proportional to edge. Oracle here pushes prices toward 50% (crude mean-reversion). Quarter-Kelly to reduce variance.",
+    name: "Kelly sizing (no edge)",
+    blurb: "Bets proportional to edge — but uses the market price as its oracle, so there IS no edge. Demonstrates Kelly's textbook baseline.",
+    theory: "Kelly sizes each bet proportional to the edge between your probability estimate and the market price. This demo uses the market price itself as the estimate — zero edge by construction — so Kelly correctly bets zero. To see Kelly work, you need a real edge predictor.",
     factory: (opts) => kellySizing({
-      pOracle: (m) => m.yesPrice < 0.5 ? Math.min(0.85, m.yesPrice + 0.15) : Math.max(0.15, m.yesPrice - 0.15),
+      pOracle: (m) => m.yesPrice,
       assignedCapital: opts.bankroll, kellyFractionMultiplier: 0.25,
     }),
     slider: null,
@@ -237,8 +237,10 @@ function renderResult(result) {
   // Verdict sentence
   const verdict = result.bankrupt
     ? "Strategy went bankrupt — spent the entire bankroll before the run ended."
+    : result.tradeList.length === 0 ? "Zero bets placed — no markets met this strategy's entry criteria."
     : pnl > 500 ? "Solidly profitable across this dataset."
     : pnl > 0 ? "Barely positive — wins covered losses but no meaningful edge."
+    : pnl === 0 ? "Broke even."
     : pnl > -1000 ? "Small loss — roughly coin-flip after slippage."
     : "Significant loss — slippage and wrong-side bets dominated.";
   setText("verdict", verdict);
