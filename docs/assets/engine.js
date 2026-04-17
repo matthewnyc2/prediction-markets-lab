@@ -229,10 +229,15 @@ export function createPortfolio(bankroll) {
   };
 }
 
+// Returns true if the fill was applied, false if rejected (insufficient cash).
+// A rejected fill is not recorded and does not mutate the portfolio.
+// This mirrors how a real broker would refuse an order that would overdraw the cash balance.
 export function applyFill(portfolio, fill) {
+  const cost = fill.fillPrice * fill.size;
+  if (cost > portfolio.cash + 1e-9) return false;
   portfolio.allFills.push(fill);
+  portfolio.cash -= cost;
   const key = `${fill.platform}|${fill.marketId}|${fill.side}`;
-  portfolio.cash -= fill.fillPrice * fill.size;
   const existing = portfolio.positions.get(key);
   if (!existing) {
     portfolio.positions.set(key, {
@@ -246,11 +251,12 @@ export function applyFill(portfolio, fill) {
       realisedPnl: 0,
       wasCancelled: false,
     });
-    return;
+    return true;
   }
   const newSize = existing.size + fill.size;
   existing.avgEntry = (existing.avgEntry * existing.size + fill.fillPrice * fill.size) / newSize;
   existing.size = newSize;
+  return true;
 }
 
 export function settleResolution(portfolio, platform, marketId, outcome) {
@@ -328,8 +334,8 @@ export function runBacktest({ strategy, events, bankroll }) {
         fillPrice,
         strategyId: order.strategyId,
       };
-      applyFill(portfolio, fill);
-      strategy.onFill(fill);
+      const applied = applyFill(portfolio, fill);
+      if (applied) strategy.onFill(fill);
     }
     if (event.eventType === "resolution") {
       settleResolution(portfolio, event.platform, event.marketId, event.resolution || "cancelled");
