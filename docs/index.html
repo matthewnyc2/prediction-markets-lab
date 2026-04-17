@@ -3,9 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Prediction Markets Lab · Strategy Backtester on Real Manifold Data</title>
-  <meta name="description" content="Test quantitative trading strategies against 120 real resolved Manifold prediction markets. Live in-browser backtester." />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <title>Prediction Markets Lab · Would your trading strategy actually work?</title>
+  <meta name="description" content="Pick a trading strategy. See if it would have made money on 120 real prediction markets. Real data, real outcomes, plain English." />
   <link rel="preconnect" href="https://rsms.me" crossorigin>
   <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
   <link rel="stylesheet" href="assets/style.css" />
@@ -19,262 +18,216 @@
     <div class="brand">PREDICTION MARKETS LAB</div>
     <nav>
       <a href="#leaderboard">Leaderboard</a>
-      <a href="#methodology">How it works</a>
-      <a href="#caveats">Caveats</a>
+      <a href="#how">How it works</a>
+      <a href="#honest">Honest caveats</a>
       <a href="https://github.com/matthewnyc2/prediction-markets-lab" target="_blank" rel="noopener">GitHub ↗</a>
     </nav>
   </header>
 
-  <!-- Hero -->
-  <section class="hero">
-    <span class="kicker">Live · real Manifold data · deterministic replay</span>
-    <h1>Test a trading strategy against <em>120 real prediction markets</em>.</h1>
-    <p class="sub">
-      Pick a strategy, see how much money it would have made or lost — using actual resolved
-      Manifold markets with reconstructed bet-by-bet price histories. The engine and metrics
-      are production-quality Python, <b>ported to JavaScript</b> so everything runs in your
-      browser with no server.
+  <!-- Intro in plain English -->
+  <section class="intro">
+    <span class="label">Live · runs in your browser</span>
+    <h1>Would your trading idea <span class="accent">actually make money?</span></h1>
+    <p class="lede">
+      Prediction markets are places where people bet yes/no on future events — "Will the Fed cut rates in June?",
+      "Will the Lakers make the playoffs?" <b>Below are five different betting strategies.</b>
+      Pick one. It will run through <b>120 real betting markets that have already resolved</b> and tell you
+      exactly how much money you would have made or lost.
     </p>
-    <div class="hero-meta">
-      <div class="item"><span class="n">120</span><span class="l">resolved markets</span></div>
-      <div class="item"><span class="n">5</span><span class="l">strategies</span></div>
-      <div class="item"><span class="n">6</span><span class="l">metric formulas</span></div>
-      <div class="item"><span class="n">53</span><span class="l">Python unit tests</span></div>
-      <div class="item"><span id="hero-dataset-info" class="n">—</span><span class="l">dataset fetched</span></div>
+    <div class="fact">
+      <span>📊 <b>120</b> real markets</span>
+      <span>💰 <b>$10,000</b> starting bankroll</span>
+      <span>🔁 <b>Re-run anytime</b> with different settings</span>
+      <span>📅 Data fetched <b id="dataset-date">—</b></span>
     </div>
   </section>
 
-  <!-- Strategy deck -->
+  <!-- Strategy picker -->
   <section>
-    <div class="sec-head">
-      <span class="num">01</span>
-      <h2>Pick a strategy</h2>
-      <span class="note">Click any card to run it on the full 120-market dataset with a $10,000 bankroll.</span>
+    <div class="sec">
+      <span class="n">01</span>
+      <h2>Pick a strategy to test</h2>
+      <p>Tap a card. The result below updates instantly.</p>
     </div>
     <div class="strategy-deck" id="strategy-deck"></div>
   </section>
 
-  <!-- Result canvas -->
+  <!-- The big result -->
   <section>
-    <div class="sec-head">
-      <span class="num">02</span>
-      <h2>The result</h2>
-      <span class="note" id="run-count">—</span>
+    <div class="sec">
+      <span class="n">02</span>
+      <h2>Here's what would have happened</h2>
+      <p id="run-summary">—</p>
     </div>
 
-    <div class="result-canvas">
-      <div class="result-top">
-        <div class="result-primary">
-          <div class="label">Profit &amp; loss on real Manifold markets</div>
-          <div class="pnl-big" id="pnl-big">—</div>
-          <div class="pnl-caption" id="pnl-caption">—</div>
+    <div class="big-result">
+      <div class="preface">Starting with <b>$10,000</b>, across <b id="result-markets">—</b> real Manifold markets, using <b id="result-strategy">—</b>:</div>
+      <div class="pnl" id="pnl-big">—</div>
+      <div class="pct-pill" id="pnl-pct">—</div>
+      <div class="verdict" id="verdict">—</div>
+
+      <div class="before-after">
+        <div class="ba-stat">
+          <div class="l">Started with</div>
+          <div class="v" id="ba-start">$10,000</div>
         </div>
-        <div class="result-summary">
-          <div class="sum-title" id="active-strategy-name">—</div>
-          <div class="sum-body" id="theory-text">Loading real dataset…</div>
+        <div class="ba-arrow">→</div>
+        <div class="ba-stat">
+          <div class="l">Ended with</div>
+          <div class="v" id="ba-end">—</div>
         </div>
       </div>
 
-      <div class="chart-row">
-        <div class="chart-head">
-          <span class="t">Equity curve</span>
-          <span class="h" id="chart-subhead">—</span>
+      <div class="facts-row">
+        <div class="fact-card">
+          <div class="l">Bets placed</div>
+          <div class="v" id="f-bets">—</div>
+          <div class="s" id="f-bets-sub">on real markets</div>
         </div>
-        <div class="chart-box">
-          <canvas id="equity-chart"></canvas>
+        <div class="fact-card">
+          <div class="l">Bets won</div>
+          <div class="v" id="f-wins">—</div>
+          <div class="s" id="f-wins-sub">—</div>
+        </div>
+        <div class="fact-card">
+          <div class="l">Worst moment</div>
+          <div class="v" id="f-worst">—</div>
+          <div class="s">lowest point reached</div>
         </div>
       </div>
+    </div>
 
-      <div class="metric-strip">
-        <div class="metric-cell">
-          <div class="lab">Sharpe ratio</div>
-          <div class="val" id="m-sharpe">—</div>
-          <div class="hint" id="m-sharpe-hint">risk-adjusted return</div>
+    <!-- Equity chart -->
+    <div class="chart-section">
+      <div class="chart-wrap">
+        <div class="head">
+          <span class="t">How your money would have moved over time</span>
+          <span class="sub" id="chart-sub">—</span>
         </div>
-        <div class="metric-cell">
-          <div class="lab">Max drawdown</div>
-          <div class="val" id="m-drawdown">—</div>
-          <div class="hint" id="m-drawdown-hint">worst peak-to-trough</div>
-        </div>
-        <div class="metric-cell">
-          <div class="lab">Win rate</div>
-          <div class="val" id="m-winrate">—</div>
-          <div class="hint" id="m-winrate-hint">profitable trades</div>
-        </div>
-        <div class="metric-cell">
-          <div class="lab">Brier score</div>
-          <div class="val" id="m-brier">—</div>
-          <div class="hint" id="m-brier-hint">forecast calibration</div>
-        </div>
-        <div class="metric-cell">
-          <div class="lab">Trades</div>
-          <div class="val" id="m-trades">—</div>
-          <div class="hint" id="m-trades-hint">—</div>
-        </div>
-        <div class="metric-cell">
-          <div class="lab">Bankrupt</div>
-          <div class="val" id="m-bankrupt">—</div>
-          <div class="hint" id="m-bankrupt-hint">—</div>
-        </div>
+        <div class="chart-box"><canvas id="equity-chart"></canvas></div>
       </div>
+    </div>
+
+    <!-- Three example bets -->
+    <div class="examples-section">
+      <div class="examples-head">Three example bets this strategy made on real Manifold markets</div>
+      <div id="examples"></div>
     </div>
 
     <!-- Controls -->
     <div class="controls">
       <div class="ctrl">
-        <label for="bankroll-input">Starting bankroll (USD)</label>
+        <label>Your bankroll</label>
         <input type="number" id="bankroll-input" value="10000" min="100" step="500" />
       </div>
       <div class="ctrl">
-        <label for="markets-input">Markets (1–120)</label>
+        <label>Markets (1–120)</label>
         <input type="number" id="markets-input" value="120" min="1" max="120" step="1" />
       </div>
       <div class="ctrl">
-        <label for="seed-input">Shuffle seed</label>
+        <label>Shuffle seed</label>
         <input type="number" id="seed-input" value="1" min="1" step="1" />
       </div>
-      <div class="ctrl" id="slider-slot">
-        <!-- filled in by app.js when strategy has parameter sliders -->
-      </div>
-      <div class="ctrl rerun">
-        <button class="btn" id="rerun-button">Re-run backtest</button>
+      <div class="ctrl slider-slot" id="slider-slot"></div>
+      <div class="ctrl go">
+        <label>&nbsp;</label>
+        <button class="btn" id="rerun-btn">Re-run</button>
       </div>
     </div>
 
-    <!-- Trades drawer -->
-    <div class="trades-wrap" id="trades-wrap">
-      <button class="trades-toggle" id="trades-toggle">
-        <span>See every trade executed · <span id="trade-count">—</span></span>
-        <span class="caret">▸</span>
-      </button>
-      <div class="trades-panel">
-        <table class="trades-table">
-          <thead><tr>
-            <th>Tick</th><th>Market</th><th>Side</th>
-            <th class="num">Size</th><th class="num">Fill</th><th class="num">Cost</th>
-          </tr></thead>
-          <tbody id="trade-tbody"></tbody>
-        </table>
+    <!-- Details drawer -->
+    <details class="details">
+      <summary><span>Technical metrics (for quant folks)</span></summary>
+      <div class="details-body">
+        <div class="q-grid">
+          <div class="q-row"><span class="k">Sharpe ratio</span><span class="v" id="q-sharpe">—</span></div>
+          <div class="q-row"><span class="k">Sortino ratio</span><span class="v" id="q-sortino">—</span></div>
+          <div class="q-row"><span class="k">Brier score</span><span class="v" id="q-brier">—</span></div>
+          <div class="q-row"><span class="k">Max drawdown</span><span class="v" id="q-drawdown">—</span></div>
+          <div class="q-row"><span class="k">Win rate</span><span class="v" id="q-winrate">—</span></div>
+          <div class="q-row"><span class="k">Closed positions</span><span class="v" id="q-closed">—</span></div>
+          <div class="q-row"><span class="k">Total fills</span><span class="v" id="q-fills">—</span></div>
+          <div class="q-row"><span class="k">Went bankrupt?</span><span class="v" id="q-bankrupt">—</span></div>
+        </div>
       </div>
-    </div>
+    </details>
   </section>
 
   <!-- Leaderboard -->
   <section id="leaderboard">
-    <div class="sec-head">
-      <span class="num">03</span>
-      <h2>All five strategies, side-by-side</h2>
-      <span class="note">Every strategy with default parameters on the full 120-market dataset. $10K bankroll each. Honest numbers.</span>
+    <div class="sec">
+      <span class="n">03</span>
+      <h2>All five strategies, side by side</h2>
+      <p>Each strategy run on the same 120 real markets with a $10,000 bankroll. No cherry-picking.</p>
     </div>
     <div class="lb">
       <div class="lb-row head">
-        <div class="rank">#</div>
+        <div class="rk">#</div>
         <div>Strategy</div>
-        <div class="v">PnL ($)</div>
-        <div class="v hide-sm">PnL (%)</div>
-        <div class="v hide-sm">Sharpe</div>
-        <div class="v hide-sm">Max DD</div>
-        <div class="v hide-sm">Trades</div>
-        <div class="status">Status</div>
+        <div style="text-align:right">Result</div>
+        <div class="status hide-sm">&nbsp;</div>
       </div>
-      <div id="leaderboard-rows">
-        <div class="lb-row"><div class="rank">—</div><div class="nm dim">computing…</div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+      <div id="lb-rows">
+        <div class="lb-row"><div class="rk">—</div><div class="nm dim">running strategies…</div><div></div><div></div></div>
       </div>
     </div>
   </section>
 
-  <!-- Metric explainers -->
-  <section>
-    <div class="sec-head">
-      <span class="num">04</span>
-      <h2>What the numbers mean</h2>
-      <span class="note">Quant metrics, explained without jargon.</span>
+  <!-- How it works -->
+  <section id="how">
+    <div class="sec">
+      <span class="n">04</span>
+      <h2>How this works</h2>
+      <p>Plain English for non-programmers.</p>
     </div>
-    <div class="explainer-grid">
-      <div class="explain-card">
-        <h4>Sharpe ratio</h4>
-        <p>Risk-adjusted return. &gt; 1 is good, &gt; 2 is rare. Penalizes volatility — a bumpy 10% year scores lower than a smooth 8% year.</p>
+    <div class="how-grid">
+      <div class="how-card">
+        <span class="step">THE DATA</span>
+        <h4>120 real resolved markets</h4>
+        <p>A Python script hit <b>Manifold Markets' public API</b> and pulled 120 markets that have already been resolved yes/no. For each one, it collected the complete history of every bet placed on it, and reconstructed the price over time from those bets.</p>
       </div>
-      <div class="explain-card">
-        <h4>Brier score</h4>
-        <p>How well-calibrated your bets' implied forecasts are. 0 = perfect, 0.25 = coin-flip, 1 = always confidently wrong. Lower is better.</p>
+      <div class="how-card">
+        <span class="step">THE ENGINE</span>
+        <h4>Plays each market back, bet by bet</h4>
+        <p>For every strategy, the engine replays each market's history in order. At each moment in time, the strategy decides whether to buy YES or NO. If it buys, the engine tracks the position until the market resolves, then credits the win or the loss.</p>
       </div>
-      <div class="explain-card">
-        <h4>Max drawdown</h4>
-        <p>Largest peak-to-trough decline during the run. A 30% drawdown means at the worst point you were down 30% from your high-water mark.</p>
+      <div class="how-card">
+        <span class="step">THE PORT</span>
+        <h4>Runs entirely in your browser</h4>
+        <p>The Python engine was ported line-for-line to JavaScript, so everything you're seeing runs <b>on your computer</b>, not a server. Pick a strategy, see the result in milliseconds, tweak the settings, see the new result.</p>
       </div>
-      <div class="explain-card">
-        <h4>Win rate</h4>
-        <p>Fraction of closed positions that made money. High win rate with losing PnL = small wins, big losses.</p>
-      </div>
-      <div class="explain-card">
-        <h4>Kelly fraction</h4>
-        <p>Optimal bet size given your edge. Full Kelly maximises growth but is volatile; quarter-Kelly is the industry-standard conservative choice.</p>
-      </div>
-      <div class="explain-card">
-        <h4>Bankrupt</h4>
-        <p>Whether the strategy spent its entire bankroll during the run. A hard failure that should trigger "redesign", not "tweak parameters".</p>
+      <div class="how-card">
+        <span class="step">THE TESTS</span>
+        <h4>53 unit tests in the Python source</h4>
+        <p>Every math formula (how to compute profit, risk, volatility, etc.) is tested against edge cases. The browser version is a translation of that tested Python code — same inputs, same outputs.</p>
       </div>
     </div>
-  </section>
-
-  <!-- Methodology -->
-  <section id="methodology">
-    <div class="sec-head">
-      <span class="num">05</span>
-      <h2>How this was built</h2>
-      <span class="note">Spec-first, test-driven, real-data-backed.</span>
-    </div>
-    <div class="method-grid">
-      <div class="method-card">
-        <span class="step">DATA</span>
-        <h4>Real Manifold bets, reconstructed</h4>
-        <p>A Python script hits <code>api.manifold.markets/v0</code>, collects resolved binary markets with ≥5 bettors and ≥50 mana volume, pulls full bet history, and rebuilds the price-over-time from each bet's probBefore / probAfter fields.</p>
-      </div>
-      <div class="method-card">
-        <span class="step">ENGINE</span>
-        <h4>Event-driven backtester</h4>
-        <p>Same code path for backtesting and live paper-trading. 53 unit tests cover every metric edge case. Slippage model adjusted for Manifold's constant-function market maker.</p>
-      </div>
-      <div class="method-card">
-        <span class="step">PORT</span>
-        <h4>Python → JavaScript, line-for-line</h4>
-        <p>The browser engine is a faithful port: same metric formulas, same portfolio bookkeeping, same deterministic PRNG. Given the same seed + dataset, both runtimes produce identical results.</p>
-      </div>
-      <div class="method-card">
-        <span class="step">UI</span>
-        <h4>Static site, zero build step</h4>
-        <p>3 JS files + 1 CSS + 1 HTML + 1 JSON dataset. Served directly from <code>/docs</code> on GitHub Pages. No bundler, no Node server, no CDN dependency beyond Chart.js.</p>
-      </div>
-    </div>
-    <div class="stack-chips">
+    <div class="stack">
       <span class="chip">Python 3.12</span>
       <span class="chip">pytest · 53 tests</span>
-      <span class="chip">urllib (stdlib)</span>
       <span class="chip">ES modules</span>
       <span class="chip">Chart.js</span>
-      <span class="chip">Manifold Public API</span>
+      <span class="chip">Manifold public API</span>
       <span class="chip">GitHub Pages</span>
     </div>
   </section>
 
   <!-- Caveats -->
-  <section id="caveats">
+  <section id="honest">
     <div class="caveats">
-      <h3>Honest caveats</h3>
+      <h3>⚠ Honest caveats</h3>
       <ul>
-        <li><b>Manifold uses play-money (mana).</b> Platform real, markets real, bets real — but currency is virtual. Incentives differ from real-money platforms like Kalshi and Polymarket.</li>
-        <li><b>Backtest overfitting is real.</b> A green result here doesn't prove a strategy works elsewhere. Out-of-sample validation, walk-forward testing, and statistical significance matter.</li>
-        <li><b>Slippage is simplified.</b> The model uses a flat 1¢ base for Manifold's CFMM. Real slippage depends on liquidity pool size.</li>
-        <li><b>Dataset skew.</b> These 120 markets are a recent-resolved sample with modest volume filters. Results would change on a different slice.</li>
-        <li><b>No real-money trading.</b> The engine has no write path to any trading API — by construction.</li>
+        <li><b>Manifold uses play-money (mana).</b> The markets are real, the bets are real, the outcomes are real — but the currency is virtual. On real-money platforms (Kalshi, Polymarket) the dynamics would differ.</li>
+        <li><b>Past performance ≠ future results.</b> A strategy that made money across these 120 markets might lose across a different set of markets or a future time period. This is decision support, not a crystal ball.</li>
+        <li><b>The test is deliberately naive.</b> No transaction fees, no tax, no liquidity constraints beyond a simple slippage model. Real trading is harsher.</li>
+        <li><b>Nothing here touches a real trading account.</b> The engine has no code path that submits real orders — by construction.</li>
       </ul>
     </div>
   </section>
 
   <footer>
-    <div>Prediction Markets Lab · 2026 · <a href="https://github.com/matthewnyc2/prediction-markets-lab" target="_blank" rel="noopener">Source on GitHub ↗</a></div>
-    <div>Real Manifold data · deterministic · 100% client-side</div>
+    <div>Prediction Markets Lab · 2026 · <a href="https://github.com/matthewnyc2/prediction-markets-lab" target="_blank" rel="noopener">Source code ↗</a></div>
+    <div>Real data · runs entirely in your browser</div>
   </footer>
 
 </div>
