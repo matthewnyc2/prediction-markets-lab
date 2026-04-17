@@ -125,28 +125,34 @@ function _datasetToEvents(payload, { shuffleSeed = 0, nMarkets = 0 } = {}) {
   const selected = nMarkets > 0 ? markets.slice(0, nMarkets) : markets;
   const events = [];
   const titleByKey = new Map();
+  const urlByKey = new Map();
   let t = 0;
   for (const m of selected) {
-    titleByKey.set(`${m.platform}|${m.marketId}`, m.marketTitle);
+    const key = `${m.platform}|${m.marketId}`;
+    titleByKey.set(key, m.marketTitle);
+    if (m.url) urlByKey.set(key, m.url);
     const ticks = Array.isArray(m.ticks) ? m.ticks : [];
     for (const tick of ticks) {
       events.push({
         t: t++,
+        wallTimeMs: tick.t || 0,
         platform: m.platform,
         marketId: m.marketId,
         marketTitle: m.marketTitle,
         yesPrice: Math.max(0.02, Math.min(0.98, tick.yesPrice)),
-        // Manifold is a constant-function market maker (CFMM), not an order book.
-        // Retail-sized bets don't meaningfully move price — skip the tier-walking penalty
-        // by setting book depth very high. Remaining fills pay only the 1¢ base slippage.
+        // Liquid real-money order books here — use very high book depth so that
+        // retail-sized fills (hundreds to low-thousands of shares) incur only the
+        // 1¢ base slippage, not tier-walking penalties.
         bookTopSize: 10_000_000,
         eventType: "tick",
         closeInHours: Math.max(0.1, tick.closeInHours ?? 24),
         resolution: "",
       });
     }
+    const resolutionMs = m.resolutionTime || (ticks.length ? ticks[ticks.length - 1].t : 0);
     events.push({
       t: t++,
+      wallTimeMs: resolutionMs,
       platform: m.platform,
       marketId: m.marketId,
       marketTitle: m.marketTitle,
@@ -157,7 +163,7 @@ function _datasetToEvents(payload, { shuffleSeed = 0, nMarkets = 0 } = {}) {
       closeInHours: 0,
     });
   }
-  return { events, titleByKey, selectedMarkets: selected };
+  return { events, titleByKey, urlByKey, selectedMarkets: selected };
 }
 
 function deterministicShuffle(arr, seed) {
@@ -254,6 +260,8 @@ export function applyFill(portfolio, fill) {
       size: fill.size,
       avgEntry: fill.fillPrice,
       entryT: fill.timestamp,
+      entryTimeMs: fill.wallTimeMs || 0,
+      resolutionTimeMs: 0,
       closed: false,
       realisedPnl: 0,
       wasCancelled: false,
@@ -266,7 +274,7 @@ export function applyFill(portfolio, fill) {
   return true;
 }
 
-export function settleResolution(portfolio, platform, marketId, outcome) {
+export function settleResolution(portfolio, platform, marketId, outcome, wallTimeMs = 0) {
   const closed = [];
   for (const side of ["yes", "no"]) {
     const key = `${platform}|${marketId}|${side}`;
@@ -282,6 +290,7 @@ export function settleResolution(portfolio, platform, marketId, outcome) {
       pos.realisedPnl = (payout - pos.avgEntry) * pos.size;
     }
     pos.closed = true;
+    pos.resolutionTimeMs = wallTimeMs || 0;
     closed.push(pos);
     portfolio.closedPositions.push(pos);
   }
@@ -333,6 +342,7 @@ export function runBacktest({ strategy, events, bankroll }) {
       const fillPrice = slippageFillPrice(clampedMid, order.size, order.orderSide, event.bookTopSize);
       const fill = {
         timestamp: event.t,
+        wallTimeMs: event.wallTimeMs || 0,
         platform: order.platform,
         marketId: order.marketId,
         side: order.side,
@@ -345,7 +355,7 @@ export function runBacktest({ strategy, events, bankroll }) {
       if (applied) strategy.onFill(fill);
     }
     if (event.eventType === "resolution") {
-      settleResolution(portfolio, event.platform, event.marketId, event.resolution || "cancelled");
+      settleResolution(portfolio, event.platform, event.marketId, event.resolution || "cancelled", event.wallTimeMs);
     }
     equityCurve.push({ t: event.t, equity: markEquity(portfolio, latest) });
   }

@@ -110,6 +110,7 @@ const state = {
   chart: null,
   dataset: null,
   titleByKey: new Map(),
+  urlByKey: new Map(),
 };
 
 // ---------- Utility ----------
@@ -219,7 +220,14 @@ function renderChart(result) {
   });
 }
 
-// ---------- Examples ----------
+// ---------- Examples: every bet this strategy placed ----------
+function fmtDateTime(ms) {
+  if (!ms) return "—";
+  const d = new Date(ms);
+  const iso = d.toISOString();
+  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
+}
+
 function renderExamples(result) {
   const host = $("examples");
   if (!host) return;
@@ -228,26 +236,56 @@ function renderExamples(result) {
     host.innerHTML = `<div class="dim" style="padding:16px">This strategy didn't enter any markets in this run.</div>`;
     return;
   }
-  // Pick most-profitable, most-losing, and a middle bet.
+  // Sort most-profitable first so the winners lead.
   const sorted = closed.slice().sort((a, b) => b.realisedPnl - a.realisedPnl);
-  const picks = [sorted[0]];
-  if (sorted.length > 1) picks.push(sorted[sorted.length - 1]);
-  if (sorted.length > 2) picks.push(sorted[Math.floor(sorted.length / 2)]);
+  const wins = sorted.filter(p => p.realisedPnl > 0).length;
+  const losses = sorted.filter(p => p.realisedPnl <= 0).length;
 
-  host.innerHTML = "";
-  for (const pos of picks) {
-    const title = state.titleByKey.get(`${pos.platform}|${pos.marketId}`) || pos.marketId;
+  const rows = sorted.map(pos => {
+    const key = `${pos.platform}|${pos.marketId}`;
+    const title = state.titleByKey.get(key) || pos.marketId;
+    const url = state.urlByKey.get(key);
     const pnl = pos.realisedPnl;
     const cls = pnl >= 0 ? "pos" : "neg";
     const side = pos.side.toUpperCase();
-    const card = document.createElement("div");
-    card.className = "example-card";
-    card.innerHTML = `
-      <div class="ex-title">${escapeHtml(title.length > 80 ? title.slice(0, 80) + "…" : title)}</div>
-      <div class="ex-line"><span class="k">Bet</span><span class="v">${side} · ${pos.size.toLocaleString()} shares at ${pos.avgEntry.toFixed(3)}</span></div>
-      <div class="ex-line"><span class="k">Outcome</span><span class="v ${cls}">${fmtMoney(pnl, { sign: true })}</span></div>`;
-    host.appendChild(card);
-  }
+    const titleCell = url
+      ? `<a href="${escapeHtml(url)}" target="_blank" rel="noopener" title="${escapeHtml(title)}">${escapeHtml(title.length > 90 ? title.slice(0, 90) + "…" : title)} ↗</a>`
+      : `<span title="${escapeHtml(title)}">${escapeHtml(title.length > 90 ? title.slice(0, 90) + "…" : title)}</span>`;
+    return `
+      <tr>
+        <td class="bet-title">${titleCell}</td>
+        <td class="bet-date mono">${fmtDateTime(pos.entryTimeMs)}</td>
+        <td class="bet-side"><span class="side-${pos.side}">${side}</span></td>
+        <td class="bet-size num">${pos.size.toLocaleString()}</td>
+        <td class="bet-entry num">${pos.avgEntry.toFixed(3)}</td>
+        <td class="bet-date mono">${fmtDateTime(pos.resolutionTimeMs)}</td>
+        <td class="bet-pnl num ${cls}">${fmtMoney(pnl, { sign: true })}</td>
+      </tr>`;
+  }).join("");
+
+  host.innerHTML = `
+    <div class="bets-summary">
+      <b>${closed.length}</b> bets total ·
+      <span class="pos"><b>${wins}</b> won</span> ·
+      <span class="neg"><b>${losses}</b> lost</span>
+      <span class="dim" style="margin-left:auto;font-size:12px">click any market title to open the live Polymarket page ↗</span>
+    </div>
+    <div class="bets-scroll">
+      <table class="bets-table">
+        <thead>
+          <tr>
+            <th>Market</th>
+            <th>Entered</th>
+            <th>Side</th>
+            <th class="num">Shares</th>
+            <th class="num">Entry $</th>
+            <th>Resolved</th>
+            <th class="num">P&L</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 // ---------- Result rendering ----------
@@ -327,10 +365,11 @@ function runPrimary() {
     betFraction: state.params.betFraction ?? 0.03,
     threshold: state.params.threshold ?? 0.30,
   });
-  const { events, titleByKey } = datasetToEvents(state.dataset, {
+  const { events, titleByKey, urlByKey } = datasetToEvents(state.dataset, {
     shuffleSeed: state.shuffleSeed, nMarkets: state.nMarkets,
   });
   state.titleByKey = titleByKey;
+  state.urlByKey = urlByKey;
   const result = runBacktest({ strategy, events, bankroll: state.bankroll });
   renderResult(result);
 }
