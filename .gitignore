@@ -1,3 +1,7 @@
+# Claude local state
+.claude/tool-failures.log
+.claude/tasklist.md
+
 # Python
 __pycache__/
 *.py[cod]
