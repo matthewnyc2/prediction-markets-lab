@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prediction Markets Lab · Strategy Backtester</title>
+  <meta name="description" content="A browser-based prediction-market backtester. Test quantitative trading strategies against synthetic markets — Kelly sizing, closing momentum, contrarian underdog, favorite-longshot fade. Production-grade engine ported from Python to JavaScript." />
+  <meta property="og:title" content="Prediction Markets Lab — Strategy Backtester" />
+  <meta property="og:description" content="Test quant strategies against prediction markets. Live in-browser backtester." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="brand">PREDICTION MARKETS LAB</div>
+    <nav class="header-links">
+      <a href="#try-it">Try it</a>
+      <a href="#methodology">Methodology</a>
+      <a href="#caveats">Caveats</a>
+      <a href="https://github.com/matthewnyc2/prediction-markets-lab" target="_blank" rel="noopener">GitHub ↗</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="eyebrow">Portfolio project · 2026</div>
+    <h1>A prediction-market strategy backtester you can actually run.</h1>
+    <p class="lead">
+      Describe a trading theory, test it, get scored results. Five built-in strategies, a full event-driven
+      replay engine, and institutional-style metrics (Sharpe, Sortino, Brier, drawdown, win rate) — all running
+      in your browser. Backed by a test-driven Python core and a spec-locked design methodology.
+    </p>
+    <div class="stats">
+      <span><b>5</b> built-in strategies</span><span class="sep">·</span>
+      <span><b>6</b> pure metric formulas</span><span class="sep">·</span>
+      <span><b>53</b> unit tests in the Python source</span><span class="sep">·</span>
+      <span><b>~700</b> lines of engine</span>
+    </div>
+  </section>
+
+  <!-- Live app -->
+  <section id="try-it">
+    <div class="section-head">
+      <h2>Run a backtest</h2>
+      <span class="sub">Pick a strategy · tweak parameters · watch the equity curve in real time.</span>
+    </div>
+
+    <div class="app">
+      <div class="app-header">
+        <span class="label">Engine status: <span style="color:var(--success)">live · deterministic</span></span>
+        <span class="run-count" id="run-count">—</span>
+      </div>
+
+      <div class="strategy-tabs" id="strategy-tabs"></div>
+
+      <div class="app-body">
+        <!-- Sidebar controls -->
+        <aside class="sidebar">
+          <h3>The theory</h3>
+          <div class="theory-text" id="theory-text"></div>
+
+          <div class="control-group">
+            <label for="bankroll-input">Starting bankroll (USD)</label>
+            <input class="input" type="number" id="bankroll-input" value="10000" min="100" step="500" />
+          </div>
+
+          <div class="control-group">
+            <label for="markets-input">Synthetic markets</label>
+            <input class="input" type="number" id="markets-input" value="20" min="1" max="100" step="1" />
+          </div>
+
+          <div class="control-group">
+            <label>Random seed</label>
+            <div class="control-input-row">
+              <input class="input" type="number" id="seed-input" value="42" step="1" />
+              <button class="btn" id="reseed-button" title="Pick a fresh random seed">🎲</button>
+            </div>
+          </div>
+
+          <div id="strategy-sliders"></div>
+
+          <button class="btn primary" id="rerun-button" style="width:100%; margin-top:8px">Re-run backtest</button>
+        </aside>
+
+        <!-- Main results -->
+        <main class="main">
+          <div class="tiles">
+            <div class="tile">
+              <div class="tile-label">Profit &amp; loss</div>
+              <div class="tile-value" id="tile-pnl">—</div>
+              <div class="tile-delta" id="tile-pnl-delta">—</div>
+            </div>
+            <div class="tile">
+              <div class="tile-label">Final equity</div>
+              <div class="tile-value" id="tile-equity">—</div>
+              <div class="tile-delta" id="tile-equity-delta">—</div>
+            </div>
+            <div class="tile">
+              <div class="tile-label">Sharpe ratio</div>
+              <div class="tile-value" id="tile-sharpe">—</div>
+              <div class="tile-delta" id="tile-sharpe-delta">—</div>
+            </div>
+            <div class="tile">
+              <div class="tile-label">Brier score</div>
+              <div class="tile-value" id="tile-brier">—</div>
+              <div class="tile-delta" id="tile-brier-delta">—</div>
+            </div>
+            <div class="tile">
+              <div class="tile-label">Max drawdown</div>
+              <div class="tile-value" id="tile-drawdown">—</div>
+              <div class="tile-delta" id="tile-drawdown-delta">—</div>
+            </div>
+            <div class="tile">
+              <div class="tile-label">Win rate</div>
+              <div class="tile-value" id="tile-winrate">—</div>
+              <div class="tile-delta" id="tile-winrate-delta">—</div>
+            </div>
+            <div class="tile">
+              <div class="tile-label">Trades placed</div>
+              <div class="tile-value" id="tile-trades">—</div>
+              <div class="tile-delta" id="tile-trades-delta">—</div>
+            </div>
+            <div class="tile">
+              <div class="tile-label">Bankrupt</div>
+              <div class="tile-value" id="tile-bankrupt">—</div>
+              <div class="tile-delta" id="tile-bankrupt-delta">—</div>
+            </div>
+          </div>
+
+          <div class="chart-wrap">
+            <canvas id="equity-chart"></canvas>
+          </div>
+
+          <div class="trade-section">
+            <div class="trade-head">
+              <h4>Trades executed</h4>
+              <span class="count" id="trade-count">—</span>
+            </div>
+            <div class="trade-table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tick</th><th>Market</th><th>Side</th>
+                    <th class="num">Size</th><th class="num">Fill</th><th class="num">Cost</th>
+                  </tr>
+                </thead>
+                <tbody id="trade-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </section>
+
+  <!-- Explainer -->
+  <section>
+    <div class="section-head">
+      <h2>What the numbers mean</h2>
+      <span class="sub">Quant metrics, explained plainly.</span>
+    </div>
+    <div class="explainer-grid">
+      <div class="explainer-card">
+        <h3>Sharpe ratio</h3>
+        <p>Risk-adjusted return. &gt; 1 is good, &gt; 2 is rare. Penalizes volatility — a strategy that returns 10% with bumpy swings scores lower than one that returns 8% smoothly.</p>
+      </div>
+      <div class="explainer-card">
+        <h3>Brier score</h3>
+        <p>How well-calibrated your bets' implied forecasts are. 0 = perfect, 0.25 = coin-flip, 1 = always confidently wrong. Lower is better. Missing if no positions closed.</p>
+      </div>
+      <div class="explainer-card">
+        <h3>Max drawdown</h3>
+        <p>Largest peak-to-trough decline during the run. A 30% drawdown means at the worst point you were down 30% from your high-water mark.</p>
+      </div>
+      <div class="explainer-card">
+        <h3>Win rate</h3>
+        <p>Fraction of closed positions that made money. High win rate with losing PnL = small wins, big losses. Low win rate with winning PnL = rare but huge wins.</p>
+      </div>
+      <div class="explainer-card">
+        <h3>Kelly fraction</h3>
+        <p>Optimal bet size given your edge. Full Kelly maximises growth but has high variance; quarter-Kelly is the industry-standard conservative choice.</p>
+      </div>
+      <div class="explainer-card">
+        <h3>Bankrupt</h3>
+        <p>Whether the strategy spent its entire bankroll during the run. A hard failure — the kind of event that should trigger "redesign", not "tweak parameters".</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Methodology -->
+  <section id="methodology">
+    <div class="section-head">
+      <h2>How this was built</h2>
+      <span class="sub">Spec-first, test-driven, then ported to the browser.</span>
+    </div>
+    <ul class="method-list">
+      <li class="method-item">
+        <div class="step">PHASE 1 · DESIGN</div>
+        <h3>Spec locked before any code</h3>
+        <p>Wrote a complete narrative spec, disambiguated 25 entities, declared 3 observable success conditions, picked the stack, selected a design system, generated wireframes. All frozen.</p>
+      </li>
+      <li class="method-item">
+        <div class="step">PHASE 2 · REVIEW</div>
+        <h3>297 rules, 99 contracts, 1 proof</h3>
+        <p>Extracted 297 rules from the design, mapped 99 user interactions to function contracts, derived a backward state chain, and verified chain correctness via cycle detection + reachability proofs.</p>
+      </li>
+      <li class="method-item">
+        <div class="step">PHASE 3 · BUILD</div>
+        <h3>Python engine + 53 unit tests</h3>
+        <p>Event-driven backtest engine, pluggable strategy ABC, pure-function metrics. Every formula tested against edge cases (empty input, zero variance, cancelled markets, extreme prices).</p>
+      </li>
+      <li class="method-item">
+        <div class="step">PIVOT</div>
+        <h3>Shipped a browser port</h3>
+        <p>The Python engine was ported line-for-line to JavaScript, so the backtester runs client-side with no server. Same logic, same metrics, same deterministic seed → identical results.</p>
+      </li>
+    </ul>
+    <div class="chip-row" style="margin-top:20px">
+      <span class="chip">Python 3.12</span>
+      <span class="chip">TypeScript-style JS</span>
+      <span class="chip">pytest (53 tests)</span>
+      <span class="chip">NumPy / SciPy (Python)</span>
+      <span class="chip">Chart.js</span>
+      <span class="chip">Zero build step</span>
+      <span class="chip">GitHub Pages</span>
+    </div>
+  </section>
+
+  <!-- Caveats -->
+  <section id="caveats">
+    <div class="caveats">
+      <h2>Honest caveats</h2>
+      <p style="color:var(--fg);margin-bottom:8px">This is a portfolio demo, not a get-rich device. What you should know:</p>
+      <ul>
+        <li><b>Markets are synthetic.</b> The mock adapter generates deterministic random-walks that resolve according to a configurable true probability. They have the right <i>shape</i> (prices in [0, 1], drift, noise, resolution) but are not real Kalshi/Polymarket/Manifold data.</li>
+        <li><b>Backtest overfitting is real.</b> A green backtest does not mean a strategy will work live. Over 50 years of quant finance has shown that most in-sample winners decay out-of-sample.</li>
+        <li><b>Slippage is simplified.</b> The model is mid ± 1¢ with tier-based book walking. Real markets are harsher (fees, adverse selection, latency).</li>
+        <li><b>No real-money trading.</b> The engine has no write path to any trading API — by construction. This project cannot place a real trade, no matter what.</li>
+        <li><b>Use for decision support, not decisions.</b> The tool forces quant-thinking discipline on gut-feel intuitions. That's genuinely valuable. It does not replace out-of-sample validation or statistical rigor.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <div>Prediction Markets Lab · built 2026 · <a href="https://github.com/matthewnyc2/prediction-markets-lab" target="_blank" rel="noopener">Source on GitHub ↗</a></div>
+    <div>Python core → JS port · deterministic · 100% client-side</div>
+  </footer>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script type="module" src="assets/app.js"></script>
+
+</body>
+</html>
