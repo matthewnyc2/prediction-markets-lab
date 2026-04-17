@@ -29,9 +29,11 @@ except Exception:
 
 def safe_print(s: str) -> None:
     try:
-        safe_print(s)
+        sys.stdout.write(s + "\n")
+        sys.stdout.flush()
     except UnicodeEncodeError:
-        safe_print(s.encode("ascii", "replace").decode("ascii"))
+        sys.stdout.write(s.encode("ascii", "replace").decode("ascii") + "\n")
+        sys.stdout.flush()
 
 BASE = "https://api.manifold.markets"
 HEADERS = {"User-Agent": "prediction-markets-lab/0.1 (+https://github.com/matthewnyc2/prediction-markets-lab)"}
