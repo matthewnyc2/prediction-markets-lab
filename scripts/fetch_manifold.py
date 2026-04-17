@@ -29,9 +29,9 @@ except Exception:
 
 def safe_print(s: str) -> None:
     try:
-        print(s, flush=True)
+        print(s)
     except UnicodeEncodeError:
-        print(s.encode("ascii", "replace").decode("ascii"), flush=True)
+        print(s.encode("ascii", "replace").decode("ascii"))
 
 BASE = "https://api.manifold.markets"
 HEADERS = {"User-Agent": "prediction-markets-lab/0.1 (+https://github.com/matthewnyc2/prediction-markets-lab)"}
@@ -76,7 +76,7 @@ def scan_resolved_binary_markets() -> list[dict]:
             ):
                 out.append(m)
         before = batch[-1]["id"]
-        print(f"  page {page+1}: scanned {len(batch)} markets, total kept {len(out)}", flush=True)
+        print(f"  page {page+1}: scanned {len(batch)} markets, total kept {len(out)}")
         if len(out) >= TARGET_MARKETS * 3:
             break
         time.sleep(0.2)
@@ -137,9 +137,9 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / "manifold.json"
 
-    print(f"scanning resolved binary markets from {BASE} ...", flush=True)
+    print(f"scanning resolved binary markets from {BASE} ...")
     candidates = scan_resolved_binary_markets()
-    print(f"found {len(candidates)} candidate markets; pulling bet history ...", flush=True)
+    print(f"found {len(candidates)} candidate markets; pulling bet history ...")
 
     keepers: list[dict] = []
     for i, m in enumerate(candidates):
@@ -148,7 +148,7 @@ def main() -> int:
         try:
             bets = fetch_bets(m["id"])
         except Exception as e:
-            print(f"  [{i+1}] skip {m['id']}: {e}", flush=True)
+            print(f"  [{i+1}] skip {m['id']}: {e}")
             continue
         resolution_time = int(m.get("resolutionTime") or m.get("closeTime") or 0)
         ticks = build_ticks_from_bets(bets, resolution_time)
@@ -156,11 +156,11 @@ def main() -> int:
             continue
         rec = to_market_record(m, ticks)
         keepers.append(rec)
-        print(f"  [{len(keepers):>3}/{TARGET_MARKETS}] {rec['marketTitle'][:72]}  ({len(ticks)} ticks, res={rec['resolution'].upper()})", flush=True)
+        print(f"  [{len(keepers):>3}/{TARGET_MARKETS}] {rec['marketTitle'][:72]}  ({len(ticks)} ticks, res={rec['resolution'].upper()})")
         time.sleep(0.15)
 
     if not keepers:
-        print("no markets survived filters; aborting", flush=True)
+        print("no markets survived filters; aborting")
         return 1
 
     payload = {
@@ -180,7 +180,7 @@ def main() -> int:
     }
     out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     size_kb = out_path.stat().st_size / 1024
-    print(f"\nwrote {out_path}  ({size_kb:.1f} KB · {len(keepers)} markets)", flush=True)
+    print(f"\nwrote {out_path}  ({size_kb:.1f} KB · {len(keepers)} markets)")
     return 0
 
 
