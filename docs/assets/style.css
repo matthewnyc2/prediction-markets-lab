@@ -155,9 +155,10 @@ section { margin-top: 72px; }
 .bets-summary .neg b { color: var(--red); }
 .bets-scroll {
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--r); overflow: hidden;
-  max-height: 520px; overflow-y: auto;
+  border-radius: var(--r);
+  max-height: 520px; overflow-y: auto; overflow-x: auto;
 }
+.bets-table { min-width: 760px; }
 .bets-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .bets-table thead th {
   position: sticky; top: 0; background: var(--bg-card);

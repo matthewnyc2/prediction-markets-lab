@@ -103,7 +103,10 @@ const BY_ID = Object.fromEntries(CATALOGUE.map(c => [c.id, c]));
 // ---------- State ----------
 const state = {
   strategyId: "closing-momentum",
-  shuffleSeed: 1,
+  startMs: 0,        // filled after dataset loads — defaults to earliest resolution
+  endMs: 0,          // filled after dataset loads — defaults to latest resolution
+  datasetMinMs: 0,   // earliest resolution in the dataset
+  datasetMaxMs: 0,   // latest resolution in the dataset
   nMarkets: 200,
   bankroll: 10_000,
   params: {},
@@ -112,6 +115,16 @@ const state = {
   titleByKey: new Map(),
   urlByKey: new Map(),
 };
+
+function isoDay(ms) {
+  if (!ms) return "";
+  return new Date(ms).toISOString().slice(0, 10);
+}
+function dayMs(iso) {
+  if (!iso) return 0;
+  const t = Date.parse(iso + "T00:00:00Z");
+  return Number.isFinite(t) ? t : 0;
+}
 
 // ---------- Utility ----------
 const $ = (id) => document.getElementById(id);
@@ -182,21 +195,28 @@ function renderChart(result) {
   const canvas = $("equity-chart");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  const data = result.equityCurve.map((p, i) => ({ x: i, y: p.equity }));
+  // Use real calendar dates on the x axis. Each equity-curve point carries the
+  // wall-clock ms of the underlying event; fall back to the index if missing.
+  const data = result.equityCurve.map((p, i) => ({
+    x: p.wallTimeMs || i,
+    y: p.equity,
+  }));
+  const useTime = data.length > 0 && data[0].x > 1_000_000_000_000;  // ms-since-epoch?
   if (state.chart) state.chart.destroy();
   state.chart = new window.Chart(ctx, {
     type: "line",
     data: {
       datasets: [
         {
-          label: "Equity", data,
+          label: "Account value",
+          data,
           borderColor: "#1652f0", backgroundColor: "rgba(22, 82, 240, 0.10)",
           borderWidth: 2, tension: 0.2, pointRadius: 0, fill: true,
         },
         {
           label: "Starting bankroll",
           data: data.map(d => ({ x: d.x, y: state.bankroll })),
-          borderColor: "rgba(0,0,0,0.22)", borderWidth: 1.2, borderDash: [5, 5],
+          borderColor: "rgba(0,0,0,0.30)", borderWidth: 1.2, borderDash: [5, 5],
           pointRadius: 0, fill: false,
         },
       ],
@@ -204,17 +224,41 @@ function renderChart(result) {
     options: {
       responsive: true, maintainAspectRatio: false, animation: { duration: 200 },
       plugins: {
-        legend: { display: false },
+        legend: { display: true, position: "top", align: "end",
+                  labels: { boxWidth: 14, font: { size: 11 }, color: "#4e5a73" } },
         tooltip: {
           callbacks: {
-            title: (items) => `Event ${items[0].parsed.x}`,
+            title: (items) => useTime
+              ? new Date(items[0].parsed.x).toISOString().slice(0, 10)
+              : `Event ${items[0].parsed.x}`,
             label: (item) => `$${item.parsed.y.toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
           },
         },
       },
       scales: {
-        x: { type: "linear", ticks: { font: { size: 11 } }, title: { display: false } },
-        y: { ticks: { font: { size: 11 }, callback: (v) => "$" + v.toLocaleString() } },
+        x: {
+          type: "linear",
+          ticks: {
+            font: { size: 11 },
+            callback: (v) => useTime ? new Date(v).toISOString().slice(0, 10) : v,
+            maxTicksLimit: 7,
+          },
+          title: {
+            display: true,
+            text: useTime ? "Date (market resolution time)" : "Event sequence",
+            font: { size: 11, weight: "500" },
+            color: "#4e5a73",
+          },
+        },
+        y: {
+          ticks: { font: { size: 11 }, callback: (v) => "$" + v.toLocaleString() },
+          title: {
+            display: true,
+            text: "Your account balance (USD)",
+            font: { size: 11, weight: "500" },
+            color: "#4e5a73",
+          },
+        },
       },
     },
   });
@@ -366,7 +410,7 @@ function runPrimary() {
     threshold: state.params.threshold ?? 0.30,
   });
   const { events, titleByKey, urlByKey } = datasetToEvents(state.dataset, {
-    shuffleSeed: state.shuffleSeed, nMarkets: state.nMarkets,
+    startMs: state.startMs, endMs: state.endMs, nMarkets: state.nMarkets,
   });
   state.titleByKey = titleByKey;
   state.urlByKey = urlByKey;
@@ -377,7 +421,9 @@ function runPrimary() {
 // ---------- Leaderboard ----------
 function runLeaderboard() {
   if (!state.dataset) return;
-  const { events } = datasetToEvents(state.dataset, { shuffleSeed: 1, nMarkets: 200 });
+  const { events } = datasetToEvents(state.dataset, {
+    startMs: state.startMs, endMs: state.endMs, nMarkets: 200,
+  });
   const rows = [];
   for (const cfg of CATALOGUE) {
     const strategy = cfg.factory({
@@ -431,12 +477,17 @@ async function boot() {
     e.target.value = state.nMarkets;
     runPrimary();
   });
-  wire("seed-input", "change", (e) => {
-    state.shuffleSeed = Math.max(1, parseInt(e.target.value || "1", 10));
-    e.target.value = state.shuffleSeed;
+  wire("start-date-input", "change", (e) => {
+    state.startMs = dayMs(e.target.value);
     runPrimary();
+    runLeaderboard();
   });
-  wire("rerun-btn", "click", runPrimary);
+  wire("end-date-input", "change", (e) => {
+    state.endMs = dayMs(e.target.value);
+    runPrimary();
+    runLeaderboard();
+  });
+  wire("rerun-btn", "click", () => { runPrimary(); runLeaderboard(); });
 
   try {
     state.dataset = await loadDataset("data/polymarket.json");
@@ -448,6 +499,30 @@ async function boot() {
 
   const fetched = new Date(state.dataset.fetched_at_ms).toISOString().slice(0, 10);
   setText("dataset-date", fetched);
+
+  // Compute the dataset's resolution-time range and seed the date inputs.
+  const resMs = state.dataset.markets
+    .map(m => m.resolutionTime || 0)
+    .filter(t => t > 0);
+  if (resMs.length) {
+    state.datasetMinMs = Math.min(...resMs);
+    state.datasetMaxMs = Math.max(...resMs);
+    state.startMs = state.datasetMinMs;
+    state.endMs   = state.datasetMaxMs;
+    const startIn = $("start-date-input");
+    const endIn   = $("end-date-input");
+    if (startIn) {
+      startIn.min = isoDay(state.datasetMinMs);
+      startIn.max = isoDay(state.datasetMaxMs);
+      startIn.value = isoDay(state.startMs);
+    }
+    if (endIn) {
+      endIn.min = isoDay(state.datasetMinMs);
+      endIn.max = isoDay(state.datasetMaxMs);
+      endIn.value = isoDay(state.endMs);
+    }
+    setText("dataset-range", `${isoDay(state.datasetMinMs)} → ${isoDay(state.datasetMaxMs)}`);
+  }
 
   runPrimary();
   runLeaderboard();

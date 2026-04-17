@@ -98,6 +98,34 @@
       </div>
     </div>
 
+    <!-- Controls (above the chart so you tune, then see the result update) -->
+    <div class="controls">
+      <div class="ctrl">
+        <label>Your bankroll</label>
+        <input type="number" id="bankroll-input" value="10000" min="100" step="500" />
+      </div>
+      <div class="ctrl">
+        <label>Markets (1–200)</label>
+        <input type="number" id="markets-input" value="200" min="1" max="200" step="1" />
+      </div>
+      <div class="ctrl">
+        <label>From (market resolved on/after)</label>
+        <input type="date" id="start-date-input" />
+      </div>
+      <div class="ctrl">
+        <label>To (market resolved on/before)</label>
+        <input type="date" id="end-date-input" />
+      </div>
+      <div class="ctrl slider-slot" id="slider-slot"></div>
+      <div class="ctrl go">
+        <label>&nbsp;</label>
+        <button class="btn" id="rerun-btn">Re-run</button>
+      </div>
+      <div class="ctrl" style="grid-column: 1 / -1; font-size: 12px; color: var(--fg-3);">
+        Dataset covers <b id="dataset-range">—</b> · markets are run in chronological order of resolution, not shuffled
+      </div>
+    </div>
+
     <!-- Equity chart -->
     <div class="chart-section">
       <div class="chart-wrap">
@@ -109,31 +137,10 @@
       </div>
     </div>
 
-    <!-- Three example bets -->
+    <!-- Every bet, with real dates + live Polymarket links -->
     <div class="examples-section">
       <div class="examples-head">Every bet this strategy placed on real Polymarket markets</div>
       <div id="examples"></div>
-    </div>
-
-    <!-- Controls -->
-    <div class="controls">
-      <div class="ctrl">
-        <label>Your bankroll</label>
-        <input type="number" id="bankroll-input" value="10000" min="100" step="500" />
-      </div>
-      <div class="ctrl">
-        <label>Markets (1–200)</label>
-        <input type="number" id="markets-input" value="200" min="1" max="200" step="1" />
-      </div>
-      <div class="ctrl">
-        <label>Shuffle seed</label>
-        <input type="number" id="seed-input" value="1" min="1" step="1" />
-      </div>
-      <div class="ctrl slider-slot" id="slider-slot"></div>
-      <div class="ctrl go">
-        <label>&nbsp;</label>
-        <button class="btn" id="rerun-btn">Re-run</button>
-      </div>
     </div>
 
     <!-- Details drawer -->

@@ -119,9 +119,17 @@ export function datasetToEvents(payload, opts) { return _datasetToEvents(payload
 // Back-compat alias.
 export const manifoldDatasetToEvents = datasetToEvents;
 
-function _datasetToEvents(payload, { shuffleSeed = 0, nMarkets = 0 } = {}) {
+function _datasetToEvents(payload, { startMs = 0, endMs = 0, nMarkets = 0, shuffleSeed = 0 } = {}) {
   const allMarkets = Array.isArray(payload.markets) ? payload.markets.slice() : [];
-  const markets = shuffleSeed > 0 ? deterministicShuffle(allMarkets, shuffleSeed) : allMarkets;
+  // Chronological by resolution time — produces a real calendar backtest instead
+  // of a random shuffle. Markets with missing resolutionTime fall back to 0 and
+  // sort to the front.
+  let markets = allMarkets.sort((a, b) => (a.resolutionTime || 0) - (b.resolutionTime || 0));
+  // Date-range filter: inclusive window [startMs, endMs]. 0 disables that side.
+  if (startMs > 0) markets = markets.filter(m => (m.resolutionTime || 0) >= startMs);
+  if (endMs > 0)   markets = markets.filter(m => (m.resolutionTime || 0) <= endMs);
+  // Legacy: shuffleSeed > 0 disables chronological ordering (only used by tests).
+  if (shuffleSeed > 0) markets = deterministicShuffle(markets, shuffleSeed);
   const selected = nMarkets > 0 ? markets.slice(0, nMarkets) : markets;
   const events = [];
   const titleByKey = new Map();
@@ -357,7 +365,7 @@ export function runBacktest({ strategy, events, bankroll }) {
     if (event.eventType === "resolution") {
       settleResolution(portfolio, event.platform, event.marketId, event.resolution || "cancelled", event.wallTimeMs);
     }
-    equityCurve.push({ t: event.t, equity: markEquity(portfolio, latest) });
+    equityCurve.push({ t: event.t, wallTimeMs: event.wallTimeMs || 0, equity: markEquity(portfolio, latest) });
   }
 
   for (const p of equityCurve) if (p.equity < 0) p.equity = 0;  // clamp negatives (bankruptcy tail)
