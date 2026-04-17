@@ -313,6 +313,8 @@ function renderExamples(result) {
     const title = state.titleByKey.get(key) || pos.marketId;
     const url = state.urlByKey.get(key);
     const pnl = pos.realisedPnl;
+    const cost = pos.avgEntry * pos.size;
+    const pct = cost > 0 ? pnl / cost : 0;
     const cls = pnl >= 0 ? "pos" : "neg";
     const side = pos.side.toUpperCase();
     const titleCell = url
@@ -325,8 +327,10 @@ function renderExamples(result) {
         <td class="bet-side"><span class="side-${pos.side}">${side}</span></td>
         <td class="bet-size num">${pos.size.toLocaleString()}</td>
         <td class="bet-entry num">${pos.avgEntry.toFixed(3)}</td>
+        <td class="bet-cost num">${fmtMoney(cost)}</td>
         <td class="bet-date mono">${fmtDateTime(pos.resolutionTimeMs)}</td>
         <td class="bet-pnl num ${cls}">${fmtMoney(pnl, { sign: true })}</td>
+        <td class="bet-pct num ${cls}">${fmtPct(pct, { sign: true })}</td>
       </tr>`;
   }).join("");
 
@@ -346,8 +350,10 @@ function renderExamples(result) {
             <th>Side</th>
             <th class="num">Shares</th>
             <th class="num">Entry $</th>
+            <th class="num">Cost</th>
             <th>Resolved</th>
             <th class="num">P&L</th>
+            <th class="num">Return</th>
           </tr>
         </thead>
         <tbody>${rows}</tbody>
@@ -530,8 +536,12 @@ async function boot() {
   if (resMs.length) {
     state.datasetMinMs = Math.min(...resMs);
     state.datasetMaxMs = Math.max(...resMs);
-    state.startMs = state.datasetMinMs;
-    state.endMs   = state.datasetMaxMs;
+    // Default window = current calendar year, clamped to dataset bounds.
+    const year = new Date().getUTCFullYear();
+    const yearStart = Date.UTC(year, 0, 1);
+    const yearEnd   = Date.UTC(year, 11, 31);
+    state.startMs = Math.max(state.datasetMinMs, yearStart);
+    state.endMs   = Math.min(state.datasetMaxMs, yearEnd);
     const startIn = $("start-date-input");
     const endIn   = $("end-date-input");
     if (startIn) {

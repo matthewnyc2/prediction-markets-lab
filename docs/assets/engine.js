@@ -125,12 +125,16 @@ function _datasetToEvents(payload, { startMs = 0, endMs = 0, nMarkets = 0, shuff
   // of a random shuffle. Markets with missing resolutionTime fall back to 0 and
   // sort to the front.
   let markets = allMarkets.sort((a, b) => (a.resolutionTime || 0) - (b.resolutionTime || 0));
-  // Date-range filter: inclusive window [startMs, endMs]. 0 disables that side.
+  // Market-level filter: skip markets whose resolution is completely outside
+  // the window (nothing meaningful to trade on them).
   if (startMs > 0) markets = markets.filter(m => (m.resolutionTime || 0) >= startMs);
   if (endMs > 0)   markets = markets.filter(m => (m.resolutionTime || 0) <= endMs);
   // Legacy: shuffleSeed > 0 disables chronological ordering (only used by tests).
   if (shuffleSeed > 0) markets = deterministicShuffle(markets, shuffleSeed);
   const selected = nMarkets > 0 ? markets.slice(0, nMarkets) : markets;
+  // Tick-level filter: within each selected market, only include ticks whose
+  // wall-clock falls in the window. Without this, a market resolving in the
+  // window still replays its FULL (potentially multi-year) tick history.
   const events = [];
   const titleByKey = new Map();
   const urlByKey = new Map();
@@ -139,7 +143,9 @@ function _datasetToEvents(payload, { startMs = 0, endMs = 0, nMarkets = 0, shuff
     const key = `${m.platform}|${m.marketId}`;
     titleByKey.set(key, m.marketTitle);
     if (m.url) urlByKey.set(key, m.url);
-    const ticks = Array.isArray(m.ticks) ? m.ticks : [];
+    let ticks = Array.isArray(m.ticks) ? m.ticks : [];
+    if (startMs > 0) ticks = ticks.filter(tk => (tk.t || 0) >= startMs);
+    if (endMs > 0)   ticks = ticks.filter(tk => (tk.t || 0) <= endMs);
     for (const tick of ticks) {
       events.push({
         wallTimeMs: tick.t || 0,
