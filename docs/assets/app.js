@@ -191,23 +191,34 @@ function renderSliderSlot() {
 }
 
 // ---------- Chart ----------
-// Day-by-day balance: one point per calendar day. X axis is the day number
-// (Day 1, Day 2, ...). Y axis is the end-of-day account balance. If the user
-// has $10,000 on day 1 and loses $500 by day 2, the chart shows $10,000 →
-// $9,500. The tooltip shows the real calendar date alongside the day number.
-function bucketByDay(curve) {
-  const useTime = curve.length > 0 && (curve[0].wallTimeMs || 0) > 1_000_000_000_000;
-  if (!useTime) return { data: curve.map((p, i) => ({ x: i + 1, y: p.equity })), dates: [] };
+// One dot per bet-settlement day, NOT per calendar day. Days when the person
+// placed no bets (nothing settled) are skipped. X axis is the trading-day
+// index starting from the window's first day; Y axis is the account balance
+// right after that bet resolved. A Day 0 anchor at starting bankroll is
+// prepended so the line begins at the number in the user's head.
+function betSettlementPoints(result, startingBankroll) {
   const DAY = 86_400_000;
-  const buckets = new Map();
-  for (const p of curve) {
-    const dayKey = Math.floor(p.wallTimeMs / DAY);
-    buckets.set(dayKey, p.equity);  // engine processes events chronologically,
-                                    // so the last write for a day is end-of-day
+  const closed = (result.closedPositions || []).filter(p => !p.wasCancelled && p.accountAfter != null);
+  if (closed.length === 0) return { data: [{ x: 0, y: startingBankroll }], dates: [""] };
+
+  // Sort by resolution time ascending so the dots walk forward in time.
+  closed.sort((a, b) => (a.resolutionTimeMs || 0) - (b.resolutionTimeMs || 0));
+
+  // Anchor Day 0 at the day BEFORE the first settlement (or at the equity
+  // curve's first day if available) so the starting bankroll is visible.
+  const firstTimeMs = closed[0].resolutionTimeMs || result.equityCurve[0]?.wallTimeMs || 0;
+  const curveStartMs = result.equityCurve.length && result.equityCurve[0].wallTimeMs
+    ? result.equityCurve[0].wallTimeMs
+    : firstTimeMs;
+  const anchorDay = Math.floor(curveStartMs / DAY);
+
+  const data = [{ x: 0, y: startingBankroll }];
+  const dates = [new Date(anchorDay * DAY).toISOString().slice(0, 10)];
+  for (const pos of closed) {
+    const dayIdx = Math.floor((pos.resolutionTimeMs || 0) / DAY) - anchorDay;
+    data.push({ x: Math.max(1, dayIdx), y: pos.accountAfter });
+    dates.push(new Date((pos.resolutionTimeMs || 0)).toISOString().slice(0, 10));
   }
-  const sortedDays = Array.from(buckets.keys()).sort((a, b) => a - b);
-  const data = sortedDays.map((dayKey, i) => ({ x: i + 1, y: buckets.get(dayKey) }));
-  const dates = sortedDays.map(dayKey => new Date(dayKey * DAY).toISOString().slice(0, 10));
   return { data, dates };
 }
 
@@ -215,10 +226,7 @@ function renderChart(result, startingBankroll) {
   const canvas = $("equity-chart");
   if (!canvas) return;
   const ctx = canvas.getContext("2d");
-  const { data, dates } = bucketByDay(result.equityCurve);
-  // Prepend a Day 0 point at the starting bankroll so the line clearly starts
-  // at the number in the user's head ($10,000) and moves from there.
-  if (data.length > 0) data.unshift({ x: 0, y: startingBankroll });
+  const { data, dates } = betSettlementPoints(result, startingBankroll);
   // Color each dot by direction vs. the previous day's balance:
   // green = money up, red = money down, gray = unchanged or Day 0.
   const GREEN = "#16a34a", RED = "#dc2626", GRAY = "#94a3b8";
