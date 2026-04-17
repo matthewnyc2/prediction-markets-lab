@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Prediction Markets Lab · Would your trading strategy actually work?</title>
-  <meta name="description" content="Pick a trading strategy. See if it would have made money on 120 real prediction markets. Real data, real outcomes, plain English." />
+  <meta name="description" content="Pick a trading strategy. See if it would have made money on 200 real-money Polymarket markets. Real data, real outcomes, plain English." />
   <link rel="preconnect" href="https://rsms.me" crossorigin>
   <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
   <link rel="stylesheet" href="assets/style.css" />
@@ -31,13 +31,14 @@
     <p class="lede">
       Prediction markets are places where people bet yes/no on future events — "Will the Fed cut rates in June?",
       "Will the Lakers make the playoffs?" <b>Below are five different betting strategies.</b>
-      Pick one. It will run through <b>120 real betting markets that have already resolved</b> and tell you
-      exactly how much money you would have made or lost.
+      Pick one. It will run through <b>200 resolved real-money Polymarket markets</b> (Trump 2024,
+      Fed rate decisions, Ukraine ceasefire, NBA Finals, etc.) and tell you exactly how much money
+      you would have made or lost — in real USDC, not play-money.
     </p>
     <div class="fact">
-      <span>📊 <b>120</b> real markets</span>
-      <span>💰 <b>$10,000</b> starting bankroll</span>
-      <span>🔁 <b>Re-run anytime</b> with different settings</span>
+      <span>📊 <b>200</b> real-money markets</span>
+      <span>💰 <b>$17B</b> aggregate volume in the set</span>
+      <span>💵 <b>$10,000</b> starting bankroll</span>
       <span>📅 Data fetched <b id="dataset-date">—</b></span>
     </div>
   </section>
@@ -61,7 +62,7 @@
     </div>
 
     <div class="big-result">
-      <div class="preface">Starting with <b>$10,000</b>, across <b id="result-markets">—</b> real Manifold markets, using <b id="result-strategy">—</b>:</div>
+      <div class="preface">Starting with <b>$10,000</b>, across <b id="result-markets">—</b> real Polymarket markets, using <b id="result-strategy">—</b>:</div>
       <div class="pnl" id="pnl-big">—</div>
       <div class="pct-pill" id="pnl-pct">—</div>
       <div class="verdict" id="verdict">—</div>
@@ -110,7 +111,7 @@
 
     <!-- Three example bets -->
     <div class="examples-section">
-      <div class="examples-head">Three example bets this strategy made on real Manifold markets</div>
+      <div class="examples-head">Three example bets this strategy made on real Polymarket markets</div>
       <div id="examples"></div>
     </div>
 
@@ -121,8 +122,8 @@
         <input type="number" id="bankroll-input" value="10000" min="100" step="500" />
       </div>
       <div class="ctrl">
-        <label>Markets (1–120)</label>
-        <input type="number" id="markets-input" value="120" min="1" max="120" step="1" />
+        <label>Markets (1–200)</label>
+        <input type="number" id="markets-input" value="200" min="1" max="200" step="1" />
       </div>
       <div class="ctrl">
         <label>Shuffle seed</label>
@@ -158,7 +159,7 @@
     <div class="sec">
       <span class="n">03</span>
       <h2>All five strategies, side by side</h2>
-      <p>Each strategy run on the same 120 real markets with a $10,000 bankroll. No cherry-picking.</p>
+      <p>Each strategy run on the same 200 real-money Polymarket markets with a $10,000 bankroll. No cherry-picking.</p>
     </div>
     <div class="lb">
       <div class="lb-row head">
@@ -183,8 +184,8 @@
     <div class="how-grid">
       <div class="how-card">
         <span class="step">THE DATA</span>
-        <h4>120 real resolved markets</h4>
-        <p>A Python script hit <b>Manifold Markets' public API</b> and pulled 120 markets that have already been resolved yes/no. For each one, it collected the complete history of every bet placed on it, and reconstructed the price over time from those bets.</p>
+        <h4>200 real-money resolved markets</h4>
+        <p>A Python script hit <b>Polymarket's public CLOB + Gamma APIs</b> and pulled the top 200 resolved binary markets by USDC volume — $17B in aggregate trading. For each one, it reconstructed the 12-hour bar price history from actual on-chain trades. These are the real markets people bet real dollars on: elections, rate decisions, geopolitical events.</p>
       </div>
       <div class="how-card">
         <span class="step">THE ENGINE</span>
@@ -207,7 +208,7 @@
       <span class="chip">pytest · 53 tests</span>
       <span class="chip">ES modules</span>
       <span class="chip">Chart.js</span>
-      <span class="chip">Manifold public API</span>
+      <span class="chip">Polymarket public API</span>
       <span class="chip">GitHub Pages</span>
     </div>
   </section>
@@ -217,8 +218,9 @@
     <div class="caveats">
       <h3>⚠ Honest caveats</h3>
       <ul>
-        <li><b>Manifold uses play-money (mana).</b> The markets are real, the bets are real, the outcomes are real — but the currency is virtual. On real-money platforms (Kalshi, Polymarket) the dynamics would differ.</li>
-        <li><b>Past performance ≠ future results.</b> A strategy that made money across these 120 markets might lose across a different set of markets or a future time period. This is decision support, not a crystal ball.</li>
+        <li><b>These are real-money USDC markets on Polymarket.</b> People bet actual dollars. Prices reflect real risk appetite, not play-money sloppiness.</li>
+        <li><b>Price data is 12-hour bars, not tick-by-tick.</b> Polymarket's public CLOB prices-history endpoint caps returned points, so long-running markets (like election majors spanning 10 months) are reconstructed at 12-hour fidelity — enough for multi-day strategies, not for intraday scalping.</li>
+        <li><b>Past performance ≠ future results.</b> A strategy that made money across these 200 markets might lose across a different set or a future time period. This is decision support, not a crystal ball.</li>
         <li><b>The test is deliberately naive.</b> No transaction fees, no tax, no liquidity constraints beyond a simple slippage model. Real trading is harsher.</li>
         <li><b>Nothing here touches a real trading account.</b> The engine has no code path that submits real orders — by construction.</li>
       </ul>
