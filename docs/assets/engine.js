@@ -129,7 +129,10 @@ export function manifoldDatasetToEvents(payload, { shuffleSeed = 0, nMarkets = 0
         marketId: m.marketId,
         marketTitle: m.marketTitle,
         yesPrice: Math.max(0.02, Math.min(0.98, tick.yesPrice)),
-        bookTopSize: 1000,  // Manifold CFMM — plenty of depth for retail bet sizes
+        // Manifold is a constant-function market maker (CFMM), not an order book.
+        // Retail-sized bets don't meaningfully move price — skip the tier-walking penalty
+        // by setting book depth very high. Remaining fills pay only the 1¢ base slippage.
+        bookTopSize: 10_000_000,
         eventType: "tick",
         closeInHours: Math.max(0.1, tick.closeInHours ?? 24),
         resolution: "",
